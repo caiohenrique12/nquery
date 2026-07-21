@@ -1,0 +1,14 @@
+<div class="nq-page-header"><h1>Invite user</h1></div>
+<%= form_with model: @user, url: admin_users_path, class: "nq-form nq-card" do |f| %>
+  <div class="nq-form-row"><%= f.label :email %><%= f.email_field :email, class: "nq-input" %></div>
+  <div class="nq-form-row"><%= f.label :first_name %><%= f.text_field :first_name, class: "nq-input" %></div>
+  <div class="nq-form-row"><%= f.label :last_name %><%= f.text_field :last_name, class: "nq-input" %></div>
+  <div class="nq-form-row"><%= f.label :password %><%= f.password_field :password, class: "nq-input" %></div>
+  <div class="nq-form-row">
+    <label>Groups</label>
+    <% @groups.each do |group| %>
+      <label class="nq-checkbox"><input type="checkbox" name="group_ids[]" value="<%= group.id %>"> <%= group.name %></label>
+    <% end %>
+  </div>
+  <%= f.submit "Create user", class: "nq-btn nq-btn-primary" %>
+<% end %>

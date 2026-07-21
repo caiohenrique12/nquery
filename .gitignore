@@ -1,0 +1,14 @@
+*.gem
+*.rbc
+/.bundle
+/vendor/bundle
+/tmp
+/log
+/server/tmp
+/server/log
+/server/storage
+.env
+.DS_Store
+node_modules
+coverage
+spec/examples.txt

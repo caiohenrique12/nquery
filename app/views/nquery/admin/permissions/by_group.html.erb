@@ -1,0 +1,14 @@
+<div class="nq-page-header"><h1>Permissions</h1></div>
+<div class="nq-tabs">
+  <%= link_to "By group", by_group_admin_permissions_path, class: "nq-tab #{'active' if @view == 'group'}" %>
+  <%= link_to "By data source", by_data_source_admin_permissions_path, class: "nq-tab #{'active' if @view == 'data_source'}" %>
+  <%= link_to "By collection", by_collection_admin_permissions_path, class: "nq-tab #{'active' if @view == 'collection'}" %>
+</div>
+
+<% if @warnings&.any? %>
+  <div class="nq-flash nq-flash-alert">
+    <% @warnings.each do |warning| %><p><%= warning %></p><% end %>
+  </div>
+<% end %>
+
+<%= render "nquery/admin/permissions/#{@view}" %>

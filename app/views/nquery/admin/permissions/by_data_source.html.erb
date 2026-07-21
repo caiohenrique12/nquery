@@ -1,0 +1,7 @@
+<div class="nq-page-header"><h1>Permissions</h1></div>
+<div class="nq-tabs">
+  <%= link_to "By group", by_group_admin_permissions_path, class: "nq-tab" %>
+  <%= link_to "By data source", by_data_source_admin_permissions_path, class: "nq-tab active" %>
+  <%= link_to "By collection", by_collection_admin_permissions_path, class: "nq-tab" %>
+</div>
+<%= render "nquery/admin/permissions/data_source" %>

@@ -1,0 +1,30 @@
+<div class="nq-page-header">
+  <h1>Edit dashboard: <%= @dashboard.name %></h1>
+</div>
+
+<%= form_with model: @dashboard, url: dashboard_path(@dashboard), method: :patch do |f| %>
+  <div class="nq-card nq-mb">
+    <div class="nq-form-row">
+      <%= f.label :name %>
+      <%= f.text_field :name, class: "nq-input" %>
+    </div>
+    <div class="nq-form-row">
+      <%= f.label :description %>
+      <%= f.text_area :description, class: "nq-textarea", rows: 2 %>
+    </div>
+    <%= f.submit "Save", class: "nq-btn nq-btn-primary" %>
+  </div>
+<% end %>
+
+<div class="nq-dashboard-grid nq-dashboard-edit" data-controller="dashboard-grid">
+  <% @dashboard.dashboard_cards.each do |card| %>
+    <div class="nq-dashboard-card nq-draggable"
+         style="grid-column: span <%= card.width %>; grid-row: span <%= card.height %>;"
+         data-dashboard-grid-target="card"
+         data-card-id="<%= card.id %>"
+         draggable="true">
+      <h3><%= card.chart.name %></h3>
+      <p class="nq-muted">Drag to reposition (preview)</p>
+    </div>
+  <% end %>
+</div>

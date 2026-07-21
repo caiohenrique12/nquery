@@ -1,0 +1,42 @@
+<div class="nq-card nq-mt">
+  <form method="get" class="nq-form-row">
+    <label>Group</label>
+    <select name="group_id" class="nq-input" onchange="this.form.submit()">
+      <% @groups.each do |group| %>
+        <option value="<%= group.id %>" <%= "selected" if group == @selected_group %>><%= group.name %></option>
+      <% end %>
+    </select>
+  </form>
+
+  <% if @selected_group %>
+    <h2>Collection permissions — <%= @selected_group.name %></h2>
+    <table class="nq-table">
+      <thead><tr><th>Collection</th><th>Access</th></tr></thead>
+      <tbody>
+        <% @collections.each do |collection| %>
+          <% perm = Nquery::CollectionPermission.find_by(group: @selected_group, collection: collection) %>
+          <tr>
+            <td><%= collection.name %></td>
+            <td><span class="nq-badge"><%= perm&.access_level || "no_access" %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <h2 class="nq-mt">Data permissions</h2>
+    <table class="nq-table">
+      <thead><tr><th>Data source</th><th>View data</th><th>Create queries</th></tr></thead>
+      <tbody>
+        <% @data_sources.each do |ds| %>
+          <% view = Nquery::DataPermission.find_by(group: @selected_group, data_source: ds, permission_type: "view_data") %>
+          <% create = Nquery::DataPermission.find_by(group: @selected_group, data_source: ds, permission_type: "create_queries") %>
+          <tr>
+            <td><%= ds.name %></td>
+            <td><span class="nq-badge"><%= view&.access_level || "blocked" %></span></td>
+            <td><span class="nq-badge"><%= create&.access_level || "no" %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

@@ -1,0 +1,42 @@
+<div class="nq-page-header">
+  <h1>Home</h1>
+  <p class="nq-muted">Recent activity and quick access</p>
+</div>
+
+<div class="nq-grid nq-grid-2">
+  <section class="nq-card">
+    <h2>Recent charts</h2>
+    <ul class="nq-list">
+      <% @recent_charts.each do |chart| %>
+        <li><%= link_to chart.name, chart_path(chart) %></li>
+      <% end %>
+    </ul>
+    <%= link_to "New chart", new_query_path, class: "nq-btn nq-btn-primary" %>
+  </section>
+
+  <section class="nq-card">
+    <h2>Recent dashboards</h2>
+    <ul class="nq-list">
+      <% @recent_dashboards.each do |dashboard| %>
+        <li><%= link_to dashboard.name, dashboard_path(dashboard) %></li>
+      <% end %>
+    </ul>
+  </section>
+</div>
+
+<section class="nq-card nq-mt">
+  <h2>Activity</h2>
+  <table class="nq-table">
+    <thead><tr><th>User</th><th>Query</th><th>Status</th><th>When</th></tr></thead>
+    <tbody>
+      <% @recent_activity.each do |audit| %>
+        <tr>
+          <td><%= audit.user&.name || "—" %></td>
+          <td><%= truncate(audit.statement.to_s, length: 60) %></td>
+          <td><span class="nq-badge"><%= audit.status %></span></td>
+          <td><%= time_ago_in_words(audit.created_at) %> ago</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

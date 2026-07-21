@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -e
+
+cmd="${1:-server}"
+shift || true
+
+case "$cmd" in
+  server)
+    cd /app/server
+    bin/setup
+    exec bundle exec rails server -b 0.0.0.0 -p "${PORT:-3000}"
+    ;;
+  setup)
+    cd /app
+    bundle check || bundle install
+    cd /app/server
+    bundle check || bundle install
+    bundle exec rails db:prepare
+    bundle exec rails nquery:seed
+    ;;
+  console)
+    cd /app/server
+    exec bundle exec rails console
+    ;;
+  test)
+    cd /app
+    exec bundle exec rspec "$@"
+    ;;
+  generate)
+    cd /app/server
+    exec bundle exec rails "$@"
+    ;;
+  version)
+    echo "nquery 0.1.0"
+    ;;
+  *)
+    echo "Usage: nquery {server|setup|console|test|generate|version}"
+    exit 1
+    ;;
+esac

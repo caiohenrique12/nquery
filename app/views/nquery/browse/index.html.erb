@@ -1,0 +1,41 @@
+<div class="nq-page-header">
+  <h1>Browse</h1>
+  <p class="nq-muted">Collections, charts, and dashboards</p>
+</div>
+
+<div class="nq-grid nq-grid-sidebar">
+  <aside class="nq-card">
+    <h2>Collections</h2>
+    <ul class="nq-tree">
+      <li class="nq-tree-item active"><%= @root_collection&.name || "Our analytics" %></li>
+      <% @collections.each do |collection| %>
+        <li class="nq-tree-item nq-tree-child"><%= collection.name %></li>
+      <% end %>
+    </ul>
+  </aside>
+
+  <div>
+    <section class="nq-card nq-mb">
+      <h2>Charts</h2>
+      <div class="nq-grid nq-grid-3">
+        <% @charts.each do |chart| %>
+          <div class="nq-tile">
+            <%= link_to chart.name, chart_path(chart) %>
+            <span class="nq-muted"><%= chart.chart_type %></span>
+          </div>
+        <% end %>
+      </div>
+    </section>
+
+    <section class="nq-card">
+      <h2>Dashboards</h2>
+      <div class="nq-grid nq-grid-3">
+        <% @dashboards.each do |dashboard| %>
+          <div class="nq-tile">
+            <%= link_to dashboard.name, dashboard_path(dashboard) %>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  </div>
+</div>

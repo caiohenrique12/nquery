@@ -1,0 +1,7 @@
+<div class="nq-page-header"><h1>New data source</h1></div>
+<%= form_with model: @data_source, url: admin_data_sources_path, class: "nq-form nq-card" do |f| %>
+  <div class="nq-form-row"><%= f.label :name %><%= f.text_field :name, class: "nq-input" %></div>
+  <div class="nq-form-row"><%= f.label :adapter %><%= f.select :adapter, Nquery::DataSource::ADAPTERS, {}, class: "nq-input" %></div>
+  <div class="nq-form-row"><%= f.label :connection_config, "Connection (JSON)" %><%= f.text_area :connection_config, class: "nq-textarea", rows: 4, placeholder: '{"host":"localhost","database":"mydb"}' %></div>
+  <%= f.submit "Create", class: "nq-btn nq-btn-primary" %>
+<% end %>

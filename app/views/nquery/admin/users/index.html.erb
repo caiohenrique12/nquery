@@ -1,0 +1,14 @@
+<div class="nq-page-header"><h1>Users</h1><%= link_to "Invite user", new_admin_user_path, class: "nq-btn nq-btn-primary" %></div>
+<table class="nq-table">
+  <thead><tr><th>Email</th><th>Name</th><th>Groups</th><th></th></tr></thead>
+  <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td><%= user.email %></td>
+        <td><%= user.name %></td>
+        <td><%= user.groups.pluck(:name).join(", ") %></td>
+        <td><%= link_to "Edit", edit_admin_user_path(user) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

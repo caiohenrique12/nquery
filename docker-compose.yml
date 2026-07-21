@@ -1,0 +1,35 @@
+services:
+  nquery:
+    build: .
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://nquery:nquery@db:5432/nquery_dev
+      SECRET_KEY_BASE: development_secret_key_base_for_local_only
+      NQUERY_SECRET_KEY_BASE: development_secret_key_base_for_local_only
+    command: bin/dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nquery
+      POSTGRES_PASSWORD: nquery
+      POSTGRES_DB: nquery_dev
+    volumes:
+      - nquery_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nquery"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  bundle_cache:
+  nquery_pg:

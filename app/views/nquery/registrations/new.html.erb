@@ -1,0 +1,14 @@
+<div class="nq-auth">
+  <div class="nq-auth-card">
+    <h1>Create account</h1>
+    <%= form_with model: @user, url: signup_path, class: "nq-form" do |f| %>
+      <div class="nq-form-row"><%= f.label :email %><%= f.email_field :email, class: "nq-input" %></div>
+      <div class="nq-form-row"><%= f.label :first_name %><%= f.text_field :first_name, class: "nq-input" %></div>
+      <div class="nq-form-row"><%= f.label :last_name %><%= f.text_field :last_name, class: "nq-input" %></div>
+      <div class="nq-form-row"><%= f.label :password %><%= f.password_field :password, class: "nq-input" %></div>
+      <div class="nq-form-row"><%= f.label :password_confirmation %><%= f.password_field :password_confirmation, class: "nq-input" %></div>
+      <%= f.submit "Sign up", class: "nq-btn nq-btn-primary nq-btn-block" %>
+    <% end %>
+    <p class="nq-muted nq-mt"><%= link_to "Sign in", login_path %></p>
+  </div>
+</div>

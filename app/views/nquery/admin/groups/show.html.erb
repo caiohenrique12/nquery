@@ -1,0 +1,24 @@
+<div class="nq-page-header"><h1><%= @group.name %></h1></div>
+<div class="nq-grid nq-grid-2">
+  <section class="nq-card">
+    <h2>Members</h2>
+    <ul class="nq-list">
+      <% @group.users.each do |user| %>
+        <li>
+          <%= user.name %> (<%= user.email %>)
+          <% unless @group.system_group == "all_users" %>
+            <%= button_to "Remove", remove_member_admin_group_path(@group, user_id: user.id), method: :delete, class: "nq-btn nq-btn-ghost" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+  <% if @available_users.any? %>
+    <section class="nq-card">
+      <h2>Add member</h2>
+      <% @available_users.limit(10).each do |user| %>
+        <%= button_to "Add #{user.email}", add_member_admin_group_path(@group, user_id: user.id), method: :post, class: "nq-btn" %>
+      <% end %>
+    </section>
+  <% end %>
+</div>

@@ -1,0 +1,17 @@
+<div class="nq-auth">
+  <div class="nq-auth-card">
+    <h1>Sign in to nquery</h1>
+    <%= form_with url: login_path, class: "nq-form" do %>
+      <div class="nq-form-row">
+        <label>Email</label>
+        <input type="email" name="email" class="nq-input" required />
+      </div>
+      <div class="nq-form-row">
+        <label>Password</label>
+        <input type="password" name="password" class="nq-input" required />
+      </div>
+      <button type="submit" class="nq-btn nq-btn-primary nq-btn-block">Sign in</button>
+    <% end %>
+    <p class="nq-muted nq-mt"><%= link_to "Create an account", signup_path %></p>
+  </div>
+</div>

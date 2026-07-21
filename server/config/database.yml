@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  url: <%= ENV.fetch("DATABASE_URL", "postgres://nquery:nquery@localhost:5432/nquery_dev") %>
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL", "postgres://nquery:nquery@db:5432/nquery_test") %>
+
+production:
+  <<: *default

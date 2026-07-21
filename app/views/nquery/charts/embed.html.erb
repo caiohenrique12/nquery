@@ -1,0 +1,15 @@
+<div class="nq-page-header">
+  <h1>Embed: <%= @chart.name %></h1>
+</div>
+
+<div class="nq-card">
+  <h2>Embed settings</h2>
+  <% if @embed_token %>
+    <p class="nq-muted">Signed embed token (expires <%= @embed_token.expires_at&.to_fs(:long) || "never" %>)</p>
+    <pre class="nq-code"><%= @embed_url %></pre>
+    <h3>Iframe snippet</h3>
+    <pre class="nq-code">&lt;iframe src="<%= @embed_url %>" width="800" height="600" frameborder="0"&gt;&lt;/iframe&gt;</pre>
+  <% else %>
+    <p class="nq-muted">No embed token yet. Generate one from the admin panel (phase 1 UI placeholder).</p>
+  <% end %>
+</div>

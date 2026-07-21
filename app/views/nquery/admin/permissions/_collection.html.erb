@@ -1,0 +1,25 @@
+<div class="nq-card nq-mt">
+  <form method="get" class="nq-form-row">
+    <label>Collection</label>
+    <select name="collection_id" class="nq-input" onchange="this.form.submit()">
+      <% @collections.each do |collection| %>
+        <option value="<%= collection.id %>" <%= "selected" if collection == @selected_collection %>><%= collection.name %></option>
+      <% end %>
+    </select>
+  </form>
+
+  <% if @selected_collection %>
+    <table class="nq-table">
+      <thead><tr><th>Group</th><th>Access</th></tr></thead>
+      <tbody>
+        <% @groups.each do |group| %>
+          <% perm = Nquery::CollectionPermission.find_by(group: group, collection: @selected_collection) %>
+          <tr>
+            <td><%= group.name %></td>
+            <td><span class="nq-badge"><%= perm&.access_level || "no_access" %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

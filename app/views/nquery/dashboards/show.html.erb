@@ -1,0 +1,21 @@
+<div class="nq-page-header">
+  <h1><%= @dashboard.name %></h1>
+  <div class="nq-actions">
+    <%= link_to "Edit", edit_dashboard_path(@dashboard), class: "nq-btn" %>
+  </div>
+</div>
+
+<div class="nq-dashboard-grid" data-controller="dashboard-grid">
+  <% @dashboard.dashboard_cards.each do |card| %>
+    <div class="nq-dashboard-card"
+         style="grid-column: span <%= card.width %>; grid-row: span <%= card.height %>;"
+         data-dashboard-grid-target="card"
+         data-card-id="<%= card.id %>">
+      <h3><%= card.chart.name %></h3>
+      <div data-controller="chart-preview"
+           data-chart-preview-type-value="<%= card.chart.chart_type %>">
+        <canvas data-chart-preview-target="canvas" height="80"></canvas>
+      </div>
+    </div>
+  <% end %>
+</div>

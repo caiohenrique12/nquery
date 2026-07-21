@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+cd "$(dirname "$0")/.."
+bundle check || bundle install
+cd server
+bundle check || bundle install
+bundle exec rails db:prepare
+bundle exec rails nquery:seed

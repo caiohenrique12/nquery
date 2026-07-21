@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+Nquery.configure do |config|
+  config.authentication_mode = :hybrid
+  config.current_user_method = :current_user
+
+  config.authenticate_with do
+    redirect_to main_app.root_path unless current_user
+  end
+
+  config.resolve_nquery_user do |host_user|
+    Nquery::User.find_or_create_from_sso!(host_user)
+  end
+end

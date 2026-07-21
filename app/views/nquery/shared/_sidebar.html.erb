@@ -1,0 +1,15 @@
+<aside class="nq-sidebar">
+  <div class="nq-logo">nquery</div>
+  <nav class="nq-nav">
+    <%= link_to "Home", root_path, class: "nq-nav-link #{'active' if controller_name == 'home'}" %>
+    <%= link_to "Browse", browse_path, class: "nq-nav-link #{'active' if controller_name == 'browse'}" %>
+    <%= link_to "New chart", new_query_path, class: "nq-nav-link #{'active' if controller_name == 'queries'}" %>
+    <% if current_nquery_user&.admin? %>
+      <div class="nq-nav-section">Admin</div>
+      <%= link_to "Users", admin_users_path, class: "nq-nav-link" %>
+      <%= link_to "Groups", admin_groups_path, class: "nq-nav-link" %>
+      <%= link_to "Data sources", admin_data_sources_path, class: "nq-nav-link" %>
+      <%= link_to "Permissions", by_group_admin_permissions_path, class: "nq-nav-link" %>
+    <% end %>
+  </nav>
+</aside>

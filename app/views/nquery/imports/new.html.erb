@@ -1,0 +1,20 @@
+<div class="nq-page-header">
+  <h1>Import CSV</h1>
+</div>
+
+<%= form_with url: imports_path, multipart: true, class: "nq-form", data: { controller: "csv-mapper" } do %>
+  <div class="nq-card">
+    <div class="nq-form-row">
+      <label>Name</label>
+      <input type="text" name="name" class="nq-input" placeholder="My dataset" />
+    </div>
+    <div class="nq-form-row">
+      <label>CSV file</label>
+      <input type="file" name="file" accept=".csv" class="nq-input"
+             data-action="change->csv-mapper#preview" data-csv-mapper-target="file" />
+    </div>
+    <div data-csv-mapper-target="preview" class="nq-csv-preview"></div>
+    <input type="hidden" name="column_mapping" data-csv-mapper-target="mapping" value="{}" />
+    <%= submit_tag "Import", class: "nq-btn nq-btn-primary" %>
+  </div>
+<% end %>

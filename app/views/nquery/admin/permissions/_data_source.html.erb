@@ -1,0 +1,27 @@
+<div class="nq-card nq-mt">
+  <form method="get" class="nq-form-row">
+    <label>Data source</label>
+    <select name="data_source_id" class="nq-input" onchange="this.form.submit()">
+      <% @data_sources.each do |ds| %>
+        <option value="<%= ds.id %>" <%= "selected" if ds == @selected_data_source %>><%= ds.name %></option>
+      <% end %>
+    </select>
+  </form>
+
+  <% if @selected_data_source %>
+    <table class="nq-table">
+      <thead><tr><th>Group</th><th>View data</th><th>Create queries</th></tr></thead>
+      <tbody>
+        <% @groups.each do |group| %>
+          <% view = Nquery::DataPermission.find_by(group: group, data_source: @selected_data_source, permission_type: "view_data") %>
+          <% create = Nquery::DataPermission.find_by(group: group, data_source: @selected_data_source, permission_type: "create_queries") %>
+          <tr>
+            <td><%= group.name %></td>
+            <td><span class="nq-badge"><%= view&.access_level || "blocked" %></span></td>
+            <td><span class="nq-badge"><%= create&.access_level || "no" %></span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>
