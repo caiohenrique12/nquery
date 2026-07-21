@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -39,6 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
   end
 
   create_table "nquery_charts", force: :cascade do |t|
+    t.datetime "archived_at"
     t.bigint "collection_id"
     t.datetime "created_at", null: false
     t.bigint "creator_id"
@@ -46,6 +47,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
     t.bigint "query_id"
     t.datetime "updated_at", null: false
     t.json "visualization", default: {}, null: false
+    t.index ["archived_at"], name: "index_nquery_charts_on_archived_at"
     t.index ["collection_id"], name: "index_nquery_charts_on_collection_id"
     t.index ["creator_id"], name: "index_nquery_charts_on_creator_id"
     t.index ["query_id"], name: "index_nquery_charts_on_query_id"
@@ -63,12 +65,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
   end
 
   create_table "nquery_collections", force: :cascade do |t|
+    t.datetime "archived_at"
     t.datetime "created_at", null: false
     t.string "kind", default: "standard", null: false
     t.string "name", null: false
     t.bigint "owner_id"
     t.bigint "parent_id"
     t.datetime "updated_at", null: false
+    t.index ["archived_at"], name: "index_nquery_collections_on_archived_at"
     t.index ["owner_id"], name: "index_nquery_collections_on_owner_id"
     t.index ["parent_id"], name: "index_nquery_collections_on_parent_id"
   end
@@ -97,6 +101,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
   end
 
   create_table "nquery_dashboards", force: :cascade do |t|
+    t.datetime "archived_at"
     t.bigint "collection_id"
     t.datetime "created_at", null: false
     t.bigint "creator_id"
@@ -104,6 +109,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
     t.string "name", null: false
     t.json "settings", default: {}, null: false
     t.datetime "updated_at", null: false
+    t.index ["archived_at"], name: "index_nquery_dashboards_on_archived_at"
     t.index ["collection_id"], name: "index_nquery_dashboards_on_collection_id"
     t.index ["creator_id"], name: "index_nquery_dashboards_on_creator_id"
   end

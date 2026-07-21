@@ -6,11 +6,14 @@ module Nquery
 
     has_many :group_memberships, class_name: "Nquery::GroupMembership", dependent: :destroy
     has_many :groups, through: :group_memberships, class_name: "Nquery::Group"
-    has_many :queries, class_name: "Nquery::Query", foreign_key: :creator_id, inverse_of: :creator
-    has_many :charts, class_name: "Nquery::Chart", foreign_key: :creator_id, inverse_of: :creator
-    has_many :dashboards, class_name: "Nquery::Dashboard", foreign_key: :creator_id, inverse_of: :creator
+    has_many :queries, class_name: "Nquery::Query", foreign_key: :creator_id, inverse_of: :creator, dependent: :nullify
+    has_many :charts, class_name: "Nquery::Chart", foreign_key: :creator_id, inverse_of: :creator, dependent: :nullify
+    has_many :dashboards, class_name: "Nquery::Dashboard", foreign_key: :creator_id, inverse_of: :creator, dependent: :nullify
+    has_many :audits, class_name: "Nquery::Audit", dependent: :nullify
+    has_many :csv_uploads, class_name: "Nquery::CsvUpload", foreign_key: :creator_id, inverse_of: :creator, dependent: :nullify
+    has_many :embed_tokens, class_name: "Nquery::EmbedToken", foreign_key: :creator_id, inverse_of: :creator, dependent: :nullify
     has_one :personal_collection, -> { where(kind: "personal") },
-            class_name: "Nquery::Collection", foreign_key: :owner_id, inverse_of: :owner
+            class_name: "Nquery::Collection", foreign_key: :owner_id, inverse_of: :owner, dependent: :destroy
 
     validates :email, presence: true, uniqueness: true
     validates :password, length: { minimum: 8 }, if: -> { password.present? }
@@ -23,6 +26,10 @@ module Nquery
 
     def active?
       deactivated_at.nil?
+    end
+
+    def deactivate!
+      update!(deactivated_at: Time.current)
     end
 
     def admin?

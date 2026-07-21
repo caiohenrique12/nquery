@@ -1,0 +1,16 @@
+<div class="nq-dashboard-card"
+     style="grid-column: span <%= card.width %>; grid-row: span <%= card.height %>;"
+     data-dashboard-grid-target="card"
+     data-card-id="<%= card.id %>">
+  <header class="nq-dashboard-card-header">
+    <h3 class="nq-dashboard-card-title">
+      <%= link_to card.chart.name, chart_show_path(card.chart, dashboard: dashboard), class: "nq-dashboard-chart-link" %>
+    </h3>
+    <%= render "nquery/shared/chart_actions_menu", chart: card.chart, dashboard: dashboard %>
+  </header>
+  <div class="nq-chart-preview" data-controller="chart-preview"
+       data-chart-preview-type-value="<%= card.chart.chart_type %>"
+       data-chart-preview-data-value="<%= card_result.to_json %>">
+    <canvas data-chart-preview-target="canvas" height="80"></canvas>
+  </div>
+</div>

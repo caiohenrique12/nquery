@@ -1,0 +1,57 @@
+<article class="nq-dashboard-summary-card">
+  <header class="nq-dashboard-summary-header">
+    <div class="nq-dashboard-summary-heading">
+      <%= link_to dashboard.name, dashboard_path(dashboard), class: "nq-dashboard-summary-title" %>
+      <p class="nq-muted nq-resource-meta">
+        Created by <%= dashboard.creator&.name || "—" %>
+        · Created <%= dashboard.created_at.to_fs(:long) %>
+        · Updated <%= dashboard.updated_at.to_fs(:long) %>
+      </p>
+    </div>
+    <details class="nq-menu">
+      <summary class="nq-btn nq-btn-icon" aria-label="Dashboard actions">
+        <%= nq_icon(:more) %>
+      </summary>
+      <div class="nq-menu-panel" role="menu">
+        <%= link_to edit_dashboard_path(dashboard), class: "nq-menu-item", role: "menuitem" do %>
+          <%= nq_icon(:edit) %>
+          <span>Edit</span>
+        <% end %>
+        <%= button_to archive_dashboard_path(dashboard),
+                      method: :patch,
+                      class: "nq-menu-item nq-menu-item-button",
+                      form: { data: { turbo_confirm: "Archive this dashboard?" }, role: "none" },
+                      role: "menuitem" do %>
+          <%= nq_icon(:archive) %>
+          <span>Archive</span>
+        <% end %>
+        <%= button_to dashboard_path(dashboard),
+                      method: :delete,
+                      class: "nq-menu-item nq-menu-item-button nq-menu-item-danger",
+                      form: { data: { turbo_confirm: "Remove this dashboard?" }, role: "none" },
+                      role: "menuitem" do %>
+          <%= nq_icon(:trash) %>
+          <span>Remove</span>
+        <% end %>
+      </div>
+    </details>
+  </header>
+
+  <ul class="nq-dashboard-summary-charts">
+    <% dashboard.dashboard_cards.each do |card| %>
+      <li class="nq-dashboard-summary-chart-row">
+        <%= link_to chart_show_path(card.chart, dashboard: dashboard), class: "nq-dashboard-summary-chart-link" do %>
+          <%= nq_icon(:chart) %>
+          <span class="nq-dashboard-summary-chart-copy">
+            <span class="nq-dashboard-summary-chart-name"><%= card.chart.name %></span>
+            <span class="nq-dashboard-summary-chart-type"><%= card.chart.chart_type.titleize %></span>
+          </span>
+        <% end %>
+        <%= render "nquery/shared/chart_actions_menu", chart: card.chart, dashboard: dashboard %>
+      </li>
+    <% end %>
+    <% if dashboard.dashboard_cards.empty? %>
+      <li class="nq-dashboard-summary-empty nq-muted">No charts on this dashboard yet.</li>
+    <% end %>
+  </ul>
+</article>

@@ -1,0 +1,15 @@
+<% if breadcrumbs.any? %>
+  <nav class="nq-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="nq-breadcrumb-list">
+      <% breadcrumbs.each_with_index do |crumb, index| %>
+        <li class="nq-breadcrumb-item">
+          <% if crumb[:path].present? %>
+            <%= link_to crumb[:label], crumb[:path], **(index == breadcrumbs.length - 1 ? { aria: { current: "page" } } : {}) %>
+          <% else %>
+            <span<% if index == breadcrumbs.length - 1 %> aria-current="page"<% end %>><%= crumb[:label] %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  </nav>
+<% end %>

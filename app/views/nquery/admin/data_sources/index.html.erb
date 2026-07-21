@@ -1,14 +1,21 @@
 <div class="nq-page-header"><h1>Data sources</h1><%= link_to "Add data source", new_admin_data_source_path, class: "nq-btn nq-btn-primary" %></div>
-<table class="nq-table">
-  <thead><tr><th>Name</th><th>Adapter</th><th>Active</th><th></th></tr></thead>
-  <tbody>
-    <% @data_sources.each do |ds| %>
-      <tr>
-        <td><%= ds.name %></td>
-        <td><%= ds.adapter %></td>
-        <td><%= ds.active? ? "Yes" : "No" %></td>
-        <td><%= link_to "Edit", edit_admin_data_source_path(ds) %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+
+<div class="nq-card nq-card-table">
+  <table class="nq-table">
+    <thead><tr><th>Name</th><th>Adapter</th><th>Active</th><th></th></tr></thead>
+    <tbody>
+      <% @data_sources.each do |ds| %>
+        <tr>
+          <td><%= ds.name %></td>
+          <td><%= ds.adapter %></td>
+          <td><%= ds.active? ? "Yes" : "No" %></td>
+          <td>
+            <div class="nq-actions">
+              <%= link_to "Edit", edit_admin_data_source_path(ds), class: "nq-btn" %>
+            </div>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

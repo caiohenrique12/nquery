@@ -1,6 +1,6 @@
 # nquery
 
-Metabase-like BI analytics for Rails — mountable engine gem.
+SQL charts, dashboards, and data visualization for Rails — mountable engine gem.
 
 ## What this is
 

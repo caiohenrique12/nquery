@@ -1,0 +1,39 @@
+<div class="nq-page-header">
+  <h1>New chart</h1>
+</div>
+
+<%= form_with model: @chart, url: charts_path, class: "nq-form" do |f| %>
+  <div class="nq-grid nq-grid-editor" data-controller="query-editor">
+    <aside class="nq-card nq-schema-panel">
+      <h3>Schema</h3>
+      <ul class="nq-tree">
+        <% @schema_tables.each do |table| %>
+          <li class="nq-tree-item" data-action="click->query-editor#insertTable" data-table="<%= table %>"><%= table %></li>
+        <% end %>
+      </ul>
+    </aside>
+
+    <div class="nq-editor-panel">
+      <%= f.fields_for :query do |query_fields| %>
+        <div class="nq-form-row">
+          <%= query_fields.label :name, "Chart name" %>
+          <%= query_fields.text_field :name, class: "nq-input" %>
+        </div>
+        <div class="nq-form-row">
+          <%= query_fields.label :data_source_id, "Data source" %>
+          <%= query_fields.collection_select :data_source_id, @data_sources, :id, :name, {}, class: "nq-input",
+                data: { query_editor_target: "dataSource", action: "change->query-editor#loadSchema" } %>
+        </div>
+        <div class="nq-form-row">
+          <%= query_fields.label :statement, "SQL" %>
+          <%= query_fields.text_area :statement, rows: 12, class: "nq-textarea", data: { query_editor_target: "statement" } %>
+        </div>
+      <% end %>
+      <div class="nq-actions">
+        <button type="button" class="nq-btn" data-action="click->query-editor#run">Run query</button>
+        <%= f.submit "Create chart", class: "nq-btn nq-btn-primary" %>
+      </div>
+      <pre class="nq-results" data-query-editor-target="results"></pre>
+    </div>
+  </div>
+<% end %>

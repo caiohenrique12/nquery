@@ -1,21 +1,48 @@
 <div class="nq-page-header">
-  <h1><%= @dashboard.name %></h1>
+  <div>
+    <h1><%= @dashboard.name %></h1>
+    <p class="nq-muted nq-resource-meta">
+      Created by <%= @dashboard.creator&.name || "—" %>
+      · Created <%= @dashboard.created_at.to_fs(:long) %>
+      · Updated <%= @dashboard.updated_at.to_fs(:long) %>
+    </p>
+  </div>
   <div class="nq-actions">
-    <%= link_to "Edit", edit_dashboard_path(@dashboard), class: "nq-btn" %>
+    <%= link_to new_dashboard_chart_path(@dashboard), class: "nq-btn nq-btn-primary" do %>
+      <%= nq_icon(:chart) %>
+      <span>New chart</span>
+    <% end %>
+    <%= link_to edit_dashboard_path(@dashboard), class: "nq-btn" do %>
+      <%= nq_icon(:edit) %>
+      <span>Edit</span>
+    <% end %>
+    <% if @dashboard.archived? %>
+      <%= button_to unarchive_dashboard_path(@dashboard), method: :patch, class: "nq-btn" do %>
+        <%= nq_icon(:unarchive) %>
+        <span>Unarchive</span>
+      <% end %>
+    <% else %>
+      <%= button_to archive_dashboard_path(@dashboard), method: :patch, class: "nq-btn", form: { data: { turbo_confirm: "Archive this dashboard?" } } do %>
+        <%= nq_icon(:archive) %>
+        <span>Archive</span>
+      <% end %>
+    <% end %>
+    <%= button_to dashboard_path(@dashboard), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Remove this dashboard?" } } do %>
+      <%= nq_icon(:trash) %>
+      <span>Remove</span>
+    <% end %>
   </div>
 </div>
 
+<% if @dashboard.archived? %>
+  <div class="nq-flash nq-flash-alert nq-mb">This dashboard is archived.</div>
+<% end %>
+
 <div class="nq-dashboard-grid" data-controller="dashboard-grid">
-  <% @dashboard.dashboard_cards.each do |card| %>
-    <div class="nq-dashboard-card"
-         style="grid-column: span <%= card.width %>; grid-row: span <%= card.height %>;"
-         data-dashboard-grid-target="card"
-         data-card-id="<%= card.id %>">
-      <h3><%= card.chart.name %></h3>
-      <div data-controller="chart-preview"
-           data-chart-preview-type-value="<%= card.chart.chart_type %>">
-        <canvas data-chart-preview-target="canvas" height="80"></canvas>
-      </div>
-    </div>
+  <% @dashboard_cards.each do |card| %>
+    <%= render "nquery/dashboards/chart_card",
+               card: card,
+               dashboard: @dashboard,
+               card_result: @card_results[card] %>
   <% end %>
 </div>

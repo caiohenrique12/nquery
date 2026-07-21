@@ -1,0 +1,12 @@
+<div class="nq-page-header">
+  <div>
+    <h1>New chart</h1>
+    <p class="nq-muted">Add a chart to <%= @dashboard.name %>. Run your query, preview results, then choose a visualization.</p>
+  </div>
+</div>
+
+<%= render "nquery/charts/builder_form",
+           chart: @chart,
+           form_url: dashboard_charts_path(@dashboard),
+           data_sources: @data_sources,
+           schema_tables: @schema_tables %>

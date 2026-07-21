@@ -3,6 +3,8 @@
 module Nquery
   module Admin
     class DataSourcesController < BaseController
+      before_action :set_data_source, only: %i[edit update]
+
       def index
         @data_sources = DataSource.order(:name)
       end
@@ -21,11 +23,9 @@ module Nquery
       end
 
       def edit
-        @data_source = DataSource.find(params[:id])
       end
 
       def update
-        @data_source = DataSource.find(params[:id])
         if @data_source.update(data_source_params)
           redirect_to admin_data_sources_path, notice: "Data source updated."
         else
@@ -34,6 +34,10 @@ module Nquery
       end
 
       private
+
+      def set_data_source
+        @data_source = DataSource.find(params[:id])
+      end
 
       def data_source_params
         params.require(:data_source).permit(:name, :adapter, :active, :connection_config)

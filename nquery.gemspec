@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version     = Nquery::VERSION
   spec.authors     = ["Nquery Contributors"]
   spec.email       = ["hello@nquery.dev"]
-  spec.summary     = "Metabase-like BI analytics for Rails"
+  spec.summary     = "SQL charts, dashboards, and data visualization for Rails"
   spec.description = "Mountable Rails engine for SQL charts, dashboards, and analytics."
   spec.homepage    = "https://github.com/nquery/nquery"
   spec.license     = "MIT"

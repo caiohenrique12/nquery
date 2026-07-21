@@ -1,7 +1,10 @@
-.PHONY: up setup test console shell
+.PHONY: up restart setup test console shell
 
 up: ## Start app + db
 	docker compose up
+
+restart: ## Restart app + db
+	docker compose restart
 
 setup: ## Build, migrate, seed
 	docker compose run --rm nquery bin/setup

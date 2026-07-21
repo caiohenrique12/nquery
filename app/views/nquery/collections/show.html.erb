@@ -1,0 +1,102 @@
+<div class="nq-page-header">
+  <div>
+    <h1><%= @collection.name %></h1>
+    <p class="nq-muted nq-resource-meta">
+      <%= collection_kind_label(@collection) %>
+      · <%= pluralize(@child_collections.size, "folder", "folders") %>
+      · <%= pluralize(@charts.size, "chart") %>
+      · <%= pluralize(@dashboards.size, "dashboard") %>
+    </p>
+  </div>
+  <div class="nq-actions">
+    <%= link_to edit_collection_path(@collection), class: "nq-btn" do %>
+      <%= nq_icon(:edit) %>
+      <span>Edit</span>
+    <% end %>
+    <% unless @collection.kind == "root" %>
+      <% if @collection.archived? %>
+        <%= button_to unarchive_collection_path(@collection), method: :patch, class: "nq-btn" do %>
+          <%= nq_icon(:unarchive) %>
+          <span>Unarchive</span>
+        <% end %>
+      <% else %>
+        <%= button_to archive_collection_path(@collection), method: :patch, class: "nq-btn", form: { data: { turbo_confirm: "Archive this collection?" } } do %>
+          <%= nq_icon(:archive) %>
+          <span>Archive</span>
+        <% end %>
+      <% end %>
+      <%= button_to collection_path(@collection), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Delete this collection?" } } do %>
+        <%= nq_icon(:trash) %>
+        <span>Delete</span>
+      <% end %>
+    <% end %>
+    <%= link_to new_collection_collection_path(@collection), class: "nq-btn" do %>
+      <%= nq_icon(:folder) %>
+      <span>New folder</span>
+    <% end %>
+    <%= link_to new_collection_dashboard_path(@collection), class: "nq-btn nq-btn-primary" do %>
+      <%= nq_icon(:dashboard) %>
+      <span>New dashboard</span>
+    <% end %>
+  </div>
+</div>
+
+<% if @collection.archived? %>
+  <div class="nq-flash nq-flash-alert nq-mb">This collection is archived.</div>
+<% end %>
+
+<% if @child_collections.empty? && @dashboards.empty? && @standalone_charts.empty? %>
+  <div class="nq-card nq-empty-state">
+    <div class="nq-empty-state-icon"><%= nq_icon(:folder, class: "nq-icon-lg") %></div>
+    <h2>This collection is empty</h2>
+    <p class="nq-muted">Create a dashboard to organize charts in this collection.</p>
+    <%= link_to new_collection_dashboard_path(@collection), class: "nq-btn nq-btn-primary" do %>
+      <%= nq_icon(:dashboard) %>
+      <span>Create dashboard</span>
+    <% end %>
+  </div>
+<% else %>
+  <% if @child_collections.any? %>
+    <section class="nq-section nq-mb">
+      <h2 class="nq-section-title">Folders</h2>
+      <div class="nq-grid nq-grid-3">
+        <% @child_collections.each do |collection| %>
+          <%= link_to collection_path(collection), class: "nq-folder-card" do %>
+            <%= nq_icon(:folder) %>
+            <span><%= collection.name %></span>
+          <% end %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @dashboards.any? %>
+    <section class="nq-section">
+      <h2 class="nq-section-title">Dashboards</h2>
+      <div class="nq-grid nq-grid-2 nq-dashboard-summary-grid">
+        <% @dashboards.each do |dashboard| %>
+          <%= render "nquery/collections/dashboard_card", dashboard: dashboard %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @standalone_charts.any? %>
+    <section class="nq-section nq-mt">
+      <h2 class="nq-section-title">Charts</h2>
+      <div class="nq-card">
+        <ul class="nq-dashboard-summary-charts">
+          <% @standalone_charts.each do |chart| %>
+            <li>
+              <%= link_to chart_path(chart), class: "nq-dashboard-summary-chart-link" do %>
+                <%= nq_icon(:chart) %>
+                <span class="nq-dashboard-summary-chart-name"><%= chart.name %></span>
+                <span class="nq-muted"><%= chart.chart_type.titleize %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </section>
+  <% end %>
+<% end %>

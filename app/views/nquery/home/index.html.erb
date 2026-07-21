@@ -1,42 +1,143 @@
-<div class="nq-page-header">
-  <h1>Home</h1>
-  <p class="nq-muted">Recent activity and quick access</p>
-</div>
+<div class="nq-home">
+  <header class="nq-home-hero nq-card">
+    <div class="nq-home-hero-content">
+      <p class="nq-home-eyebrow">Welcome back</p>
+      <h1 class="nq-home-title"><%= home_greeting %></h1>
+      <p class="nq-muted nq-home-subtitle">Pick up where you left off, or start something new.</p>
+    </div>
+    <% if @root_collection %>
+      <div class="nq-home-hero-actions">
+        <%= link_to new_chart_path, class: "nq-btn nq-home-hero-cta" do %>
+          <%= nq_icon(:chart) %>
+          <span>New question</span>
+        <% end %>
+        <%= link_to new_collection_dashboard_path(@root_collection), class: "nq-btn nq-btn-primary nq-home-hero-cta" do %>
+          <%= nq_icon(:plus) %>
+          <span>New dashboard</span>
+        <% end %>
+      </div>
+    <% end %>
+  </header>
 
-<div class="nq-grid nq-grid-2">
-  <section class="nq-card">
-    <h2>Recent charts</h2>
-    <ul class="nq-list">
-      <% @recent_charts.each do |chart| %>
-        <li><%= link_to chart.name, chart_path(chart) %></li>
+  <section class="nq-home-actions" aria-label="Quick actions">
+    <%= link_to collections_path, class: "nq-home-action-card" do %>
+      <span class="nq-home-action-icon nq-home-action-icon-folder">
+        <%= nq_icon(:folder) %>
+      </span>
+      <span class="nq-home-action-label">Collections</span>
+      <span class="nq-muted nq-home-action-desc">Browse folders and content</span>
+    <% end %>
+
+    <%= link_to dashboards_path, class: "nq-home-action-card" do %>
+      <span class="nq-home-action-icon nq-home-action-icon-dashboard">
+        <%= nq_icon(:dashboard) %>
+      </span>
+      <span class="nq-home-action-label">Dashboards</span>
+      <span class="nq-muted nq-home-action-desc">View all your dashboards</span>
+    <% end %>
+
+    <% if @root_collection %>
+      <%= link_to collection_path(@root_collection), class: "nq-home-action-card" do %>
+        <span class="nq-home-action-icon nq-home-action-icon-chart">
+          <%= nq_icon(:chart) %>
+        </span>
+        <span class="nq-home-action-label">Analytics</span>
+        <span class="nq-muted nq-home-action-desc">Open <%= @root_collection.name %></span>
       <% end %>
-    </ul>
-    <%= link_to "New chart", new_query_path, class: "nq-btn nq-btn-primary" %>
+    <% end %>
   </section>
 
-  <section class="nq-card">
-    <h2>Recent dashboards</h2>
-    <ul class="nq-list">
-      <% @recent_dashboards.each do |dashboard| %>
-        <li><%= link_to dashboard.name, dashboard_path(dashboard) %></li>
-      <% end %>
-    </ul>
-  </section>
-</div>
+  <div class="nq-home-recents">
+    <section class="nq-card nq-home-panel">
+      <header class="nq-home-panel-header">
+        <div>
+          <h2 class="nq-home-panel-title">Recent dashboards</h2>
+          <p class="nq-muted nq-home-panel-desc">Dashboards you've viewed or updated recently</p>
+        </div>
+        <%= link_to dashboards_path, class: "nq-home-panel-link" do %>
+          <span>View all</span>
+          <%= nq_icon("arrow-right") %>
+        <% end %>
+      </header>
 
-<section class="nq-card nq-mt">
-  <h2>Activity</h2>
-  <table class="nq-table">
-    <thead><tr><th>User</th><th>Query</th><th>Status</th><th>When</th></tr></thead>
-    <tbody>
-      <% @recent_activity.each do |audit| %>
-        <tr>
-          <td><%= audit.user&.name || "—" %></td>
-          <td><%= truncate(audit.statement.to_s, length: 60) %></td>
-          <td><span class="nq-badge"><%= audit.status %></span></td>
-          <td><%= time_ago_in_words(audit.created_at) %> ago</td>
-        </tr>
+      <% if @recent_dashboards.any? %>
+        <ul class="nq-home-list">
+          <% @recent_dashboards.each do |dashboard| %>
+            <li>
+              <%= link_to dashboard_path(dashboard), class: "nq-home-list-item" do %>
+                <span class="nq-home-list-icon nq-home-list-icon-dashboard">
+                  <%= nq_icon(:dashboard) %>
+                </span>
+                <span class="nq-home-list-body">
+                  <span class="nq-home-list-title"><%= dashboard.name %></span>
+                  <span class="nq-muted nq-home-list-meta">
+                    <%= dashboard.collection&.name || "No collection" %>
+                    <% if dashboard.dashboard_cards.any? %>
+                      · <%= pluralize(dashboard.dashboard_cards.size, "chart") %>
+                    <% end %>
+                  </span>
+                </span>
+                <span class="nq-muted nq-home-list-time"><%= time_ago_in_words(dashboard.updated_at) %> ago</span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="nq-home-empty">
+          <%= nq_icon(:dashboard, class: "nq-icon-lg") %>
+          <p class="nq-muted">No dashboards yet</p>
+          <% if @root_collection %>
+            <%= link_to new_collection_dashboard_path(@root_collection), class: "nq-btn nq-btn-primary" do %>
+              <%= nq_icon(:plus) %>
+              <span>Create dashboard</span>
+            <% end %>
+          <% end %>
+        </div>
       <% end %>
-    </tbody>
-  </table>
-</section>
+    </section>
+
+    <section class="nq-card nq-home-panel">
+      <header class="nq-home-panel-header">
+        <div>
+          <h2 class="nq-home-panel-title">Recent charts</h2>
+          <p class="nq-muted nq-home-panel-desc">Charts from across your collections</p>
+        </div>
+        <%= link_to collections_path, class: "nq-home-panel-link" do %>
+          <span>Browse</span>
+          <%= nq_icon("arrow-right") %>
+        <% end %>
+      </header>
+
+      <% if @recent_charts.any? %>
+        <ul class="nq-home-list">
+          <% @recent_charts.each do |chart| %>
+            <li>
+              <%= link_to chart_path(chart), class: "nq-home-list-item" do %>
+                <span class="nq-home-list-icon nq-home-list-icon-chart">
+                  <%= nq_icon(:chart) %>
+                </span>
+                <span class="nq-home-list-body">
+                  <span class="nq-home-list-title"><%= chart.name %></span>
+                  <span class="nq-muted nq-home-list-meta">
+                    <%= chart.collection&.name || "No collection" %>
+                    · <%= chart_type_label(chart) %>
+                  </span>
+                </span>
+                <span class="nq-muted nq-home-list-time"><%= time_ago_in_words(chart.updated_at) %> ago</span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="nq-home-empty">
+          <%= nq_icon(:chart, class: "nq-icon-lg") %>
+          <p class="nq-muted">No charts yet</p>
+          <%= link_to collections_path, class: "nq-btn" do %>
+            <%= nq_icon(:folder) %>
+            <span>Browse collections</span>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  </div>
+</div>

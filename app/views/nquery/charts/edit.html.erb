@@ -2,7 +2,7 @@
   <h1>Edit chart: <%= @chart.name %></h1>
 </div>
 
-<%= form_with model: @chart, url: chart_path(@chart), method: :patch, class: "nq-form" do |f| %>
+<%= form_with model: @chart, url: chart_form_path(@chart), method: :patch, class: "nq-form" do |f| %>
   <div class="nq-grid nq-grid-2">
     <div class="nq-card">
       <div class="nq-form-row">

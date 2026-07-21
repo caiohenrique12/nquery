@@ -1,0 +1,74 @@
+<div class="nq-page-header">
+  <h1>Query logs</h1>
+  <p class="nq-muted">Search query execution history</p>
+</div>
+
+<section class="nq-card">
+  <%= form_with url: admin_logs_path, method: :get, class: "nq-form" do %>
+    <div class="nq-grid nq-grid-3">
+      <div class="nq-form-row">
+        <label for="user">User</label>
+        <%= text_field_tag :user, params[:user], class: "nq-input", placeholder: "Name or email" %>
+      </div>
+      <div class="nq-form-row">
+        <label for="collection">Collection</label>
+        <%= select_tag :collection,
+              options_from_collection_for_select(@collections, :id, :name, params[:collection]),
+              include_blank: "All collections",
+              class: "nq-input" %>
+      </div>
+      <div class="nq-form-row">
+        <label for="dashboard">Dashboard</label>
+        <%= select_tag :dashboard,
+              options_from_collection_for_select(@dashboards, :id, :name, params[:dashboard]),
+              include_blank: "All dashboards",
+              class: "nq-input" %>
+      </div>
+      <div class="nq-form-row">
+        <label for="from">From</label>
+        <%= date_field_tag :from, params[:from], class: "nq-input" %>
+      </div>
+      <div class="nq-form-row">
+        <label for="to">To</label>
+        <%= date_field_tag :to, params[:to], class: "nq-input" %>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <%= submit_tag "Search", class: "nq-btn nq-btn-primary" %>
+      <%= link_to "Clear", admin_logs_path, class: "nq-btn nq-btn-ghost" %>
+    </div>
+  <% end %>
+</section>
+
+<section class="nq-card nq-mt">
+  <table class="nq-table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Query</th>
+        <th>Collection</th>
+        <th>Dashboard</th>
+        <th>Status</th>
+        <th>When</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @audits.any? %>
+        <% @audits.each do |audit| %>
+          <tr>
+            <td><%= audit.user&.name || "—" %></td>
+            <td><%= truncate(audit.statement.to_s, length: 60) %></td>
+            <td><%= audit.query&.collection&.name || "—" %></td>
+            <td><%= audit.query&.chart&.dashboard_cards&.first&.dashboard&.name || "—" %></td>
+            <td><span class="nq-badge"><%= audit.status %></span></td>
+            <td><%= time_ago_in_words(audit.created_at) %> ago</td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="6" class="nq-muted">No query logs found.</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

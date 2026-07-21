@@ -1,0 +1,27 @@
+<details class="nq-menu">
+  <summary class="nq-btn nq-btn-icon" aria-label="Chart actions">
+    <%= nq_icon(:more) %>
+  </summary>
+  <div class="nq-menu-panel" role="menu">
+    <%= link_to chart_edit_path(chart, dashboard: dashboard), class: "nq-menu-item", role: "menuitem" do %>
+      <%= nq_icon(:edit) %>
+      <span>Edit</span>
+    <% end %>
+    <%= button_to chart_archive_path(chart, dashboard: dashboard),
+                  method: :patch,
+                  class: "nq-menu-item nq-menu-item-button",
+                  form: { data: { turbo_confirm: "Archive this chart?" }, role: "none" },
+                  role: "menuitem" do %>
+      <%= nq_icon(:archive) %>
+      <span>Archive</span>
+    <% end %>
+    <%= button_to chart_show_path(chart, dashboard: dashboard),
+                  method: :delete,
+                  class: "nq-menu-item nq-menu-item-button nq-menu-item-danger",
+                  form: { data: { turbo_confirm: "Remove this chart?" }, role: "none" },
+                  role: "menuitem" do %>
+      <%= nq_icon(:trash) %>
+      <span>Remove</span>
+    <% end %>
+  </div>
+</details>

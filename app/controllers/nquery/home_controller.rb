@@ -2,10 +2,15 @@
 
 module Nquery
   class HomeController < ApplicationController
+    include Browsable
+
     def index
-      @recent_charts = Chart.includes(:collection, :creator).order(updated_at: :desc).limit(6)
-      @recent_dashboards = Dashboard.includes(:collection, :creator).order(updated_at: :desc).limit(6)
-      @recent_activity = Audit.includes(:user, :query).recent.limit(10)
+      charts = Chart.active.includes(:collection, :creator).order(updated_at: :desc).limit(12)
+      dashboards = Dashboard.active.includes(:collection, :creator, :dashboard_cards).order(updated_at: :desc).limit(12)
+
+      @recent_charts = filter_viewable_charts(charts).first(6)
+      @recent_dashboards = filter_viewable_dashboards(dashboards).first(6)
+      @root_collection = Collection.roots.first
     end
   end
 end
