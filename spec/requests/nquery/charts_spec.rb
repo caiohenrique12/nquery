@@ -32,6 +32,13 @@ RSpec.describe "Nquery::Charts", type: :request do
       get "/charts/new"
 
       expect(response.body).to include("New chart")
+      expect(response.body).to include('data-controller="chart-builder"')
+      expect(response.body).to include("Run query")
+      expect(response.body).to include("Output")
+      expect(response.body).to include('class="nq-output-tab is-active"')
+      expect(response.body).to include('data-tab="chart"')
+      expect(response.body).to include("Save chart")
+      expect(response.body).not_to include('data-controller="query-editor"')
     end
   end
 
@@ -73,6 +80,10 @@ RSpec.describe "Nquery::Charts", type: :request do
       get "/dashboards/#{dashboard.id}/charts/new"
 
       expect(response.body).to include("New chart")
+      expect(response.body).to include('data-controller="chart-builder"')
+      expect(response.body).to include("Output")
+      expect(response.body).to include('data-tab="chart"')
+      expect(response.body).not_to include('data-controller="query-editor"')
     end
   end
 

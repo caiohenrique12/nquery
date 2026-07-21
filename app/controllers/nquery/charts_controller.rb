@@ -22,7 +22,7 @@ module Nquery
         )
       )
       @chart.name = @chart.name.presence || @chart.query&.name
-      @chart.visualization = { "type" => "bar" } if @chart.visualization.blank?
+      @chart.visualization = { "type" => "table" } if @chart.visualization.blank?
       @chart.query&.creator = current_nquery_user
       @chart.query&.collection = @root_collection
 
