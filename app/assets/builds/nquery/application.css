@@ -198,7 +198,10 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-dashboard-summary-charts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--nq-border); }
 .nq-dashboard-summary-chart-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-bottom: 1px solid var(--nq-border); padding: 0.25rem 0; }
 .nq-dashboard-summary-chart-row:last-child { border-bottom: none; }
-.nq-dashboard-summary-chart-row .nq-menu { flex-shrink: 0; }
+.nq-dashboard-summary-chart-row .nq-chart-row-actions { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
+.nq-dashboard-summary-chart-row .nq-chart-row-actions form { display: inline-flex; margin: 0; }
+.nq-btn-icon-danger { color: var(--nq-danger); border-color: #fecaca; }
+.nq-btn-icon-danger:hover { background: #fef2f2; }
 .nq-dashboard-summary-chart-link { display: flex; align-items: center; gap: 0.625rem; flex: 1; min-width: 0; padding: 0.5rem 0; text-decoration: none; color: inherit; border-radius: 6px; transition: background-color 0.15s; }
 .nq-dashboard-summary-chart-link:hover { background: #f8fafc; }
 .nq-dashboard-summary-chart-link:hover .nq-dashboard-summary-chart-name { color: var(--nq-primary); }

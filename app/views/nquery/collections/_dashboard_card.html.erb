@@ -47,7 +47,7 @@
             <span class="nq-dashboard-summary-chart-type"><%= card.chart.chart_type.titleize %></span>
           </span>
         <% end %>
-        <%= render "nquery/shared/chart_actions_menu", chart: card.chart, dashboard: dashboard %>
+        <%= render "nquery/shared/chart_row_actions", chart: card.chart, dashboard: dashboard %>
       </li>
     <% end %>
     <% if dashboard.dashboard_cards.empty? %>

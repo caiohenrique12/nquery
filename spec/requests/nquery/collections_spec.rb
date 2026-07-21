@@ -53,8 +53,12 @@ RSpec.describe "Nquery::Collections", type: :request do
       expect(response.body).to include("Remove")
       expect(response.body).to include("Top-level collection")
       expect(response.body).to include("href=\"/dashboards/#{dashboard.id}/charts/#{chart.id}\"")
-      expect(response.body).to include("href=\"/dashboards/#{dashboard.id}/charts/#{chart.id}/edit\"")
       expect(response.body).to include("/dashboards/#{dashboard.id}/charts/#{chart.id}/archive")
+      expect(response.body).to include('data-turbo-confirm="Archive this chart?"')
+      expect(response.body).to include('data-turbo-confirm="Remove this chart?"')
+      expect(response.body).to include('aria-label="Archive chart"')
+      expect(response.body).to include('aria-label="Remove chart"')
+      expect(response.body).not_to include('aria-label="Chart actions"')
       expect(response.body).not_to include("href=\"/charts/#{chart.id}\"")
     end
 
