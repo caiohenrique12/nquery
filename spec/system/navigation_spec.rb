@@ -6,7 +6,8 @@ require_relative "../rails_helper"
 RSpec.describe "Navigation", type: :system do
   it "shows login page" do
     visit "/login"
-    expect(page).to have_content("Sign in to nquery")
+    expect(page).to have_content("Welcome back")
+    expect(page).to have_content("nquery")
   end
 
   it "signs in and visits home" do

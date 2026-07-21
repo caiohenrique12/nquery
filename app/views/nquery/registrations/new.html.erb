@@ -1,14 +1,34 @@
-<div class="nq-auth">
-  <div class="nq-auth-card">
-    <h1>Create account</h1>
-    <%= form_with model: @user, url: signup_path, class: "nq-form" do |f| %>
-      <div class="nq-form-row"><%= f.label :email %><%= f.email_field :email, class: "nq-input" %></div>
-      <div class="nq-form-row"><%= f.label :first_name %><%= f.text_field :first_name, class: "nq-input" %></div>
-      <div class="nq-form-row"><%= f.label :last_name %><%= f.text_field :last_name, class: "nq-input" %></div>
-      <div class="nq-form-row"><%= f.label :password %><%= f.password_field :password, class: "nq-input" %></div>
-      <div class="nq-form-row"><%= f.label :password_confirmation %><%= f.password_field :password_confirmation, class: "nq-input" %></div>
-      <%= f.submit "Sign up", class: "nq-btn nq-btn-primary nq-btn-block" %>
-    <% end %>
-    <p class="nq-muted nq-mt"><%= link_to "Sign in", login_path %></p>
-  </div>
-</div>
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Create your account",
+             subtitle: "Get started with SQL charts and dashboards in minutes.",
+             footer_text: "Already have an account?",
+             footer_link: login_path,
+             footer_label: "Sign in"
+           } do %>
+  <%= form_with model: @user, url: signup_path, class: "nq-form nq-auth-form" do |f| %>
+    <div class="nq-form-row">
+      <%= f.label :email, "Email address" %>
+      <%= f.email_field :email, class: "nq-input", required: true, autofocus: true, autocomplete: "email", placeholder: "you@company.com" %>
+    </div>
+    <div class="nq-form-row nq-auth-form-row-split">
+      <div>
+        <%= f.label :first_name, "First name" %>
+        <%= f.text_field :first_name, class: "nq-input", required: true, autocomplete: "given-name", placeholder: "Jane" %>
+      </div>
+      <div>
+        <%= f.label :last_name, "Last name" %>
+        <%= f.text_field :last_name, class: "nq-input", required: true, autocomplete: "family-name", placeholder: "Doe" %>
+      </div>
+    </div>
+    <div class="nq-form-row">
+      <%= f.label :password, "Password" %>
+      <%= f.password_field :password, class: "nq-input", required: true, autocomplete: "new-password", placeholder: "At least 8 characters" %>
+    </div>
+    <div class="nq-form-row">
+      <%= f.label :password_confirmation, "Confirm password" %>
+      <%= f.password_field :password_confirmation, class: "nq-input", required: true, autocomplete: "new-password", placeholder: "Re-enter your password" %>
+    </div>
+    <%= f.submit "Create account", class: "nq-btn nq-btn-primary nq-btn-block nq-auth-submit" %>
+  <% end %>
+<% end %>

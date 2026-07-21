@@ -8,7 +8,6 @@
     <%= javascript_include_tag "nquery/application", defer: true %>
   </head>
   <body class="nq-body nq-auth-body">
-    <% if flash[:alert] %><div class="nq-flash nq-flash-alert"><%= flash[:alert] %></div><% end %>
     <%= yield %>
   </body>
 </html>

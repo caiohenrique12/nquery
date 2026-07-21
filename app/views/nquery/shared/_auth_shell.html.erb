@@ -1,0 +1,29 @@
+<div class="nq-auth">
+  <div class="nq-auth-backdrop" aria-hidden="true"></div>
+
+  <div class="nq-auth-panel">
+    <header class="nq-auth-header">
+      <span class="nq-auth-mark">nquery</span>
+      <h1><%= title %></h1>
+      <% if subtitle.present? %>
+        <p class="nq-auth-subtitle"><%= subtitle %></p>
+      <% end %>
+    </header>
+
+    <% if flash[:alert] %>
+      <div class="nq-flash nq-flash-alert" role="alert"><%= flash[:alert] %></div>
+    <% end %>
+    <% if flash[:notice] %>
+      <div class="nq-flash nq-flash-notice" role="status"><%= flash[:notice] %></div>
+    <% end %>
+
+    <%= yield %>
+
+    <% if footer_link.present? %>
+      <footer class="nq-auth-footer">
+        <span class="nq-muted"><%= footer_text %></span>
+        <%= link_to footer_label, footer_link, class: "nq-auth-link" %>
+      </footer>
+    <% end %>
+  </div>
+</div>
