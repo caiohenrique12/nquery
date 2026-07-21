@@ -1,15 +1,16 @@
 <aside class="nq-sidebar">
   <div class="nq-logo">nquery</div>
   <nav class="nq-nav">
-    <%= link_to "Home", root_path, class: "nq-nav-link #{'active' if controller_name == 'home'}" %>
-    <%= link_to "Browse", browse_path, class: "nq-nav-link #{'active' if controller_name == 'browse'}" %>
-    <%= link_to "New chart", new_query_path, class: "nq-nav-link #{'active' if controller_name == 'queries'}" %>
+    <%= link_to "Home", root_path, class: nav_link_class("nquery/home") %>
+    <%= link_to "Collections", collections_path, class: nav_link_class("nquery/collections") %>
+    <%= link_to "Dashboards", dashboards_path, class: nav_link_class("nquery/dashboards") %>
     <% if current_nquery_user&.admin? %>
       <div class="nq-nav-section">Admin</div>
-      <%= link_to "Users", admin_users_path, class: "nq-nav-link" %>
-      <%= link_to "Groups", admin_groups_path, class: "nq-nav-link" %>
-      <%= link_to "Data sources", admin_data_sources_path, class: "nq-nav-link" %>
-      <%= link_to "Permissions", by_group_admin_permissions_path, class: "nq-nav-link" %>
+      <%= link_to "Users", admin_users_path, class: nav_link_class("nquery/admin/users") %>
+      <%= link_to "Groups", admin_groups_path, class: nav_link_class("nquery/admin/groups") %>
+      <%= link_to "Data sources", admin_data_sources_path, class: nav_link_class("nquery/admin/data_sources") %>
+      <%= link_to "Permissions", by_group_admin_permissions_path, class: nav_link_class("nquery/admin/permissions") %>
+      <%= link_to "Logs", admin_logs_path, class: nav_link_class("nquery/admin/logs") %>
     <% end %>
   </nav>
 </aside>

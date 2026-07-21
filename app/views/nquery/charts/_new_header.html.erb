@@ -1,0 +1,10 @@
+<div class="nq-page-header">
+  <div>
+    <h1>New chart</h1>
+    <% if local_assigns[:dashboard] %>
+      <p class="nq-muted">Add a chart to <%= dashboard.name %>. Run your query, preview results, then choose a visualization.</p>
+    <% else %>
+      <p class="nq-muted">Write a query, preview the results, then pick how to visualize them.</p>
+    <% end %>
+  </div>
+</div>

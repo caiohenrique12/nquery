@@ -1,0 +1,35 @@
+<div class="nq-page-header">
+  <h1>Dashboards</h1>
+</div>
+
+<div class="nq-card nq-card-table">
+  <table class="nq-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Collection</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @dashboards.each do |dashboard| %>
+      <tr>
+        <td><%= link_to dashboard.name, dashboard_path(dashboard) %></td>
+        <td><%= dashboard.collection&.name || "—" %></td>
+        <td>
+          <div class="nq-actions">
+            <%= link_to edit_dashboard_path(dashboard), class: "nq-btn" do %>
+              <%= nq_icon(:edit) %>
+              <span>Edit</span>
+            <% end %>
+            <%= button_to dashboard_path(dashboard), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Delete this dashboard?" } } do %>
+              <%= nq_icon(:trash) %>
+              <span>Delete</span>
+            <% end %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+  </table>
+</div>

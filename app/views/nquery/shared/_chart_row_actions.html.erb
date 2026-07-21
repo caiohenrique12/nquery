@@ -1,0 +1,16 @@
+<div class="nq-chart-row-actions">
+  <%= button_to chart_archive_path(chart, dashboard: dashboard),
+                method: :patch,
+                class: "nq-btn nq-btn-icon",
+                form: { data: { turbo_confirm: "Archive this chart?" } },
+                aria: { label: "Archive chart" } do %>
+    <%= nq_icon(:archive) %>
+  <% end %>
+  <%= button_to chart_show_path(chart, dashboard: dashboard),
+                method: :delete,
+                class: "nq-btn nq-btn-icon nq-btn-icon-danger",
+                form: { data: { turbo_confirm: "Remove this chart?" } },
+                aria: { label: "Remove chart" } do %>
+    <%= nq_icon(:trash) %>
+  <% end %>
+</div>

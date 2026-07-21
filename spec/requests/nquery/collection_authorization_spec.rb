@@ -58,21 +58,20 @@ RSpec.describe "Nquery collection authorization", type: :request do
   it "allows members to browse restricted content" do
     sign_in_as(member)
 
-    get "/browse"
+    get "/collections/#{restricted_collection.id}"
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include("Finance chart")
     expect(response.body).to include("Finance dashboard")
   end
 
-  it "hides restricted content from outsiders on browse" do
+  it "hides restricted content from outsiders on collection show" do
     sign_in_as(outsider)
 
-    get "/browse"
+    get "/collections/#{restricted_collection.id}"
 
-    expect(response).to have_http_status(:ok)
-    expect(response.body).not_to include("Finance chart")
-    expect(response.body).not_to include("Finance dashboard")
+    expect(response).to redirect_to("/")
+    expect(flash[:alert]).to include("permission")
   end
 
   it "denies outsiders access to restricted charts" do

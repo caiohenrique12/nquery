@@ -1,0 +1,13 @@
+<div class="nq-page-header"><h1>New dashboard</h1></div>
+
+<%= form_with model: @dashboard, url: collection_dashboards_path(@collection), class: "nq-form nq-card" do |f| %>
+  <div class="nq-form-row">
+    <%= f.label :name %>
+    <%= f.text_field :name, class: "nq-input" %>
+  </div>
+  <div class="nq-form-row">
+    <%= f.label :description %>
+    <%= f.text_area :description, class: "nq-textarea", rows: 2 %>
+  </div>
+  <%= f.submit "Create", class: "nq-btn nq-btn-primary" %>
+<% end %>

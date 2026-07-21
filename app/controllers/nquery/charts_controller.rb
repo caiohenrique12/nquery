@@ -2,64 +2,69 @@
 
 module Nquery
   class ChartsController < ApplicationController
-    before_action :set_chart, only: %i[show edit update embed]
-    before_action :authorize_chart_collection!, only: %i[show edit update embed]
+    include ChartActions
 
-    def show
-      @result = chart_result(@chart)
+    before_action :set_root_collection, only: %i[new create]
+    before_action :authorize_chart_create!, only: %i[new create]
+
+    def new
+      @chart = Chart.new
+      @chart.build_query(statement: "SELECT 1 AS example")
+      @data_sources = DataSource.active.order(:name)
+      @schema_tables = schema_tables
     end
 
-    def edit
-      @chart_types = Chart::CHART_TYPES
-    end
+    def create
+      @chart = Chart.new(
+        chart_create_params.merge(
+          creator: current_nquery_user,
+          collection: @root_collection
+        )
+      )
+      @chart.name = @chart.name.presence || @chart.query&.name
+      @chart.visualization = { "type" => "table" } if @chart.visualization.blank?
+      @chart.query&.creator = current_nquery_user
+      @chart.query&.collection = @root_collection
 
-    def update
-      if @chart.update(chart_params)
-        redirect_to chart_path(@chart), notice: "Chart updated."
+      if @chart.save
+        redirect_to chart_path(@chart), notice: "Chart created."
       else
-        @chart_types = Chart::CHART_TYPES
-        render :edit, status: :unprocessable_entity
+        @data_sources = DataSource.active.order(:name)
+        @schema_tables = schema_tables
+        render :new, status: :unprocessable_entity
       end
     end
 
-    def embed
-      @embed_token = EmbedToken.active.find_by(resource_type: "Nquery::Chart", resource_id: @chart.id)
-      @embed_url = @embed_token ? embed_public_chart_url(token: EmbedTokenService.signed_token_for(@embed_token)) : nil
+    private
+
+    def set_root_collection
+      @root_collection = Collection.roots.first
+      redirect_to root_path, alert: "No collection available." unless @root_collection
     end
 
-    private
+    def authorize_chart_create!
+      authorize_collection_access!(@root_collection, required: :curate)
+    end
 
     def set_chart
       @chart = Chart.find(params[:id])
     end
 
-    def authorize_chart_collection!
-      authorize_collection_access!(@chart.collection, required: :view)
+    def chart_create_params
+      params.require(:chart).permit(
+        :name,
+        visualization: {},
+        query_attributes: %i[name statement data_source_id]
+      )
     end
 
-    def chart_params
-      params.require(:chart).permit(:name, visualization: {})
-    end
+    def schema_tables
+      data_source = DataSource.first
+      return [] unless data_source
 
-    def chart_result(chart)
-      return demo_result unless chart.query&.statement.present?
-
-      QueryRunner.new(
-        data_source: chart.query.data_source || DataSource.first,
-        statement: chart.query.statement,
-        user: current_nquery_user,
-        query: chart.query
-      ).run
+      DataSources::Adapter.for(data_source).tables
     rescue StandardError
-      demo_result
-    end
-
-    def demo_result
-      {
-        columns: %w[month revenue],
-        rows: [%w[Jan 1200], %w[Feb 1800], %w[Mar 2400], %w[Apr 2100]],
-        row_count: 4
-      }
+      []
     end
   end
 end

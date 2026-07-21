@@ -3,6 +3,7 @@
 module Nquery
   class ApplicationController < ActionController::Base
     include Nquery::AuthorizesCollection
+    include Nquery::Breadcrumbs
     include Nquery::Engine.routes.url_helpers
 
     protect_from_forgery with: :exception

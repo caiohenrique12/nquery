@@ -6,8 +6,8 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= stylesheet_link_tag "nquery/application", "data-turbo-track": "reload" %>
-    <%= javascript_include_tag "nquery/application", defer: true %>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <%= javascript_include_tag "nquery/application", defer: true %>
   </head>
   <body class="nq-body">
     <div class="nq-layout">
@@ -17,6 +17,7 @@
         <main class="nq-content" id="main_content">
           <% if flash[:notice] %><div class="nq-flash nq-flash-notice"><%= flash[:notice] %></div><% end %>
           <% if flash[:alert] %><div class="nq-flash nq-flash-alert"><%= flash[:alert] %></div><% end %>
+          <%= render "nquery/shared/breadcrumbs" %>
           <%= yield %>
         </main>
       </div>

@@ -11,7 +11,24 @@ module Nquery
     has_many :embed_tokens, -> { where(resource_type: "Nquery::Chart") },
              class_name: "Nquery::EmbedToken", foreign_key: :resource_id, dependent: :destroy
 
+    accepts_nested_attributes_for :query
+
+    scope :active, -> { where(archived_at: nil) }
+    scope :archived, -> { where.not(archived_at: nil) }
+
     validates :name, presence: true
+
+    def archived?
+      archived_at.present?
+    end
+
+    def archive!
+      update!(archived_at: Time.current)
+    end
+
+    def unarchive!
+      update!(archived_at: nil)
+    end
 
     def chart_type
       visualization["type"] || "bar"

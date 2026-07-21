@@ -3,12 +3,13 @@
 module Nquery
   module Admin
     class UsersController < BaseController
+      before_action :set_user, only: %i[show edit update deactivate destroy]
+
       def index
         @users = User.active.includes(:groups).order(:email)
       end
 
       def show
-        @user = User.find(params[:id])
       end
 
       def new
@@ -30,12 +31,10 @@ module Nquery
       end
 
       def edit
-        @user = User.find(params[:id])
         @groups = Group.order(:name)
       end
 
       def update
-        @user = User.find(params[:id])
         if @user.update(user_params)
           assign_groups(@user)
           redirect_to admin_users_path, notice: "User updated."
@@ -45,7 +44,26 @@ module Nquery
         end
       end
 
+      def deactivate
+        return redirect_to admin_users_path, alert: "You cannot disable your own account." if @user == current_nquery_user
+
+        @user.deactivate!
+        redirect_to admin_users_path, notice: "#{@user.name} has been disabled."
+      end
+
+      def destroy
+        return redirect_to admin_users_path, alert: "You cannot remove your own account." if @user == current_nquery_user
+
+        name = @user.name
+        @user.destroy!
+        redirect_to admin_users_path, notice: "#{name} has been removed."
+      end
+
       private
+
+      def set_user
+        @user = User.find(params[:id])
+      end
 
       def user_params
         params.require(:user).permit(:email, :first_name, :last_name, :password, :password_confirmation)

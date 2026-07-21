@@ -12,6 +12,10 @@
       <%= f.label :description %>
       <%= f.text_area :description, class: "nq-textarea", rows: 2 %>
     </div>
+    <div class="nq-form-row">
+      <%= f.label :collection_id, "Collection" %>
+      <%= f.collection_select :collection_id, @collections, :id, :name, { prompt: "Select a collection" }, class: "nq-input" %>
+    </div>
     <%= f.submit "Save", class: "nq-btn nq-btn-primary" %>
   </div>
 <% end %>
