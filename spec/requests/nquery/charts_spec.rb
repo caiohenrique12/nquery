@@ -197,10 +197,17 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "highlights dashboards in the sidebar" do
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response.body).to include('class="nq-nav-link active" href="/dashboards"')
+    end
+
     it "renders the same chart builder form as new" do
       get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
 
-      expect(response.body).to include("Edit chart")
+      expect(response.body).to include("nq-chart-builder-title")
+      expect(response.body).to include('value="Signups trend"')
       expect(response.body).to include('data-controller="chart-builder"')
       expect(response.body).to include("Format SQL")
       expect(response.body).to include("Run query")

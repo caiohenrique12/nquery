@@ -232,6 +232,9 @@ function initChartBuilders() {
     const nameInput = root.querySelector("[data-chart-builder-target='name']")
     const queryNameInput = root.querySelector("[data-chart-builder-target='queryName']")
     const meta = root.querySelector("[data-chart-builder-target='meta']")
+    const workspaceTabs = root.querySelectorAll("[data-chart-builder-target='workspaceTab']")
+    const queryPanel = root.querySelector("[data-chart-builder-target='queryPanel']")
+    const workspaceOutputPanel = root.querySelector("[data-chart-builder-target='workspaceOutputPanel']")
     const tabList = root.querySelector("[data-chart-builder-target='tabList']")
     const outputTabs = root.querySelectorAll("[data-chart-builder-target='outputTab']")
     const emptyState = root.querySelector("[data-chart-builder-target='emptyState']")
@@ -260,6 +263,7 @@ function initChartBuilders() {
     let chartInstance = null
     let currentChartType = typeField?.value && typeField.value !== "table" ? typeField.value : "bar"
     let currentOutputTab = typeField?.value && typeField.value !== "table" ? "chart" : "table"
+    let currentWorkspaceTab = "query"
     let statementEditor = null
     let lastFormattedSql = null
     let lastSavedSql = statement?.value ?? ""
@@ -361,11 +365,37 @@ function initChartBuilders() {
       if (nameInput && queryNameInput) queryNameInput.value = nameInput.value
     }
 
+    const updateOutputSubtabs = () => {
+      tabList?.toggleAttribute("hidden", !(currentWorkspaceTab === "output" && currentResult))
+    }
+
+    const selectWorkspaceTab = (tab) => {
+      currentWorkspaceTab = tab
+
+      workspaceTabs.forEach(btn => {
+        const active = btn.dataset.tab === tab
+        btn.classList.toggle("is-active", active)
+        btn.setAttribute("aria-selected", active ? "true" : "false")
+      })
+
+      queryPanel?.classList.toggle("is-active", tab === "query")
+      workspaceOutputPanel?.classList.toggle("is-active", tab === "output")
+      queryPanel?.toggleAttribute("hidden", tab !== "query")
+      workspaceOutputPanel?.toggleAttribute("hidden", tab !== "output")
+
+      if (tab === "query" && statementEditor) {
+        requestAnimationFrame(() => statementEditor.refresh())
+      }
+
+      updateOutputSubtabs()
+    }
+
     const hideResults = () => {
       emptyState?.removeAttribute("hidden")
       errorBox?.setAttribute("hidden", "")
       tabList?.setAttribute("hidden", "")
       setActivePanel(null)
+      updateOutputSubtabs()
     }
 
     const setActivePanel = (panel) => {
@@ -386,6 +416,7 @@ function initChartBuilders() {
         errorBox.removeAttribute("hidden")
       }
       meta?.setAttribute("hidden", "")
+      selectWorkspaceTab("output")
     }
 
     const columnIndex = (columns, name) => columns.indexOf(name)
@@ -581,6 +612,7 @@ function initChartBuilders() {
       errorBox?.setAttribute("hidden", "")
       tabList?.removeAttribute("hidden")
       selectOutputTab(currentOutputTab)
+      selectWorkspaceTab("output")
     }
 
     const runQuery = async (button) => {
@@ -689,6 +721,13 @@ function initChartBuilders() {
     })
 
     dataSource?.addEventListener("change", loadSchema)
+
+    workspaceTabs.forEach(btn => {
+      btn.addEventListener("click", (event) => {
+        event.preventDefault()
+        selectWorkspaceTab(btn.dataset.tab)
+      })
+    })
 
     outputTabs.forEach(btn => {
       btn.addEventListener("click", (event) => {

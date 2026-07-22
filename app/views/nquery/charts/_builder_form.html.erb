@@ -7,154 +7,175 @@
         query_save_url: chart.query&.persisted? ? query_path(chart.query) : nil
       }
     } do |f| %>
-  <div class="nq-chart-builder">
-    <header class="nq-chart-builder-toolbar">
-      <div class="nq-chart-builder-toolbar-main">
-        <%= f.text_field :name,
-                         placeholder: "Chart name",
-                         class: "nq-input nq-chart-builder-name",
-                         data: { chart_builder_target: "name", action: "input->chart-builder#syncName" } %>
-      </div>
-      <div class="nq-actions">
-        <%= f.submit "Save chart", class: "nq-btn nq-btn-primary" %>
-      </div>
-    </header>
+  <%= render "nquery/charts/new_header",
+             f: f,
+             chart: chart,
+             dashboard: local_assigns[:dashboard] %>
 
+  <div class="nq-chart-builder">
     <div class="nq-chart-builder-layout">
       <aside class="nq-card nq-chart-builder-panel nq-chart-builder-schema">
         <h3 class="nq-panel-title">Schema</h3>
         <%= render "nquery/charts/schema_tree", schema: schema %>
       </aside>
 
-      <section class="nq-card nq-chart-builder-panel nq-chart-builder-query">
-        <div class="nq-panel-header">
-          <h3 class="nq-panel-title">Query</h3>
-          <%= f.fields_for :query do |query_fields| %>
-            <%= query_fields.collection_select :data_source_id,
-                                               data_sources,
-                                               :id,
-                                               :name,
-                                               {},
-                                               class: "nq-input nq-input-sm",
-                                               data: {
-                                                 chart_builder_target: "dataSource",
-                                                 action: "change->chart-builder#loadSchema"
-                                               } %>
-          <% end %>
-        </div>
-
-        <%= f.fields_for :query do |query_fields| %>
-          <div class="nq-sql-editor-shell">
-            <%= query_fields.text_area :statement,
-                                     rows: 16,
-                                     class: "nq-textarea nq-sql-editor",
-                                     placeholder: "SELECT ...",
-                                     spellcheck: false,
-                                     data: { chart_builder_target: "statement" } %>
-          </div>
-          <%= query_fields.hidden_field :name, data: { chart_builder_target: "queryName" } %>
-        <% end %>
-
-        <div class="nq-chart-builder-query-actions">
-          <button type="button"
-                  class="nq-btn"
-                  data-manages-loading="true"
-                  data-action="click->chart-builder#format"
-                  data-chart-builder-target="formatButton">
-            <%= nq_icon(:format) %>
-            <span>Format SQL</span>
-          </button>
-          <button type="button" class="nq-btn nq-btn-primary" data-manages-loading="true" data-action="click->chart-builder#run">
-            Run query
-          </button>
-          <span class="nq-sql-save-status nq-muted" data-chart-builder-target="saveStatus" hidden></span>
-          <span class="nq-sql-editor-hint nq-muted">⌘↵ run · ⌘⇧F format</span>
-        </div>
-      </section>
-
-      <section class="nq-card nq-chart-builder-panel nq-chart-builder-results">
+      <section class="nq-card nq-chart-builder-panel nq-chart-builder-workspace">
         <input type="hidden" name="chart[visualization][type]" value="<%= chart_type %>" data-chart-builder-target="typeField">
         <input type="hidden" name="chart[visualization][x]" value="<%= viz["x"] %>" data-chart-builder-target="xField">
         <input type="hidden" name="chart[visualization][y]" value="<%= viz["y"] %>" data-chart-builder-target="yField">
 
-        <div class="nq-output-header">
-          <div class="nq-output-header-main">
-            <h3 class="nq-panel-title">Output</h3>
-            <span class="nq-muted nq-query-meta" data-chart-builder-target="meta" hidden></span>
-          </div>
-
-          <div class="nq-output-tabs" role="tablist" aria-label="Output views" data-chart-builder-target="tabList" hidden>
+        <header class="nq-workspace-header">
+          <div class="nq-workspace-tabs" role="tablist" aria-label="Chart builder views">
             <button type="button"
                     role="tab"
                     aria-selected="true"
-                    aria-controls="chart-builder-table-panel"
-                    class="nq-output-tab is-active"
-                    data-chart-builder-target="outputTab"
-                    data-tab="table">
-              Table
+                    aria-controls="chart-builder-query-panel"
+                    class="nq-workspace-tab is-active"
+                    data-chart-builder-target="workspaceTab"
+                    data-tab="query">
+              Query
             </button>
             <button type="button"
                     role="tab"
                     aria-selected="false"
-                    aria-controls="chart-builder-chart-panel"
-                    class="nq-output-tab"
-                    data-chart-builder-target="outputTab"
-                    data-tab="chart">
-              Chart
+                    aria-controls="chart-builder-output-panel"
+                    class="nq-workspace-tab"
+                    data-chart-builder-target="workspaceTab"
+                    data-tab="output">
+              Output
             </button>
+          </div>
+
+          <div class="nq-workspace-header-actions">
+            <span class="nq-muted nq-query-meta" data-chart-builder-target="meta" hidden></span>
+
+            <div class="nq-output-tabs" role="tablist" aria-label="Output views" data-chart-builder-target="tabList" hidden>
+              <button type="button"
+                      role="tab"
+                      aria-selected="true"
+                      aria-controls="chart-builder-table-panel"
+                      class="nq-output-tab is-active"
+                      data-chart-builder-target="outputTab"
+                      data-tab="table">
+                Table
+              </button>
+              <button type="button"
+                      role="tab"
+                      aria-selected="false"
+                      aria-controls="chart-builder-chart-panel"
+                      class="nq-output-tab"
+                      data-chart-builder-target="outputTab"
+                      data-tab="chart">
+                Chart
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div id="chart-builder-query-panel"
+             class="nq-workspace-panel is-active"
+             data-chart-builder-target="queryPanel"
+             role="tabpanel">
+          <div class="nq-panel-header">
+            <%= f.fields_for :query do |query_fields| %>
+              <%= query_fields.collection_select :data_source_id,
+                                                 data_sources,
+                                                 :id,
+                                                 :name,
+                                                 {},
+                                                 class: "nq-input nq-input-sm",
+                                                 data: {
+                                                   chart_builder_target: "dataSource",
+                                                   action: "change->chart-builder#loadSchema"
+                                                 } %>
+            <% end %>
+          </div>
+
+          <%= f.fields_for :query do |query_fields| %>
+            <div class="nq-sql-editor-shell">
+              <%= query_fields.text_area :statement,
+                                       rows: 16,
+                                       class: "nq-textarea nq-sql-editor",
+                                       placeholder: "SELECT ...",
+                                       spellcheck: false,
+                                       data: { chart_builder_target: "statement" } %>
+            </div>
+            <%= query_fields.hidden_field :name, data: { chart_builder_target: "queryName" } %>
+          <% end %>
+
+          <div class="nq-chart-builder-query-actions">
+            <button type="button"
+                    class="nq-btn"
+                    data-manages-loading="true"
+                    data-action="click->chart-builder#format"
+                    data-chart-builder-target="formatButton">
+              <%= nq_icon(:format) %>
+              <span>Format SQL</span>
+            </button>
+            <button type="button" class="nq-btn nq-btn-primary" data-manages-loading="true" data-action="click->chart-builder#run">
+              Run query
+            </button>
+            <span class="nq-sql-save-status nq-muted" data-chart-builder-target="saveStatus" hidden></span>
+            <span class="nq-sql-editor-hint nq-muted">⌘↵ run · ⌘⇧F format</span>
           </div>
         </div>
 
-        <div class="nq-output-body" data-chart-builder-target="outputBody">
-          <div class="nq-output-empty" data-chart-builder-target="emptyState">
-            <p>Run your query to see results.</p>
-            <p class="nq-muted">Preview data as a table or chart.</p>
-          </div>
-
-          <div class="nq-output-error" data-chart-builder-target="error" hidden></div>
-
-          <div id="chart-builder-table-panel"
-               class="nq-output-panel"
-               data-chart-builder-target="tablePanel"
-               role="tabpanel"
-               hidden>
-            <div class="nq-viz-table-wrap" data-chart-builder-target="table"></div>
-          </div>
-
-          <div id="chart-builder-chart-panel"
-               class="nq-output-panel"
-               data-chart-builder-target="chartPanel"
-               role="tabpanel"
-               hidden>
-            <div class="nq-chart-settings">
-              <div class="nq-viz-types" role="radiogroup" aria-label="Chart type">
-                <% chart_builder_chart_types.each do |type| %>
-                  <button type="button"
-                          class="nq-viz-type<%= " is-active" if type == active_chart_type %>"
-                          data-chart-builder-target="typeButton"
-                          data-type="<%= type %>">
-                    <%= type.titleize %>
-                  </button>
-                <% end %>
-              </div>
-
-              <div class="nq-viz-mapping" data-chart-builder-target="mapping">
-                <label class="nq-viz-mapping-field" data-chart-builder-target="xMapping">
-                  <span>X axis</span>
-                  <select class="nq-input" data-chart-builder-target="xAxis"></select>
-                </label>
-                <label class="nq-viz-mapping-field">
-                  <span>Y axis</span>
-                  <select class="nq-input" data-chart-builder-target="yAxis"></select>
-                </label>
-              </div>
+        <div id="chart-builder-output-panel"
+             class="nq-workspace-panel"
+             data-chart-builder-target="workspaceOutputPanel"
+             role="tabpanel"
+             hidden>
+          <div class="nq-output-body" data-chart-builder-target="outputBody">
+            <div class="nq-output-empty" data-chart-builder-target="emptyState">
+              <p>Run your query to see results.</p>
+              <p class="nq-muted">Preview data as a table or chart.</p>
             </div>
 
-            <div class="nq-viz-chart-preview" data-chart-builder-target="chartPreview">
-              <div class="nq-viz-chart-wrap" data-chart-builder-target="chartWrap" hidden>
-                <canvas data-chart-builder-target="canvas" height="220"></canvas>
+            <div class="nq-output-error" data-chart-builder-target="error" hidden></div>
+
+            <div id="chart-builder-table-panel"
+                 class="nq-output-panel"
+                 data-chart-builder-target="tablePanel"
+                 role="tabpanel"
+                 hidden>
+              <div class="nq-viz-table-wrap" data-chart-builder-target="table"></div>
+            </div>
+
+            <div id="chart-builder-chart-panel"
+                 class="nq-output-panel"
+                 data-chart-builder-target="chartPanel"
+                 role="tabpanel"
+                 hidden>
+              <div class="nq-chart-settings">
+                <div class="nq-viz-types" role="radiogroup" aria-label="Chart type">
+                  <% chart_builder_chart_types.each do |type| %>
+                    <button type="button"
+                            class="nq-viz-type<%= " is-active" if type == active_chart_type %>"
+                            data-chart-builder-target="typeButton"
+                            data-type="<%= type %>">
+                      <%= type.titleize %>
+                    </button>
+                  <% end %>
+                </div>
+
+                <div class="nq-viz-mapping" data-chart-builder-target="mapping">
+                  <label class="nq-viz-mapping-field" data-chart-builder-target="xMapping">
+                    <span>X axis</span>
+                    <select class="nq-input" data-chart-builder-target="xAxis"></select>
+                  </label>
+                  <label class="nq-viz-mapping-field">
+                    <span>Y axis</span>
+                    <select class="nq-input" data-chart-builder-target="yAxis"></select>
+                  </label>
+                </div>
               </div>
-              <div class="nq-viz-number" data-chart-builder-target="number" hidden></div>
+
+              <div class="nq-viz-chart-preview" data-chart-builder-target="chartPreview">
+                <div class="nq-viz-chart-wrap" data-chart-builder-target="chartWrap" hidden>
+                  <canvas data-chart-builder-target="canvas" height="180"></canvas>
+                </div>
+                <div class="nq-viz-number" data-chart-builder-target="number" hidden></div>
+              </div>
             </div>
           </div>
         </div>

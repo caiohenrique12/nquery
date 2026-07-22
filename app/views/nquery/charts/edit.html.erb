@@ -1,10 +1,6 @@
-<%= render "nquery/charts/new_header",
-           title: "Edit chart",
-           dashboard: @dashboard,
-           chart: @chart %>
-
 <%= render "nquery/charts/builder_form",
            chart: @chart,
+           dashboard: @dashboard,
            form_url: chart_form_path(@chart),
            data_sources: @data_sources,
            schema: @schema %>

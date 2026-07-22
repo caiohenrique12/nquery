@@ -3,7 +3,7 @@
   <nav class="nq-nav">
     <%= link_to "Home", root_path, class: nav_link_class("nquery/home") %>
     <%= link_to "Collections", collections_path, class: nav_link_class("nquery/collections") %>
-    <%= link_to "Dashboards", dashboards_path, class: nav_link_class("nquery/dashboards") %>
+    <%= link_to "Dashboards", dashboards_path, class: nav_link_class("nquery/dashboards", "nquery/dashboard/charts") %>
     <% if current_nquery_user&.admin? %>
       <div class="nq-nav-section">Admin</div>
       <%= link_to "Users", admin_users_path, class: nav_link_class("nquery/admin/users") %>
