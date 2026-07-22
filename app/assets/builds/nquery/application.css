@@ -194,9 +194,8 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-tile-link { display: block; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }
 .nq-tile-link:hover { border-color: var(--nq-primary); box-shadow: 0 0 0 1px var(--nq-primary); }
 .nq-tile-title { display: block; font-weight: 600; color: var(--nq-primary); margin-bottom: 0.25rem; }
-.nq-dashboard-chart-link { color: inherit; text-decoration: none; }
-.nq-dashboard-chart-link:hover { color: var(--nq-primary); }
 .nq-chart-preview { min-height: 120px; }
+.nq-chart-preview.is-number { display: flex; align-items: center; justify-content: center; min-height: 0; }
 .nq-chart-preview canvas { width: 100% !important; }
 .nq-results { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px; overflow: auto; max-height: 300px; font-size: 0.8rem; }
 .nq-code { background: #f1f5f9; padding: 1rem; border-radius: 6px; overflow: auto; font-size: 0.8rem; }

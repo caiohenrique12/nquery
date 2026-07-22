@@ -278,6 +278,71 @@ function initButtonLoaders() {
   })
 }
 
+function columnIndex(columns, name) {
+  const index = columns.indexOf(name)
+  return index >= 0 ? index : 0
+}
+
+function chartJsType(type) {
+  if (type === "area") return "line"
+  if (type === "scatter") return "scatter"
+  if (type === "pie") return "pie"
+  return type === "line" ? "line" : "bar"
+}
+
+function buildPreviewChartConfig(type, data, xCol, yCol) {
+  const columns = data.columns || []
+  const rows = data.rows || []
+  const xIndex = columnIndex(columns, xCol || columns[0])
+  const yIndex = columnIndex(columns, yCol || columns[1] || columns[0])
+  const labels = rows.map(row => row[xIndex])
+  const values = rows.map(row => Number(row[yIndex]) || 0)
+  const color = "#509ee3"
+  const yLabel = yCol || columns[yIndex] || "Value"
+
+  if (type === "scatter") {
+    return {
+      type: "scatter",
+      data: {
+        datasets: [{
+          label: yLabel,
+          data: rows.map(row => ({ x: Number(row[xIndex]) || 0, y: Number(row[yIndex]) || 0 })),
+          backgroundColor: color
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    }
+  }
+
+  if (type === "pie") {
+    return {
+      type: "pie",
+      data: {
+        labels,
+        datasets: [{ data: values, backgroundColor: [color, "#7db8ea", "#a8d0f0", "#d4e8f8", "#2d7ec1"] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    }
+  }
+
+  const jsType = chartJsType(type)
+  return {
+    type: jsType,
+    data: {
+      labels,
+      datasets: [{
+        label: yLabel,
+        data: values,
+        backgroundColor: color,
+        borderColor: color,
+        fill: type === "area",
+        tension: type === "line" || type === "area" ? 0.3 : 0
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  }
+}
+
 function initChartPreviews() {
   if (typeof Chart === "undefined") {
     requestAnimationFrame(initChartPreviews)
@@ -285,10 +350,12 @@ function initChartPreviews() {
   }
 
   document.querySelectorAll("[data-controller='chart-preview']").forEach(el => {
-    const canvas = el.querySelector("canvas")
-    if (!canvas || Chart.getChart(canvas)) return
+    if (el.dataset.chartPreviewInitialized === "true") return
+    el.dataset.chartPreviewInitialized = "true"
 
     const type = el.dataset.chartPreviewTypeValue || "bar"
+    const xCol = el.dataset.chartPreviewXValue || ""
+    const yCol = el.dataset.chartPreviewYValue || ""
     let data
     try {
       data = el.dataset.chartPreviewDataValue ? JSON.parse(el.dataset.chartPreviewDataValue) : null
@@ -300,17 +367,49 @@ function initChartPreviews() {
       columns: ["month", "revenue"],
       rows: [["Jan", 1200], ["Feb", 1800], ["Mar", 2400], ["Apr", 2100]]
     }
-    const labels = demo.rows.map(r => r[0])
-    const values = demo.rows.map(r => Number(r[1]) || 0)
 
-    new Chart(canvas, {
-      type: type === "pie" ? "pie" : "bar",
-      data: {
-        labels,
-        datasets: [{ label: demo.columns[1] || "Value", data: values, backgroundColor: "#509ee3" }]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
-    })
+    if (type === "number") {
+      const yIndex = columnIndex(demo.columns || [], yCol || demo.columns?.[1] || demo.columns?.[0])
+      const value = demo.rows?.[0]?.[yIndex] ?? "—"
+      el.classList.add("is-number")
+      el.innerHTML = `<div class="nq-number-display">${value}</div>`
+      return
+    }
+
+    if (type === "table") {
+      const columns = demo.columns || []
+      const rows = (demo.rows || []).slice(0, 8)
+      const table = document.createElement("table")
+      table.className = "nq-data-table"
+      const thead = document.createElement("thead")
+      const headRow = document.createElement("tr")
+      columns.forEach(col => {
+        const th = document.createElement("th")
+        th.textContent = col
+        headRow.appendChild(th)
+      })
+      thead.appendChild(headRow)
+      table.appendChild(thead)
+      const tbody = document.createElement("tbody")
+      rows.forEach(row => {
+        const tr = document.createElement("tr")
+        row.forEach(cell => {
+          const td = document.createElement("td")
+          td.textContent = cell ?? ""
+          tr.appendChild(td)
+        })
+        tbody.appendChild(tr)
+      })
+      table.appendChild(tbody)
+      el.innerHTML = ""
+      el.appendChild(table)
+      return
+    }
+
+    const canvas = el.querySelector("canvas")
+    if (!canvas || Chart.getChart(canvas)) return
+
+    new Chart(canvas, buildPreviewChartConfig(type, demo, xCol, yCol))
   })
 }
 
@@ -675,13 +774,16 @@ function initChartBuilders() {
         btn.setAttribute("aria-selected", active ? "true" : "false")
       })
 
+      // Table/Chart tabs are preview modes only — never overwrite the saved visualization type.
       if (tab === "table") {
-        if (typeField) typeField.value = "table"
         setActivePanel("table")
       } else {
         setActivePanel("chart")
-        if (typeField?.value === "table") selectChartType("bar")
-        else updateChartPreview()
+        if (!currentChartType || currentChartType === "table") selectChartType("bar")
+        else {
+          if (typeField) typeField.value = currentChartType
+          updateChartPreview()
+        }
       }
     }
 
@@ -689,7 +791,7 @@ function initChartBuilders() {
       currentChartType = type
       if (typeField) typeField.value = type
       typeButtons.forEach(btn => btn.classList.toggle("is-active", btn.dataset.type === type))
-      if (currentResult) updateChartPreview()
+      if (currentResult && currentOutputTab === "chart") updateChartPreview()
     }
 
     const updateMapping = () => {

@@ -14,7 +14,10 @@ debug: ## Start app with Ruby debugger (attach on port 12345)
 setup: ## Migrate and seed without starting server
 	docker compose run --rm nquery bin/setup
 
-test: ## Run RSpec
+tests: ## Run RSpec
+	docker compose run --rm nquery bash -lc "cd /app && bundle exec rspec"
+
+coverage: ## Run RSpec with SimpleCov report (output in coverage/)
 	docker compose run --rm nquery bash -lc "cd /app && bundle exec rspec"
 
 console: ## Rails console

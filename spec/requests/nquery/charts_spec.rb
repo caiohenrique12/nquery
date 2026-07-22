@@ -354,4 +354,117 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response).to redirect_to("/dashboards/#{dashboard.id}")
     end
   end
+
+  describe "standalone charts" do
+    let!(:chart) do
+      query = Nquery::Query.create!(
+        name: "Standalone chart",
+        statement: "SELECT 1 AS value",
+        data_source: data_source,
+        creator: admin,
+        collection: root_collection
+      )
+      Nquery::Chart.create!(
+        name: "Standalone chart",
+        query: query,
+        collection: root_collection,
+        creator: admin,
+        visualization: { "type" => "bar", "x" => "value", "y" => "value" }
+      )
+    end
+
+    before { sign_in_as_admin }
+
+    it "shows a chart" do
+      get "/charts/#{chart.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Standalone chart")
+    end
+
+    it "shows demo data when the query has no statement" do
+      chart.query.update!(statement: "")
+
+      get "/charts/#{chart.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Jan")
+    end
+
+    it "shows demo data when the query runner fails" do
+      allow_any_instance_of(Nquery::QueryRunner).to receive(:run).and_raise(StandardError, "boom")
+
+      get "/charts/#{chart.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Jan")
+    end
+
+    it "renders the embed page" do
+      Nquery::EmbedTokenService.sign(resource_type: "Nquery::Chart", resource_id: chart.id, creator: admin)
+
+      get "/charts/#{chart.id}/embed"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Embed")
+    end
+
+    it "updates a standalone chart" do
+      patch "/charts/#{chart.id}", params: {
+        chart: {
+          name: "Updated standalone",
+          query_attributes: {
+            id: chart.query.id,
+            name: "Updated standalone",
+            statement: "SELECT 2 AS value",
+            data_source_id: data_source.id
+          },
+          visualization: { type: "line", x: "value", y: "value" }
+        }
+      }
+
+      expect(response).to redirect_to("/charts/#{chart.id}/edit")
+    end
+
+    it "renders errors when standalone update fails" do
+      patch "/charts/#{chart.id}", params: { chart: { name: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "destroys a standalone chart" do
+      expect {
+        delete "/charts/#{chart.id}"
+      }.to change(Nquery::Chart, :count).by(-1)
+
+      expect(response).to redirect_to("/collections/#{root_collection.id}")
+    end
+
+    it "archives a standalone chart" do
+      patch "/charts/#{chart.id}/archive"
+
+      expect(response).to redirect_to("/collections/#{root_collection.id}")
+      expect(chart.reload.archived?).to be(true)
+    end
+
+    it "renders errors when dashboard chart creation fails" do
+      post "/dashboards/#{dashboard.id}/charts", params: { chart: { name: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "renders errors when standalone chart creation fails" do
+      post "/charts", params: { chart: { name: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "redirects to root when destroying a chart without a collection" do
+      chart.update_column(:collection_id, nil)
+
+      delete "/charts/#{chart.id}"
+
+      expect(response).to redirect_to("/")
+    end
+  end
 end

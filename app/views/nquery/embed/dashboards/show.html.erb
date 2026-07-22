@@ -1,0 +1,7 @@
+<h1><%= @dashboard.name %></h1>
+
+<% @dashboard.dashboard_cards.each do |card| %>
+  <section>
+    <h2><%= card.chart.name %></h2>
+  </section>
+<% end %>

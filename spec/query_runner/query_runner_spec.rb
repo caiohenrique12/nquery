@@ -50,4 +50,22 @@ RSpec.describe Nquery::QueryRunner do
     expect(result[:columns]).to include("value")
     expect(result[:row_count]).to eq(1)
   end
+
+  it "re-raises permission errors without wrapping" do
+    viewer_group = Nquery::Group.create!(name: "Blocked", system_group: "custom")
+    viewer = Nquery::User.create!(email: "blocked@example.com", password: "password123").tap do |u|
+      Nquery::GroupMembership.create!(user: u, group: viewer_group)
+    end
+    Nquery::DataPermission.create!(
+      group: viewer_group,
+      data_source: data_source,
+      permission_type: "view_data",
+      access_level: "blocked"
+    )
+
+    runner = described_class.new(data_source: data_source, statement: "SELECT 1 AS value", user: viewer)
+
+    expect { runner.run }.to raise_error(described_class::PermissionError)
+    expect(Nquery::Audit.where(status: "error")).to be_empty
+  end
 end

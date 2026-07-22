@@ -36,4 +36,6 @@ RSpec.configure do |config|
   config.before(:suite) do
     Nquery::Seeder.run!
   end
+
+  config.include ActiveSupport::Testing::TimeHelpers
 end

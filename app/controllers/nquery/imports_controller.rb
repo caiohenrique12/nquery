@@ -20,7 +20,7 @@ module Nquery
     rescue CsvImporter::Error => e
       @csv_upload = CsvUpload.new(name: params[:name])
       flash.now[:alert] = e.message
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
 
     private

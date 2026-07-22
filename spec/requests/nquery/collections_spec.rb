@@ -132,6 +132,12 @@ RSpec.describe "Nquery::Collections", type: :request do
       expect(collection.kind).to eq("standard")
       expect(response).to redirect_to("/collections/#{collection.id}")
     end
+
+    it "renders errors for invalid collections" do
+      post "/collections", params: { collection: { name: "", parent_id: root_collection.id } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
   end
 
   describe "POST /collections/:collection_id/collections" do
@@ -150,6 +156,26 @@ RSpec.describe "Nquery::Collections", type: :request do
     end
   end
 
+  describe "POST /collections/:collection_id/dashboards" do
+    before { sign_in_as_admin }
+
+    it "creates a dashboard" do
+      expect {
+        post "/collections/#{root_collection.id}/dashboards", params: {
+          dashboard: { name: "Nested board", description: "Nested" }
+        }
+      }.to change(Nquery::Dashboard, :count).by(1)
+
+      expect(response).to be_redirect
+    end
+
+    it "renders errors for invalid dashboards" do
+      post "/collections/#{root_collection.id}/dashboards", params: { dashboard: { name: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
   describe "PATCH /collections/:id" do
     before { sign_in_as_admin }
 
@@ -160,6 +186,37 @@ RSpec.describe "Nquery::Collections", type: :request do
 
       expect(response).to redirect_to("/collections/#{collection.id}")
       expect(collection.reload.name).to eq("Revenue ops")
+    end
+
+    it "renders errors for invalid updates" do
+      collection = Nquery::Collection.create!(name: "Sales", kind: "standard", parent: root_collection)
+
+      patch "/collections/#{collection.id}", params: { collection: { name: "" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+  end
+
+  describe "GET /collections/:id/edit" do
+    before { sign_in_as_admin }
+
+    it "renders the edit form" do
+      collection = Nquery::Collection.create!(name: "Sales", kind: "standard", parent: root_collection)
+
+      get "/collections/#{collection.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "GET /collections/:collection_id/collections/new" do
+    before { sign_in_as_admin }
+
+    it "renders the nested new collection form" do
+      get "/collections/#{root_collection.id}/collections/new"
+
+      expect(response).to have_http_status(:ok)
     end
   end
 
@@ -174,6 +231,15 @@ RSpec.describe "Nquery::Collections", type: :request do
       }.to change(Nquery::Collection, :count).by(-1)
 
       expect(response).to redirect_to("/collections")
+    end
+
+    it "prevents deleting root collections" do
+      expect {
+        delete "/collections/#{root_collection.id}"
+      }.not_to change(Nquery::Collection, :count)
+
+      expect(response).to redirect_to("/collections")
+      expect(flash[:alert]).to eq("Root collections cannot be deleted.")
     end
   end
 

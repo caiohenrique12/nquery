@@ -33,7 +33,7 @@ module Nquery
       if @collection.save
         redirect_to collection_path(@collection), notice: "Collection created."
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 
@@ -51,7 +51,7 @@ module Nquery
       if @collection.update(collection_params)
         redirect_to collection_path(@collection), notice: "Collection updated."
       else
-        render :edit, status: :unprocessable_entity
+        render :edit, status: :unprocessable_content
       end
     end
 

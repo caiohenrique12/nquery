@@ -26,7 +26,7 @@ module Nquery
           redirect_to admin_users_path, notice: "User created."
         else
           @groups = Group.order(:name)
-          render :new, status: :unprocessable_entity
+          render :new, status: :unprocessable_content
         end
       end
 
@@ -40,7 +40,7 @@ module Nquery
           redirect_to admin_users_path, notice: "User updated."
         else
           @groups = Group.order(:name)
-          render :edit, status: :unprocessable_entity
+          render :edit, status: :unprocessable_content
         end
       end
 

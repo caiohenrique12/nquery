@@ -17,7 +17,7 @@ module Nquery
       if @dashboard.save
         redirect_to dashboard_path(@dashboard), notice: "Dashboard created."
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 

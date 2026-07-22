@@ -18,7 +18,7 @@ module Nquery
         if @data_source.save
           redirect_to admin_data_sources_path, notice: "Data source created."
         else
-          render :new, status: :unprocessable_entity
+          render :new, status: :unprocessable_content
         end
       end
 
@@ -29,7 +29,7 @@ module Nquery
         if @data_source.update(data_source_params)
           redirect_to admin_data_sources_path, notice: "Data source updated."
         else
-          render :edit, status: :unprocessable_entity
+          render :edit, status: :unprocessable_content
         end
       end
 

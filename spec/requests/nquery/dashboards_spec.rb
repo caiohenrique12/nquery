@@ -98,7 +98,6 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       expect(response.body).to include('aria-label="Chart actions"')
       expect(response.body).to include('data-turbo-confirm="Archive this chart?"')
       expect(response.body).to include('data-turbo-confirm="Remove this chart?"')
-      expect(response.body).to include("href=\"/dashboards/#{dashboard.id}/charts/#{chart.id}\"")
       expect(response.body).to include("href=\"/dashboards/#{dashboard.id}/charts/#{chart.id}/edit\"")
       expect(response.body).to include("/dashboards/#{dashboard.id}/charts/#{chart.id}/archive")
       expect(response.body).not_to include("href=\"/charts/#{chart.id}\"")
@@ -146,6 +145,92 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       get "/dashboards/new"
 
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "GET /dashboards/:id/edit" do
+    let!(:dashboard) do
+      Nquery::Dashboard.create!(
+        name: "Editable board",
+        collection: root_collection,
+        creator: admin
+      )
+    end
+
+    before { sign_in_as_admin }
+
+    it "renders the edit form" do
+      get "/dashboards/#{dashboard.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "PATCH /dashboards/:id" do
+    let!(:dashboard) do
+      Nquery::Dashboard.create!(
+        name: "Editable board",
+        collection: root_collection,
+        creator: admin
+      )
+    end
+
+    before { sign_in_as_admin }
+
+    it "updates a dashboard" do
+      patch "/dashboards/#{dashboard.id}", params: {
+        dashboard: { name: "Updated board", description: "Updated", collection_id: root_collection.id }
+      }
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}")
+      expect(dashboard.reload.name).to eq("Updated board")
+    end
+
+    it "renders errors for invalid updates" do
+      patch "/dashboards/#{dashboard.id}", params: {
+        dashboard: { name: "", collection_id: root_collection.id }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe "PATCH /dashboards/:id/update_layout" do
+    let!(:dashboard) do
+      Nquery::Dashboard.create!(
+        name: "Layout board",
+        collection: root_collection,
+        creator: admin
+      )
+    end
+    let!(:card) do
+      query = Nquery::Query.create!(
+        name: "Layout query",
+        statement: "SELECT 1 AS value",
+        data_source: Nquery::DataSource.find_by!(name: "Main Database"),
+        creator: admin,
+        collection: root_collection
+      )
+      chart = Nquery::Chart.create!(
+        name: "Layout chart",
+        query: query,
+        collection: root_collection,
+        creator: admin,
+        visualization: { "type" => "bar" }
+      )
+      dashboard.dashboard_cards.create!(chart: chart, pos_x: 0, pos_y: 0, width: 6, height: 4)
+    end
+
+    before { sign_in_as_admin }
+
+    it "updates card layout positions" do
+      patch "/dashboards/#{dashboard.id}/update_layout", params: {
+        cards: { card.id => { x: 1, y: 2, w: 4, h: 3 } }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(card.reload.pos_x).to eq(1)
+      expect(card.pos_y).to eq(2)
     end
   end
 

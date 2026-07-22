@@ -22,7 +22,7 @@ module Nquery
         if @group.save
           redirect_to admin_groups_path, notice: "Group created."
         else
-          render :new, status: :unprocessable_entity
+          render :new, status: :unprocessable_content
         end
       end
 
@@ -33,7 +33,7 @@ module Nquery
         if @group.update(group_params)
           redirect_to admin_groups_path, notice: "Group updated."
         else
-          render :edit, status: :unprocessable_entity
+          render :edit, status: :unprocessable_content
         end
       end
 
