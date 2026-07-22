@@ -147,20 +147,111 @@ function setButtonLoading(button, loading, { keepDisabled = false } = {}) {
   }
 }
 
-function showClientFlash(message, type = "notice") {
-  const main = document.getElementById("main_content")
-  if (!main || !message) return
+const FLASH_CARD_ICONS = {
+  notice: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  alert: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 6v5M10 14h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/></svg>',
+  warning: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 7v4M10 14h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3.5 16h13L10 4 3.5 16z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  info: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5M10 6h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+}
 
-  main.querySelectorAll(".nq-flash-client").forEach((el) => el.remove())
+class FlashCardController {
+  constructor(element) {
+    this.element = element
+    this.autoDismiss = element.dataset.flashCardAutoDismissValue === "true"
+    this.delay = Number.parseInt(element.dataset.flashCardDelayValue || "5000", 10)
+    this.isToast = element.dataset.flashCardToastValue === "true"
+    this.timeout = null
+  }
 
-  const flash = document.createElement("div")
-  flash.className = `nq-flash nq-flash-${type} nq-flash-client`
-  flash.setAttribute("role", "status")
-  flash.textContent = message
-  main.prepend(flash)
+  connect() {
+    const dismissButton = this.element.querySelector("[data-action*='flash-card#dismiss']")
+    dismissButton?.addEventListener("click", () => this.dismiss())
 
-  window.clearTimeout(flash._nqTimeout)
-  flash._nqTimeout = window.setTimeout(() => flash.remove(), 4000)
+    if (this.isToast) {
+      this.element.hidden = false
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.element.classList.add("is-visible"))
+      })
+    }
+
+    if (this.autoDismiss) {
+      this.timeout = window.setTimeout(() => this.dismiss(), this.delay)
+    }
+  }
+
+  dismiss() {
+    window.clearTimeout(this.timeout)
+
+    if (!this.isToast) {
+      this.element.remove()
+      return
+    }
+
+    this.element.classList.remove("is-visible")
+    this.element.classList.add("is-leaving")
+
+    const remove = () => this.element.remove()
+    this.element.addEventListener("transitionend", remove, { once: true })
+    window.setTimeout(remove, 350)
+  }
+}
+
+function flashCardMarkup(message, type = "notice", { delay = 5000, autoDismiss = true } = {}) {
+  return `
+    <div class="nq-flash-card nq-flash-card-${type} nq-flash-card-toast nq-flash-client" role="status" data-controller="flash-card" data-flash-card-auto-dismiss-value="${autoDismiss}" data-flash-card-delay-value="${delay}" data-flash-card-toast-value="true" hidden>
+      <div class="nq-flash-card-icon" aria-hidden="true">${FLASH_CARD_ICONS[type] || FLASH_CARD_ICONS.notice}</div>
+      <div class="nq-flash-card-body"><p>${escapeHtml(message)}</p></div>
+      <button type="button" class="nq-flash-card-dismiss" aria-label="Dismiss" data-action="flash-card#dismiss">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  `
+}
+
+function ensureToastStack() {
+  let stack = document.getElementById("flash")
+  if (!stack) {
+    stack = document.createElement("div")
+    stack.id = "flash"
+    stack.className = "nq-toast-stack"
+    stack.setAttribute("aria-live", "polite")
+    stack.setAttribute("aria-atomic", "false")
+    document.body.appendChild(stack)
+  }
+  return stack
+}
+
+function mountFlashCard(element) {
+  if (!element || element.dataset.flashCardInitialized === "true") return
+  element.dataset.flashCardInitialized = "true"
+  new FlashCardController(element).connect()
+}
+
+function initFlashCards(root = document) {
+  root.querySelectorAll("[data-controller='flash-card']").forEach(mountFlashCard)
+}
+
+function showClientFlash(message, type = "notice", { delay = 5000 } = {}) {
+  if (!message) return
+
+  const stack = ensureToastStack()
+  stack.insertAdjacentHTML("beforeend", flashCardMarkup(message, type, { delay }))
+  mountFlashCard(stack.lastElementChild)
+}
+
+function initToastEvents() {
+  window.addEventListener("nquery:toast", (event) => {
+    const { message, type = "notice", delay = 5000 } = event.detail || {}
+    showClientFlash(message, type, { delay })
+  })
+}
+
+function observeToastStack() {
+  const stack = ensureToastStack()
+  if (stack.dataset.toastObserver === "true") return
+  stack.dataset.toastObserver = "true"
+
+  new MutationObserver(() => initFlashCards(stack)).observe(stack, { childList: true })
 }
 
 function initButtonLoaders() {
@@ -775,6 +866,9 @@ function initQueryEditors() {
 
 function initPage() {
   initButtonLoaders()
+  initToastEvents()
+  observeToastStack()
+  initFlashCards()
   initQueryEditors()
   initChartBuilders()
   initChartPreviews()

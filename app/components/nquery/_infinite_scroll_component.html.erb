@@ -1,0 +1,11 @@
+<div
+  class="<%= component.css_class %>"
+  data-controller="infinite-scroll"
+  data-infinite-scroll-url-value="<%= component.url %>"
+  data-infinite-scroll-target-value="<%= component.target %>"
+>
+  <div id="<%= component.target %>" class="nq-infinite-scroll-list">
+    <%= content %>
+  </div>
+  <div class="nq-infinite-scroll-sentinel" data-infinite-scroll-target="sentinel" aria-hidden="true"></div>
+</div>

@@ -5,6 +5,6 @@
   <%= link_to "By collection", by_collection_admin_permissions_path, class: "nq-tab active" %>
 </div>
 <% if @warnings&.any? %>
-  <div class="nq-flash nq-flash-alert"><% @warnings.each { |w| %><p><%= w %></p><% } %></div>
+  <%= nq_flash_card nil, messages: @warnings, type: :warning, toast: false, auto_dismiss: false %>
 <% end %>
 <%= render "nquery/admin/permissions/collection" %>

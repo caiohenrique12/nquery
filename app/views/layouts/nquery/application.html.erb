@@ -20,13 +20,13 @@
       <div class="nq-main">
         <%= render "nquery/shared/topbar" %>
         <main class="nq-content" id="main_content">
-          <div id="flash">
-            <%= render "nquery/shared/flash" %>
-          </div>
           <%= render "nquery/shared/breadcrumbs" %>
           <%= yield %>
         </main>
       </div>
+    </div>
+    <div id="flash" class="nq-toast-stack" aria-live="polite" aria-atomic="false">
+      <%= render "nquery/shared/flash" %>
     </div>
   </body>
 </html>

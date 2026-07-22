@@ -9,6 +9,8 @@ RSpec.describe "Chart builder styles" do
     css = File.read(css_path)
 
     expect(css).to include(".nq-chart-builder-layout")
+    expect(css).to include("align-items: stretch")
+    expect(css).to include(".nq-chart-builder-schema .nq-schema-tree")
     expect(css).to include(".nq-chart-builder-title")
     expect(css).to include(".nq-workspace-tab")
     expect(css).to include(".nq-output-panel.is-active")

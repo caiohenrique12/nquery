@@ -42,7 +42,7 @@
 </div>
 
 <% if @collection.archived? %>
-  <div class="nq-flash nq-flash-alert nq-mb">This collection is archived.</div>
+  <%= nq_flash_card "This collection is archived.", type: :warning, toast: false %>
 <% end %>
 
 <% if @child_collections.empty? && @dashboards.empty? && @standalone_charts.empty? %>

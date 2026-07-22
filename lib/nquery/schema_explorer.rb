@@ -20,7 +20,8 @@ module Nquery
           columns: adapter.columns(table)
         }
       end
-    rescue StandardError
+    rescue StandardError => e
+      Rails.logger.error("[Nquery::SchemaExplorer] #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
       []
     end
   end
