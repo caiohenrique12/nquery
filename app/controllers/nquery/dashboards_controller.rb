@@ -32,7 +32,7 @@ module Nquery
       if @dashboard.update(dashboard_params)
         redirect_to dashboard_path(@dashboard), notice: "Dashboard updated."
       else
-        render :edit, status: :unprocessable_entity
+        render :edit, status: :unprocessable_content
       end
     end
 

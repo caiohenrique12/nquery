@@ -72,7 +72,7 @@ Nquery::Engine.routes.draw do
   post "signup", to: "registrations#create"
 
   namespace :embed do
-    get "charts/:token", to: "charts#show", as: :public_chart
-    get "dashboards/:token", to: "dashboards#show", as: :public_dashboard
+    get "charts/show", to: "charts#show", as: :public_chart
+    get "dashboards/show", to: "dashboards#show", as: :public_dashboard
   end
 end

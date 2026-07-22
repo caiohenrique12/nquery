@@ -6,11 +6,13 @@
     <% unless chart.persisted? %>
       <p class="nq-chart-builder-eyebrow">New chart</p>
     <% end %>
-    <%= f.text_field :name,
-                     placeholder: "Chart name",
-                     class: "nq-input nq-chart-builder-title",
-                     aria: { label: "Chart name" },
-                     data: { chart_builder_target: "name", action: "input->chart-builder#syncName" } %>
+    <div class="nq-chart-builder-name">
+      <%= f.text_field :name,
+                       placeholder: "Chart name",
+                       class: "nq-input",
+                       aria: { label: "Chart name" },
+                       data: { chart_builder_target: "name", action: "input->chart-builder#syncName" } %>
+    </div>
     <% if chart.persisted? %>
       <% if local_assigns[:dashboard] %>
         <p class="nq-muted nq-resource-meta">On <%= dashboard.name %>. Update the query and visualization below.</p>

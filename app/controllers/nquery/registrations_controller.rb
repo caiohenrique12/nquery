@@ -18,7 +18,7 @@ module Nquery
         session[:nquery_user_id] = @user.id
         redirect_to root_path, notice: "Welcome to nquery!"
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 

@@ -1,6 +1,28 @@
 # frozen_string_literal: true
 
-require "nquery/version"
+require "simplecov"
+
+SimpleCov.start do
+  enable_coverage :branch
+
+  add_filter "/spec/"
+  add_filter "/server/"
+  add_filter "/lib/generators/"
+  add_filter "/lib/tasks/"
+  add_filter "/lib/nquery/seeder.rb"
+  add_filter "/lib/nquery/sample_data/"
+
+  track_files "{app,lib}/**/*.rb"
+
+  add_group "Models", "app/models"
+  add_group "Controllers", "app/controllers"
+  add_group "Components", "app/components"
+  add_group "Helpers", "app/helpers"
+  add_group "Lib", "lib"
+end
+
+$LOADED_FEATURES.delete_if { |path| path.end_with?("nquery/version.rb") }
+load File.expand_path("../lib/nquery/version.rb", __dir__)
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

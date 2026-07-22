@@ -1,0 +1,9 @@
+<h1><%= @chart.name %></h1>
+
+<div class="nq-card nq-chart-preview" data-controller="chart-preview"
+     data-chart-preview-type-value="<%= @chart.chart_type %>"
+     data-chart-preview-x-value="<%= @chart.visualization.to_h["x"] %>"
+     data-chart-preview-y-value="<%= @chart.visualization.to_h["y"] %>"
+     data-chart-preview-data-value="<%= @result.to_json %>">
+  <canvas data-chart-preview-target="canvas" height="120"></canvas>
+</div>

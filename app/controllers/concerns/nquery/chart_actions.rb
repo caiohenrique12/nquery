@@ -32,7 +32,7 @@ module Nquery
         end
       else
         load_chart_builder_assigns
-        render "nquery/charts/edit", status: :unprocessable_entity
+        render "nquery/charts/edit", status: :unprocessable_content
       end
     end
 

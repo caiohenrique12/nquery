@@ -29,7 +29,7 @@ module Nquery
         redirect_to edit_chart_path(@chart), notice: "Chart created."
       else
         load_chart_builder_assigns
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 

@@ -20,7 +20,8 @@ module Nquery
         redirect_to edit_query_path(@query), notice: "Query created."
       else
         @data_sources = DataSource.active.order(:name)
-        render :new, status: :unprocessable_entity
+        @schema_tables = schema_tables
+        render :new, status: :unprocessable_content
       end
     end
 
@@ -39,10 +40,10 @@ module Nquery
         @data_sources = DataSource.active.order(:name)
         @schema_tables = schema_tables
         respond_to do |format|
-          format.html { render :edit, status: :unprocessable_entity }
+          format.html { render :edit, status: :unprocessable_content }
           format.json {
             render json: { error: @query.errors.full_messages.to_sentence.presence || "Query could not be saved." },
-                   status: :unprocessable_entity
+                   status: :unprocessable_content
           }
         end
       end
@@ -62,7 +63,7 @@ module Nquery
     rescue QueryRunner::PermissionError => e
       render json: { error: e.message }, status: :forbidden
     rescue QueryRunner::Error => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      render json: { error: e.message }, status: :unprocessable_content
     end
 
     def schema

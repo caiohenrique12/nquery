@@ -17,5 +17,12 @@ RSpec.describe Nquery::SchemaExplorer do
     it "returns an empty array when data source is nil" do
       expect(described_class.tables_for(nil)).to eq([])
     end
+
+    it "returns an empty array and logs when adapter introspection fails" do
+      allow(Nquery::DataSources::Adapter).to receive(:for).and_raise(StandardError, "boom")
+      expect(Rails.logger).to receive(:error).with(/SchemaExplorer/)
+
+      expect(described_class.tables_for(data_source)).to eq([])
+    end
   end
 end
