@@ -33,11 +33,19 @@ RSpec.describe "Nquery::Charts", type: :request do
 
       expect(response.body).to include("New chart")
       expect(response.body).to include('data-controller="chart-builder"')
+      expect(response.body).to include("Format SQL")
       expect(response.body).to include("Run query")
+      expect(response.body).to include("nq-sql-editor-shell")
+      expect(response.body).to include("nq-sql-editor-hint")
+      expect(response.body).to include("nq-sql-save-status")
+      expect(response.body).to include('data-chart-builder-target="formatButton"')
+      expect(response.body).to include("nq-schema-toggle")
+      expect(response.body).to include("nq-schema-column-type")
       expect(response.body).to include("Output")
       expect(response.body).to include('class="nq-output-tab is-active"')
       expect(response.body).to include('data-tab="chart"')
       expect(response.body).to include("Save chart")
+      expect(response.body).not_to include("data-query-save-url=")
       expect(response.body).not_to include('data-controller="query-editor"')
     end
   end
@@ -63,7 +71,7 @@ RSpec.describe "Nquery::Charts", type: :request do
 
       chart = Nquery::Chart.find_by!(name: "Standalone trend")
       expect(chart.collection).to eq(root_collection)
-      expect(response).to redirect_to("/charts/#{chart.id}")
+      expect(response).to redirect_to("/charts/#{chart.id}/edit")
     end
   end
 
@@ -110,7 +118,7 @@ RSpec.describe "Nquery::Charts", type: :request do
       chart = Nquery::Chart.find_by!(name: "Signups trend")
       expect(chart.collection).to eq(root_collection)
       expect(chart.dashboard_cards.first.dashboard).to eq(dashboard)
-      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}")
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/edit")
     end
   end
 
@@ -161,6 +169,64 @@ RSpec.describe "Nquery::Charts", type: :request do
     end
   end
 
+  describe "GET /dashboards/:dashboard_id/charts/:id/edit" do
+    let!(:chart) do
+      query = Nquery::Query.create!(
+        name: "Signups trend",
+        statement: "SELECT 1 AS value",
+        data_source: data_source,
+        creator: admin,
+        collection: root_collection
+      )
+      Nquery::Chart.create!(
+        name: "Signups trend",
+        query: query,
+        collection: root_collection,
+        creator: admin,
+        visualization: { "type" => "bar", "x" => "value", "y" => "value" }
+      ).tap do |created_chart|
+        dashboard.dashboard_cards.create!(chart: created_chart, pos_x: 0, pos_y: 0, width: 6, height: 4)
+      end
+    end
+
+    before { sign_in_as_admin }
+
+    it "returns success" do
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "highlights dashboards in the sidebar" do
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response.body).to include('class="nq-nav-link active" href="/dashboards"')
+    end
+
+    it "renders the same chart builder form as new" do
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response.body).to include("nq-chart-builder-title")
+      expect(response.body).to include('value="Signups trend"')
+      expect(response.body).to include('data-controller="chart-builder"')
+      expect(response.body).to include("Format SQL")
+      expect(response.body).to include("Run query")
+      expect(response.body).to include("nq-sql-editor-shell")
+      expect(response.body).to include("nq-sql-editor-hint")
+      expect(response.body).to include("nq-sql-save-status")
+      expect(response.body).to include('data-chart-builder-target="formatButton"')
+      expect(response.body).to include("data-query-save-url=\"/queries/#{chart.query.id}\"")
+      expect(response.body).to include("nq-schema-toggle")
+      expect(response.body).to include("nq-schema-column-type")
+      expect(response.body).to include("Output")
+      expect(response.body).to include("Save chart")
+      expect(response.body).to include("SELECT 1 AS value")
+      expect(response.body).to include('value="bar"')
+      expect(response.body).not_to include('data-controller="query-editor"')
+      expect(response.body).not_to include('data-controller="chart-preview"')
+    end
+  end
+
   describe "PATCH /dashboards/:dashboard_id/charts/:id" do
     let!(:chart) do
       query = Nquery::Query.create!(
@@ -183,13 +249,48 @@ RSpec.describe "Nquery::Charts", type: :request do
 
     before { sign_in_as_admin }
 
-    it "updates the chart and redirects to the nested show page" do
+    it "updates the chart and redirects to the nested edit page" do
       patch "/dashboards/#{dashboard.id}/charts/#{chart.id}", params: {
-        chart: { name: "Signups updated" }
+        chart: {
+          name: "Signups updated",
+          query_attributes: {
+            id: chart.query.id,
+            name: "Signups updated",
+            statement: "SELECT 2 AS value",
+            data_source_id: data_source.id
+          },
+          visualization: { type: "line", x: "value", y: "value" }
+        }
       }
 
-      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}")
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/edit")
       expect(chart.reload.name).to eq("Signups updated")
+      expect(chart.query.statement).to eq("SELECT 2 AS value")
+      expect(chart.visualization["type"]).to eq("line")
+    end
+
+    it "updates the chart via turbo stream without redirecting" do
+      patch "/dashboards/#{dashboard.id}/charts/#{chart.id}",
+            params: {
+              chart: {
+                name: "Signups streamed",
+                query_attributes: {
+                  id: chart.query.id,
+                  name: "Signups streamed",
+                  statement: "SELECT 3 AS value",
+                  data_source_id: data_source.id
+                },
+                visualization: { type: "bar", x: "value", y: "value" }
+              }
+            },
+            as: :turbo_stream
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq(Mime[:turbo_stream])
+      expect(response.body).to include('turbo-stream action="update" target="flash"')
+      expect(response.body).to include("Chart updated.")
+      expect(chart.reload.name).to eq("Signups streamed")
+      expect(chart.query.statement).to eq("SELECT 3 AS value")
     end
   end
 

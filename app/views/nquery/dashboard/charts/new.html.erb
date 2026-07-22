@@ -1,7 +1,6 @@
-<%= render "nquery/charts/new_header", dashboard: @dashboard %>
-
 <%= render "nquery/charts/builder_form",
            chart: @chart,
+           dashboard: @dashboard,
            form_url: dashboard_charts_path(@dashboard),
            data_sources: @data_sources,
-           schema_tables: @schema_tables %>
+           schema: @schema %>

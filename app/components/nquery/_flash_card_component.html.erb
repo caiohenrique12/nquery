@@ -1,0 +1,32 @@
+<div
+  class="<%= component.css_class %>"
+  role="<%= component.role %>"
+  data-controller="flash-card"
+  data-flash-card-auto-dismiss-value="<%= component.auto_dismiss? %>"
+  data-flash-card-delay-value="<%= component.delay %>"
+  data-flash-card-toast-value="<%= component.toast? %>"
+  <%= "hidden" if component.toast? %>
+>
+  <div class="nq-flash-card-icon" aria-hidden="true">
+    <% case component.type %>
+    <% when :notice %>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <% when :alert %>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 6v5M10 14h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/></svg>
+    <% when :warning %>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 7v4M10 14h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3.5 16h13L10 4 3.5 16z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <% when :info %>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5M10 6h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <% end %>
+  </div>
+  <div class="nq-flash-card-body">
+    <% component.messages.each do |message| %>
+      <p><%= message %></p>
+    <% end %>
+  </div>
+  <% if component.dismissible? %>
+    <button type="button" class="nq-flash-card-dismiss" aria-label="Dismiss" data-action="flash-card#dismiss">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  <% end %>
+</div>

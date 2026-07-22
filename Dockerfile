@@ -1,7 +1,7 @@
 FROM ruby:3.3-slim
 
 RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends build-essential git libpq-dev curl chromium chromium-driver && \
+    apt-get install -y --no-install-recommends build-essential git libsqlite3-dev curl chromium chromium-driver && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

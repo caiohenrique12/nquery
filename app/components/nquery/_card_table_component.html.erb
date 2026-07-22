@@ -1,0 +1,14 @@
+<div class="<%= component.css_class %>">
+  <table class="<%= component.table_class %>">
+    <thead>
+      <tr>
+        <% component.columns.each do |column| %>
+          <th><%= column %></th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <%= content %>
+    </tbody>
+  </table>
+</div>

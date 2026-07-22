@@ -5,16 +5,17 @@ SQL charts, dashboards, and data visualization for Rails — mountable engine ge
 ## What this is
 
 - **`lib/` + `app/`** — the gem (mount in any Rails app)
-- **`server/`** — thin demo app to run the UI locally without Ruby on your machine
+- **`server/`** — thin demo app to run the UI locally (SQLite, no external database)
 - **Docker + Makefile** — local dev only (MVP)
 
 ## Quick start (no Ruby required)
 
 ```bash
 cp .env.example .env
-make setup
 make up
 ```
+
+`make up` builds the image, runs migrations, seeds demo data, and starts the server — no separate seed step needed.
 
 Open http://localhost:3000 — login: `admin@nquery.dev` / `password123`
 
@@ -22,8 +23,8 @@ Open http://localhost:3000 — login: `admin@nquery.dev` / `password123`
 
 | Command | Description |
 |---------|-------------|
-| `make up` | Start server + PostgreSQL |
-| `make setup` | Build image, migrate, seed |
+| `make up` | Build, migrate, seed, and start server |
+| `make setup` | Migrate and seed only (without starting server) |
 | `make test` | Run RSpec |
 | `make console` | Rails console |
 

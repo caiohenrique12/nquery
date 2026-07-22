@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Prepares the demo database: install gems, migrate, and seed demo data.
 set -e
 cd "$(dirname "$0")/.."
 bundle check || bundle install

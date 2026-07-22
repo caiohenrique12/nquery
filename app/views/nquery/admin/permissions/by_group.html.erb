@@ -6,9 +6,7 @@
 </div>
 
 <% if @warnings&.any? %>
-  <div class="nq-flash nq-flash-alert">
-    <% @warnings.each do |warning| %><p><%= warning %></p><% end %>
-  </div>
+  <%= nq_flash_card nil, messages: @warnings, type: :warning, toast: false, auto_dismiss: false %>
 <% end %>
 
 <%= render "nquery/admin/permissions/#{@view}" %>

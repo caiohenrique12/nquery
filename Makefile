@@ -1,12 +1,17 @@
-.PHONY: up restart setup test console bash shell
+.PHONY: up down restart debug setup test console bash shell
 
-up: ## Start app + db
-	docker compose up
+up: ## Build, migrate, seed, and start app
+	docker compose up --build
 
-restart: ## Restart app + db
-	docker compose restart
+down: ## Stop all services and remove orphans
+	docker compose down --remove-orphans
 
-setup: ## Build, migrate, seed
+restart: down up ## Stop and restart all services
+
+debug: ## Start app with Ruby debugger (attach on port 12345)
+	docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+
+setup: ## Migrate and seed without starting server
 	docker compose run --rm nquery bin/setup
 
 test: ## Run RSpec

@@ -1,10 +1,29 @@
-<div class="nq-page-header">
-  <div>
-    <h1>New chart</h1>
-    <% if local_assigns[:dashboard] %>
-      <p class="nq-muted">Add a chart to <%= dashboard.name %>. Run your query, preview results, then choose a visualization.</p>
+<% chart = local_assigns[:chart] %>
+<% f = local_assigns.fetch(:f) %>
+
+<header class="nq-page-header nq-chart-builder-header">
+  <div class="nq-chart-builder-header-main">
+    <% unless chart.persisted? %>
+      <p class="nq-chart-builder-eyebrow">New chart</p>
+    <% end %>
+    <%= f.text_field :name,
+                     placeholder: "Chart name",
+                     class: "nq-input nq-chart-builder-title",
+                     aria: { label: "Chart name" },
+                     data: { chart_builder_target: "name", action: "input->chart-builder#syncName" } %>
+    <% if chart.persisted? %>
+      <% if local_assigns[:dashboard] %>
+        <p class="nq-muted nq-resource-meta">On <%= dashboard.name %>. Update the query and visualization below.</p>
+      <% else %>
+        <p class="nq-muted nq-resource-meta">Update the query, preview results, then adjust the visualization.</p>
+      <% end %>
+    <% elsif local_assigns[:dashboard] %>
+      <p class="nq-muted nq-resource-meta">Adding to <%= dashboard.name %>. Run your query, preview results, then choose a visualization.</p>
     <% else %>
-      <p class="nq-muted">Write a query, preview the results, then pick how to visualize them.</p>
+      <p class="nq-muted nq-resource-meta">Write a query, preview the results, then pick how to visualize them.</p>
     <% end %>
   </div>
-</div>
+  <div class="nq-actions">
+    <%= f.submit "Save chart", class: "nq-btn nq-btn-primary" %>
+  </div>
+</header>

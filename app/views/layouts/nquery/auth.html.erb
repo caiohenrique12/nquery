@@ -9,5 +9,8 @@
   </head>
   <body class="nq-body nq-auth-body">
     <%= yield %>
+    <div id="flash" class="nq-toast-stack" aria-live="polite" aria-atomic="false">
+      <%= render "nquery/shared/flash" %>
+    </div>
   </body>
 </html>

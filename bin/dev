@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Starts the demo server. Runs bin/setup first (migrate + seed) on every boot.
 set -e
 cd "$(dirname "$0")/.."
 bin/setup

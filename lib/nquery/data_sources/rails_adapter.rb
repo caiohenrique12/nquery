@@ -6,7 +6,7 @@ module Nquery
   module DataSources
     class RailsAdapter < Adapter
       def tables
-        connection.tables.reject { |t| t.start_with?("ar_", "nquery_") || t == "schema_migrations" }
+        connection.tables.reject { |t| hidden_table?(t) }
       end
 
       def columns(table_name)
@@ -29,6 +29,13 @@ module Nquery
       end
 
       private
+
+      def hidden_table?(table_name)
+        return true if table_name.start_with?("ar_") || table_name == "schema_migrations"
+        return false if table_name.start_with?("nquery_sample_")
+
+        table_name.start_with?("nquery_")
+      end
 
       def connection
         ActiveRecord::Base.connection

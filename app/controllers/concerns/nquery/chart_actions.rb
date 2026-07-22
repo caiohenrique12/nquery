@@ -17,15 +17,21 @@ module Nquery
     end
 
     def edit
-      @chart_types = Chart::CHART_TYPES
+      load_chart_builder_assigns
       render "nquery/charts/edit"
     end
 
     def update
       if @chart.update(chart_params)
-        redirect_to after_chart_update_path, notice: "Chart updated."
+        respond_to do |format|
+          format.html { redirect_to after_chart_save_path, notice: "Chart updated." }
+          format.turbo_stream do
+            flash.now[:notice] = "Chart updated."
+            render template: "nquery/charts/update"
+          end
+        end
       else
-        @chart_types = Chart::CHART_TYPES
+        load_chart_builder_assigns
         render "nquery/charts/edit", status: :unprocessable_entity
       end
     end
@@ -56,11 +62,11 @@ module Nquery
       authorize_collection_access!(@chart.collection, required: :curate)
     end
 
-    def after_chart_update_path
+    def after_chart_save_path
       if chart_dashboard
-        dashboard_chart_path(chart_dashboard, @chart)
+        edit_dashboard_chart_path(chart_dashboard, @chart)
       else
-        chart_path(@chart)
+        edit_chart_path(@chart)
       end
     end
 
@@ -79,7 +85,20 @@ module Nquery
     end
 
     def chart_params
-      params.require(:chart).permit(:name, visualization: {})
+      params.require(:chart).permit(
+        :name,
+        visualization: {},
+        query_attributes: %i[id name statement data_source_id]
+      )
+    end
+
+    def load_chart_builder_assigns
+      @data_sources = DataSource.active.order(:name)
+      @schema = schema_for(@chart&.query&.data_source)
+    end
+
+    def schema_for(data_source = nil)
+      Nquery::SchemaExplorer.tables_for(data_source || DataSource.first)
     end
   end
 end

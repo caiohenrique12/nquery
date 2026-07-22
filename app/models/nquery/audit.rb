@@ -8,9 +8,16 @@ module Nquery
     scope :recent, -> { order(created_at: :desc) }
 
     scope :for_user, lambda { |term|
+      pattern = "%#{sanitize_sql_like(term.downcase)}%"
+      full_name_sql = if connection.adapter_name.downcase.include?("mysql")
+        "CONCAT(nquery_users.first_name, ' ', nquery_users.last_name)"
+      else
+        "nquery_users.first_name || ' ' || nquery_users.last_name"
+      end
+
       joins(:user).where(
-        "nquery_users.email ILIKE :q OR (nquery_users.first_name || ' ' || nquery_users.last_name) ILIKE :q",
-        q: "%#{sanitize_sql_like(term)}%"
+        "LOWER(nquery_users.email) LIKE :q OR LOWER(#{full_name_sql}) LIKE :q",
+        q: pattern
       )
     }
 

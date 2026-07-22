@@ -35,7 +35,7 @@
 </div>
 
 <% if @dashboard.archived? %>
-  <div class="nq-flash nq-flash-alert nq-mb">This dashboard is archived.</div>
+  <%= nq_flash_card "This dashboard is archived.", type: :warning, toast: false %>
 <% end %>
 
 <div class="nq-dashboard-grid" data-controller="dashboard-grid">

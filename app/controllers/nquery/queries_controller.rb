@@ -31,11 +31,20 @@ module Nquery
 
     def update
       if @query.update(query_params)
-        redirect_to edit_query_path(@query), notice: "Query saved."
+        respond_to do |format|
+          format.html { redirect_to edit_query_path(@query), notice: "Query saved." }
+          format.json { render json: { ok: true, notice: "Query saved." } }
+        end
       else
         @data_sources = DataSource.active.order(:name)
         @schema_tables = schema_tables
-        render :edit, status: :unprocessable_entity
+        respond_to do |format|
+          format.html { render :edit, status: :unprocessable_entity }
+          format.json {
+            render json: { error: @query.errors.full_messages.to_sentence.presence || "Query could not be saved." },
+                   status: :unprocessable_entity
+          }
+        end
       end
     end
 
@@ -57,8 +66,7 @@ module Nquery
     end
 
     def schema
-      adapter = DataSources::Adapter.for(@data_source)
-      render json: { tables: adapter.tables }
+      render json: { tables: Nquery::SchemaExplorer.tables_for(@data_source) }
     end
 
     private

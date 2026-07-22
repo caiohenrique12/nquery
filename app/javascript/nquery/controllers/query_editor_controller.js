@@ -33,8 +33,9 @@ export default class extends Controller {
     const dataSourceId = this.dataSourceTarget.value
     const response = await fetch(`/queries/schema?data_source_id=${dataSourceId}`)
     const data = await response.json()
-    this.schemaTarget.innerHTML = data.tables.map(t =>
-      `<li class="nq-tree-item" data-action="click->query-editor#insertTable" data-table="${t}">${t}</li>`
-    ).join("")
+    this.schemaTarget.innerHTML = data.tables.map(t => {
+      const name = typeof t === "string" ? t : t.name
+      return `<li class="nq-tree-item" data-action="click->query-editor#insertTable" data-table="${name}">${name}</li>`
+    }).join("")
   }
 }

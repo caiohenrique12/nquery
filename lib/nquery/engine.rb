@@ -4,6 +4,9 @@ module Nquery
   class Engine < ::Rails::Engine
     isolate_namespace Nquery
 
+    config.autoload_paths << root.join("app/components")
+    config.eager_load_paths << root.join("app/components")
+
     config.generators do |g|
       g.test_framework :rspec
     end
@@ -36,6 +39,12 @@ module Nquery
     initializer "nquery.config" do
       Nquery.configure do |config|
         config.authentication_mode = ENV.fetch("NQUERY_AUTHENTICATION_MODE", "standalone").to_sym
+      end
+    end
+
+    initializer "nquery.components" do
+      ActiveSupport.on_load(:action_controller) do
+        append_view_path Nquery::Engine.root.join("app/components")
       end
     end
 

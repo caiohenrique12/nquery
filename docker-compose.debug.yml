@@ -1,0 +1,8 @@
+services:
+  nquery:
+    ports:
+      - "12345:12345"
+    environment:
+      RUBY_DEBUG_OPEN: "true"
+      RUBY_DEBUG_HOST: "0.0.0.0"
+      RUBY_DEBUG_PORT: "12345"
