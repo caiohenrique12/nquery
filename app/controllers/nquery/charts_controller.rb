@@ -10,13 +10,12 @@ module Nquery
     def new
       @chart = Chart.new
       @chart.build_query(statement: "SELECT 1 AS example")
-      @data_sources = DataSource.active.order(:name)
-      @schema_tables = schema_tables
+      load_chart_builder_assigns
     end
 
     def create
       @chart = Chart.new(
-        chart_create_params.merge(
+        chart_params.merge(
           creator: current_nquery_user,
           collection: @root_collection
         )
@@ -27,10 +26,9 @@ module Nquery
       @chart.query&.collection = @root_collection
 
       if @chart.save
-        redirect_to chart_path(@chart), notice: "Chart created."
+        redirect_to edit_chart_path(@chart), notice: "Chart created."
       else
-        @data_sources = DataSource.active.order(:name)
-        @schema_tables = schema_tables
+        load_chart_builder_assigns
         render :new, status: :unprocessable_entity
       end
     end
@@ -48,23 +46,6 @@ module Nquery
 
     def set_chart
       @chart = Chart.find(params[:id])
-    end
-
-    def chart_create_params
-      params.require(:chart).permit(
-        :name,
-        visualization: {},
-        query_attributes: %i[name statement data_source_id]
-      )
-    end
-
-    def schema_tables
-      data_source = DataSource.first
-      return [] unless data_source
-
-      DataSources::Adapter.for(data_source).tables
-    rescue StandardError
-      []
     end
   end
 end

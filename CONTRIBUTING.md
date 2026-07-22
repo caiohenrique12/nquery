@@ -39,16 +39,17 @@ You can develop with Docker (recommended) or with Ruby installed locally.
 
 ```bash
 cp .env.example .env
-make setup
 make up
 ```
+
+`make up` builds the image, runs migrations, seeds demo data, and starts the server automatically.
 
 Useful commands:
 
 | Command | Description |
 |---------|-------------|
-| `make up` | Start server + PostgreSQL |
-| `make setup` | Build image, migrate, seed |
+| `make up` | Build, migrate, seed, and start server |
+| `make setup` | Migrate and seed only (without starting server) |
 | `make test` | Run RSpec |
 | `make console` | Rails console |
 | `make shell` | Bash inside the container |
@@ -57,7 +58,7 @@ The demo app runs at http://localhost:3000 (`admin@nquery.dev` / `password123`).
 
 ### Local Ruby
 
-Requirements: Ruby >= 3.2, PostgreSQL.
+Requirements: Ruby >= 3.2, SQLite.
 
 ```bash
 bundle install
@@ -84,10 +85,12 @@ Before requesting review, please confirm:
 ## Project structure
 
 - `lib/` and `app/` — the mountable engine gem
-- `server/` — thin demo Rails app for local development
+- `server/` — thin demo Rails app for local development (SQLite)
 - `spec/` — RSpec tests for the gem
 
 When changing engine code, verify behavior through the demo app when UI or routing is affected.
+
+Host apps install nquery migrations into their own database (Devise-style). The demo app uses SQLite for local development; production host apps can use PostgreSQL, MySQL, or SQLite.
 
 ## Code style
 

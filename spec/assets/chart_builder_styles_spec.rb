@@ -12,5 +12,11 @@ RSpec.describe "Chart builder styles" do
     expect(css).to include(".nq-output-panel.is-active")
     expect(css).to include(".nq-output-tab")
     expect(css).to include(".nq-chart-builder-results [hidden]")
+    expect(css).to include(".nq-schema-tree")
+    expect(css).to include(".nq-schema-column-type")
+    expect(css).to include(".nq-sql-editor-shell")
+    expect(css).to include(".nq-chart-builder-query .CodeMirror")
+    expect(css).to include(".nq-sql-save-status")
+    expect(css).to include('.nq-btn:disabled')
   end
 end

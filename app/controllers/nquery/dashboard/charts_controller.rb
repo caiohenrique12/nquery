@@ -11,8 +11,7 @@ module Nquery
     def new
       @chart = Chart.new
       @chart.build_query(statement: "SELECT 1 AS example")
-      @data_sources = DataSource.active.order(:name)
-      @schema_tables = schema_tables
+      load_chart_builder_assigns
     end
 
     def create
@@ -35,10 +34,9 @@ module Nquery
           width: 6,
           height: 4
         )
-        redirect_to dashboard_chart_path(@dashboard, @chart), notice: "Chart created."
+        redirect_to edit_dashboard_chart_path(@dashboard, @chart), notice: "Chart created."
       else
-        @data_sources = DataSource.active.order(:name)
-        @schema_tables = schema_tables
+        load_chart_builder_assigns
         render :new, status: :unprocessable_entity
       end
     end
@@ -59,23 +57,6 @@ module Nquery
 
     def authorize_dashboard_curate!
       authorize_collection_access!(@dashboard.collection, required: :curate)
-    end
-
-    def chart_params
-      params.require(:chart).permit(
-        :name,
-        visualization: {},
-        query_attributes: %i[name statement data_source_id]
-      )
-    end
-
-    def schema_tables
-      data_source = DataSource.first
-      return [] unless data_source
-
-      DataSources::Adapter.for(data_source).tables
-    rescue StandardError
-      []
     end
   end
 end

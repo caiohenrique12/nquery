@@ -1,4 +1,12 @@
-<%= form_with model: chart, url: form_url, class: "nq-form nq-chart-builder-form", html: { data: { controller: "chart-builder" } } do |f| %>
+<% viz = chart.visualization.is_a?(Hash) ? chart.visualization : {} %>
+<% chart_type = viz["type"].presence || "table" %>
+<% active_chart_type = chart_builder_chart_types.include?(chart_type) ? chart_type : "bar" %>
+<%= form_with model: chart, url: form_url, class: "nq-form nq-chart-builder-form", html: {
+      data: {
+        controller: "chart-builder",
+        query_save_url: chart.query&.persisted? ? query_path(chart.query) : nil
+      }
+    } do |f| %>
   <div class="nq-chart-builder">
     <header class="nq-chart-builder-toolbar">
       <div class="nq-chart-builder-toolbar-main">
@@ -15,11 +23,7 @@
     <div class="nq-chart-builder-layout">
       <aside class="nq-card nq-chart-builder-panel nq-chart-builder-schema">
         <h3 class="nq-panel-title">Schema</h3>
-        <ul class="nq-tree" data-chart-builder-target="schema">
-          <% schema_tables.each do |table| %>
-            <li class="nq-tree-item" data-action="click->chart-builder#insertTable" data-table="<%= table %>"><%= table %></li>
-          <% end %>
-        </ul>
+        <%= render "nquery/charts/schema_tree", schema: schema %>
       </aside>
 
       <section class="nq-card nq-chart-builder-panel nq-chart-builder-query">
@@ -40,25 +44,38 @@
         </div>
 
         <%= f.fields_for :query do |query_fields| %>
-          <%= query_fields.text_area :statement,
-                                   rows: 16,
-                                   class: "nq-textarea nq-sql-editor",
-                                   placeholder: "SELECT ...",
-                                   data: { chart_builder_target: "statement" } %>
+          <div class="nq-sql-editor-shell">
+            <%= query_fields.text_area :statement,
+                                     rows: 16,
+                                     class: "nq-textarea nq-sql-editor",
+                                     placeholder: "SELECT ...",
+                                     spellcheck: false,
+                                     data: { chart_builder_target: "statement" } %>
+          </div>
           <%= query_fields.hidden_field :name, data: { chart_builder_target: "queryName" } %>
         <% end %>
 
         <div class="nq-chart-builder-query-actions">
-          <button type="button" class="nq-btn nq-btn-primary" data-action="click->chart-builder#run">
+          <button type="button"
+                  class="nq-btn"
+                  data-manages-loading="true"
+                  data-action="click->chart-builder#format"
+                  data-chart-builder-target="formatButton">
+            <%= nq_icon(:format) %>
+            <span>Format SQL</span>
+          </button>
+          <button type="button" class="nq-btn nq-btn-primary" data-manages-loading="true" data-action="click->chart-builder#run">
             Run query
           </button>
+          <span class="nq-sql-save-status nq-muted" data-chart-builder-target="saveStatus" hidden></span>
+          <span class="nq-sql-editor-hint nq-muted">⌘↵ run · ⌘⇧F format</span>
         </div>
       </section>
 
       <section class="nq-card nq-chart-builder-panel nq-chart-builder-results">
-        <input type="hidden" name="chart[visualization][type]" value="table" data-chart-builder-target="typeField">
-        <input type="hidden" name="chart[visualization][x]" data-chart-builder-target="xField">
-        <input type="hidden" name="chart[visualization][y]" data-chart-builder-target="yField">
+        <input type="hidden" name="chart[visualization][type]" value="<%= chart_type %>" data-chart-builder-target="typeField">
+        <input type="hidden" name="chart[visualization][x]" value="<%= viz["x"] %>" data-chart-builder-target="xField">
+        <input type="hidden" name="chart[visualization][y]" value="<%= viz["y"] %>" data-chart-builder-target="yField">
 
         <div class="nq-output-header">
           <div class="nq-output-header-main">
@@ -113,7 +130,7 @@
               <div class="nq-viz-types" role="radiogroup" aria-label="Chart type">
                 <% chart_builder_chart_types.each do |type| %>
                   <button type="button"
-                          class="nq-viz-type<%= " is-active" if type == "bar" %>"
+                          class="nq-viz-type<%= " is-active" if type == active_chart_type %>"
                           data-chart-builder-target="typeButton"
                           data-type="<%= type %>">
                     <%= type.titleize %>

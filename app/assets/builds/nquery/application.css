@@ -50,7 +50,17 @@ body.nq-body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe
 .nq-panel-title { margin: 0; font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nq-muted); }
 .nq-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
 .nq-input-sm { max-width: 12rem; font-size: 0.875rem; }
+.nq-sql-editor-shell { flex: 1; min-height: 18rem; display: flex; flex-direction: column; }
 .nq-sql-editor { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; line-height: 1.5; min-height: 18rem; resize: vertical; }
+.nq-chart-builder-query .CodeMirror { flex: 1; height: auto !important; min-height: 18rem; border: 1px solid var(--nq-border); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875rem; background: #fff; }
+.nq-chart-builder-query .CodeMirror-scroll { min-height: 18rem; }
+.nq-chart-builder-query .CodeMirror-gutters { border-right: 1px solid var(--nq-border); background: #f8fafc; border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.nq-chart-builder-query .CodeMirror-linenumber { color: #94a3b8; padding: 0 0.5rem 0 0.25rem; min-width: 2rem; }
+.nq-chart-builder-query .CodeMirror-cursor { border-left: 2px solid var(--nq-primary); }
+.nq-chart-builder-query .CodeMirror-activeline-background { background: rgba(80, 158, 227, 0.08); }
+.nq-chart-builder-query .cm-s-eclipse .CodeMirror-selected { background: rgba(80, 158, 227, 0.2); }
+.nq-sql-editor-hint { margin-left: auto; font-size: 0.75rem; }
+.nq-sql-save-status { font-size: 0.75rem; min-width: 3.5rem; }
 .nq-chart-builder-query-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 .nq-query-meta { font-size: 0.8125rem; }
 .nq-chart-builder-results { min-height: 28rem; display: flex; flex-direction: column; }
@@ -87,6 +97,8 @@ body.nq-body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe
 .nq-mb { margin-bottom: 1rem; }
 .nq-mt { margin-top: 1rem; }
 .nq-btn { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; border: 1px solid var(--nq-border); border-radius: 6px; background: #fff; cursor: pointer; text-decoration: none; color: var(--nq-text); font-size: 0.875rem; }
+.nq-btn:disabled,
+.nq-btn[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
 .nq-icon { width: 1rem; height: 1rem; flex-shrink: 0; }
 .nq-btn-primary { background: var(--nq-primary); color: #fff; border-color: var(--nq-primary); }
 .nq-btn-primary:hover { background: var(--nq-primary-dark); }
@@ -128,6 +140,18 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-tree-item { padding: 0.375rem 0.5rem; cursor: pointer; border-radius: 4px; }
 .nq-tree-item:hover { background: #f1f5f9; }
 .nq-tree-child { padding-left: 1rem; }
+.nq-schema-tree { display: flex; flex-direction: column; gap: 0.125rem; }
+.nq-schema-table { list-style: none; }
+.nq-schema-table-header { display: flex; align-items: center; gap: 0.125rem; min-width: 0; }
+.nq-schema-toggle { flex: 0 0 auto; width: 1.5rem; height: 1.5rem; padding: 0; border: none; background: transparent; color: var(--nq-muted); cursor: pointer; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; }
+.nq-schema-toggle:hover { background: #f1f5f9; color: var(--nq-text); }
+.nq-schema-toggle-icon { transition: transform 0.15s ease; }
+.nq-schema-table.is-expanded .nq-schema-toggle-icon { transform: rotate(90deg); }
+.nq-schema-table-name { flex: 1; min-width: 0; padding: 0.375rem 0.5rem; text-align: left; font: inherit; color: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nq-schema-columns { list-style: none; padding: 0 0 0.25rem 1.75rem; margin: 0; }
+.nq-schema-column { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8125rem; }
+.nq-schema-column-name { color: var(--nq-text); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nq-schema-column-type { flex: 0 0 auto; color: var(--nq-muted); font-size: 0.75rem; text-transform: lowercase; }
 .nq-tile { padding: 1rem; border: 1px solid var(--nq-border); border-radius: 6px; }
 .nq-tile a { font-weight: 600; text-decoration: none; color: var(--nq-primary); }
 .nq-tile-link { display: block; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s; }

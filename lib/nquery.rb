@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "turbo-rails"
+
 require "nquery/version"
 require "nquery/configuration"
 require "nquery/permissions/resolver"
@@ -10,8 +12,10 @@ require "nquery/data_sources/postgresql_adapter"
 require "nquery/data_sources/mysql_adapter"
 require "nquery/data_sources/sqlite_adapter"
 require "nquery/query_runner"
+require "nquery/schema_explorer"
 require "nquery/embed_token_service"
 require "nquery/csv_importer"
+require "nquery/sample_data/ecommerce"
 require "nquery/seeder"
 require "nquery/engine"
 

@@ -1,0 +1,25 @@
+<ul class="nq-tree nq-schema-tree" data-chart-builder-target="schema">
+  <% schema.each do |table| %>
+    <li class="nq-schema-table">
+      <div class="nq-schema-table-header">
+        <button type="button"
+                class="nq-schema-toggle"
+                aria-expanded="false"
+                aria-label="Toggle <%= table[:name] %> columns">
+          <svg class="nq-schema-toggle-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="nq-schema-table-name"><%= table[:name] %></span>
+      </div>
+      <ul class="nq-schema-columns" hidden>
+        <% table[:columns].each do |column| %>
+          <li class="nq-schema-column">
+            <span class="nq-schema-column-name"><%= column[:name] %></span>
+            <span class="nq-schema-column-type"><%= column[:type] %></span>
+          </li>
+        <% end %>
+      </ul>
+    </li>
+  <% end %>
+</ul>

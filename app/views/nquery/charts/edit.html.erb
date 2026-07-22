@@ -1,31 +1,10 @@
-<div class="nq-page-header">
-  <h1>Edit chart: <%= @chart.name %></h1>
-</div>
+<%= render "nquery/charts/new_header",
+           title: "Edit chart",
+           dashboard: @dashboard,
+           chart: @chart %>
 
-<%= form_with model: @chart, url: chart_form_path(@chart), method: :patch, class: "nq-form" do |f| %>
-  <div class="nq-grid nq-grid-2">
-    <div class="nq-card">
-      <div class="nq-form-row">
-        <%= f.label :name %>
-        <%= f.text_field :name, class: "nq-input" %>
-      </div>
-      <div class="nq-form-row">
-        <label>Chart type</label>
-        <div class="nq-chart-types">
-          <% @chart_types.each do |type| %>
-            <label class="nq-radio">
-              <input type="radio" name="chart[visualization][type]" value="<%= type %>"
-                     <%= "checked" if @chart.chart_type == type %>>
-              <%= type.titleize %>
-            </label>
-          <% end %>
-        </div>
-      </div>
-      <%= f.submit "Save", class: "nq-btn nq-btn-primary" %>
-    </div>
-    <div class="nq-card" data-controller="chart-preview"
-         data-chart-preview-type-value="<%= @chart.chart_type %>">
-      <canvas data-chart-preview-target="canvas" height="120"></canvas>
-    </div>
-  </div>
-<% end %>
+<%= render "nquery/charts/builder_form",
+           chart: @chart,
+           form_url: chart_form_path(@chart),
+           data_sources: @data_sources,
+           schema: @schema %>

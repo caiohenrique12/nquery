@@ -1,17 +1,18 @@
 # frozen_string_literal: true
 
 default: &default
-  adapter: postgresql
-  encoding: unicode
+  adapter: sqlite3
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  url: <%= ENV.fetch("DATABASE_URL", "postgres://nquery:nquery@localhost:5432/nquery_dev") %>
+  timeout: 5000
 
 development:
   <<: *default
+  database: <%= Rails.root.join("db/development.sqlite3") %>
 
 test:
   <<: *default
-  url: <%= ENV.fetch("DATABASE_URL", "postgres://nquery:nquery@db:5432/nquery_test") %>
+  database: <%= Rails.root.join("db/test.sqlite3") %>
 
 production:
   <<: *default
+  database: <%= Rails.root.join("db/production.sqlite3") %>

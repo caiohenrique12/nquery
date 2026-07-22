@@ -1,7 +1,15 @@
+<% title = local_assigns.fetch(:title, "New chart") %>
+<% chart = local_assigns[:chart] %>
 <div class="nq-page-header">
   <div>
-    <h1>New chart</h1>
-    <% if local_assigns[:dashboard] %>
+    <h1><%= title %></h1>
+    <% if chart&.persisted? %>
+      <% if local_assigns[:dashboard] %>
+        <p class="nq-muted">Update the query and visualization for this chart on <%= dashboard.name %>.</p>
+      <% else %>
+        <p class="nq-muted">Update the query, preview results, then adjust the visualization.</p>
+      <% end %>
+    <% elsif local_assigns[:dashboard] %>
       <p class="nq-muted">Add a chart to <%= dashboard.name %>. Run your query, preview results, then choose a visualization.</p>
     <% else %>
       <p class="nq-muted">Write a query, preview the results, then pick how to visualize them.</p>

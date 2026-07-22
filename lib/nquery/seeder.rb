@@ -7,6 +7,8 @@ module Nquery
     end
 
     def run!
+      seed_sample_data!
+
       admin_group = ensure_group!("Administrators", "administrators")
       all_users_group = ensure_group!("All Users", "all_users")
       engineering = ensure_group!("Engineering", "custom", "Engineering team")
@@ -28,12 +30,22 @@ module Nquery
 
       seed_permissions!(admin_group, all_users_group, engineering, root_collection, data_source)
 
-      query = Query.find_or_create_by!(name: "Monthly revenue") do |q|
-        q.statement = "SELECT 'Jan' AS month, 1200 AS revenue UNION SELECT 'Feb', 1800 UNION SELECT 'Mar', 2400"
-        q.data_source = data_source
-        q.creator = admin
-        q.collection = root_collection
-      end
+      sample_tables = SampleData::Ecommerce::TABLES
+      query = Query.find_or_initialize_by(name: "Monthly revenue")
+      query.assign_attributes(
+        statement: <<~SQL.squish,
+          SELECT strftime('%Y-%m', #{sample_tables[:orders]}.ordered_at) AS month,
+                 ROUND(SUM(#{sample_tables[:order_items]}.quantity * #{sample_tables[:order_items]}.unit_price), 2) AS revenue
+          FROM #{sample_tables[:orders]}
+          INNER JOIN #{sample_tables[:order_items]} ON #{sample_tables[:order_items]}.order_id = #{sample_tables[:orders]}.id
+          GROUP BY strftime('%Y-%m', #{sample_tables[:orders]}.ordered_at)
+          ORDER BY month
+        SQL
+        data_source: data_source,
+        creator: admin,
+        collection: root_collection
+      )
+      query.save!
 
       chart = Chart.find_or_create_by!(name: "Revenue by month") do |c|
         c.query = query
@@ -70,6 +82,12 @@ module Nquery
     end
 
     private
+
+    def seed_sample_data!
+      return unless Rails.env.local?
+
+      SampleData::Ecommerce.run!
+    end
 
     def ensure_group!(name, system_group, description = nil)
       Group.find_or_create_by!(system_group: system_group) do |g|

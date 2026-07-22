@@ -66,4 +66,41 @@ RSpec.describe "Nquery queries", type: :request do
     expect(response).to redirect_to("/")
     expect(flash[:alert]).to include("permission")
   end
+
+  it "returns schema tables with columns for authenticated users" do
+    admin = Nquery::User.find_by!(email: "admin@nquery.dev")
+    sign_in_as(admin)
+
+    get "/queries/schema", params: { data_source_id: data_source.id }
+
+    expect(response).to have_http_status(:ok)
+    payload = JSON.parse(response.body)
+    expect(payload["tables"]).not_to be_empty
+    expect(payload["tables"].first).to include("name", "columns")
+    expect(payload["tables"].first["columns"].first).to include("name", "type")
+  end
+
+  it "updates a query statement via JSON for autosave and format" do
+    sign_in_as(owner)
+
+    patch "/queries/#{query.id}",
+          params: { query: { statement: "SELECT 2 AS value" } },
+          as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body)).to include("ok" => true, "notice" => "Query saved.")
+    expect(query.reload.statement).to eq("SELECT 2 AS value")
+  end
+
+  it "returns JSON errors when a query update fails" do
+    sign_in_as(owner)
+
+    patch "/queries/#{query.id}",
+          params: { query: { name: "", statement: "SELECT 3 AS value" } },
+          as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(JSON.parse(response.body)).to include("error")
+    expect(query.reload.statement).to eq("SELECT 1 AS value")
+  end
 end

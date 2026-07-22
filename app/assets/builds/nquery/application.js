@@ -1,5 +1,140 @@
 // Simplified Stimulus-style controllers without importmap
-function setButtonLoading(button, loading) {
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
+const schemaToggleIcon = `<svg class="nq-schema-toggle-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+
+function renderSchemaTable(table) {
+  const name = typeof table === "string" ? table : table.name
+  const columns = typeof table === "string" ? [] : (table.columns || [])
+  const columnsHtml = columns.map(column => `
+    <li class="nq-schema-column">
+      <span class="nq-schema-column-name">${escapeHtml(column.name)}</span>
+      <span class="nq-schema-column-type">${escapeHtml(column.type)}</span>
+    </li>
+  `).join("")
+
+  return `
+    <li class="nq-schema-table">
+      <div class="nq-schema-table-header">
+        <button type="button" class="nq-schema-toggle" aria-expanded="false" aria-label="Toggle ${escapeHtml(name)} columns">
+          ${schemaToggleIcon}
+        </button>
+        <span class="nq-schema-table-name">${escapeHtml(name)}</span>
+      </div>
+      <ul class="nq-schema-columns" hidden>${columnsHtml}</ul>
+    </li>
+  `
+}
+
+function bindSchemaTree(container) {
+  if (!container) return
+
+  container.querySelectorAll(".nq-schema-table").forEach(tableEl => {
+    const toggle = tableEl.querySelector(".nq-schema-toggle")
+    const columns = tableEl.querySelector(".nq-schema-columns")
+
+    toggle?.addEventListener("click", (event) => {
+      event.stopPropagation()
+      const expanded = tableEl.classList.toggle("is-expanded")
+      toggle.setAttribute("aria-expanded", expanded ? "true" : "false")
+      columns?.toggleAttribute("hidden", !expanded)
+    })
+  })
+}
+
+function renderSchemaTree(container, tables) {
+  if (!container) return
+  container.innerHTML = tables.map(renderSchemaTable).join("")
+  bindSchemaTree(container)
+}
+
+function formatSql(sql) {
+  if (!sql?.trim()) return sql || ""
+
+  if (typeof sqlFormatter !== "undefined") {
+    try {
+      return sqlFormatter.format(sql, {
+        language: "sql",
+        tabWidth: 2,
+        keywordCase: "upper",
+        linesBetweenQueries: 2
+      })
+    } catch {
+      // Fall back to the lightweight formatter below.
+    }
+  }
+
+  const breakBefore = [
+    "UNION ALL", "UNION", "EXCEPT", "INTERSECT",
+    "GROUP BY", "ORDER BY", "LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "FULL JOIN", "CROSS JOIN",
+    "INSERT INTO", "DELETE FROM",
+    "SELECT", "FROM", "WHERE", "HAVING", "LIMIT", "OFFSET", "JOIN", "SET", "VALUES", "WITH"
+  ]
+
+  let formatted = sql.replace(/([(),;])/g, " $1 ").replace(/\s+/g, " ").trim()
+
+  breakBefore.forEach(keyword => {
+    const pattern = new RegExp(`\\s*\\b${keyword.replace(/ /g, "\\s+")}\\b`, "gi")
+    formatted = formatted.replace(pattern, match => `\n${match.trim().toUpperCase()}`)
+  })
+
+  formatted = formatted.replace(/\s+\b(AND|OR)\b/gi, "\n  $1")
+
+  return formatted
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join("\n")
+}
+
+function initSqlEditor(textarea, options = {}) {
+  if (!textarea || textarea.dataset.sqlEditorInitialized === "true") return textarea._sqlEditor || null
+  if (typeof CodeMirror === "undefined") return null
+
+  const editor = CodeMirror.fromTextArea(textarea, {
+    mode: "text/x-sql",
+    theme: "eclipse",
+    lineNumbers: true,
+    indentWithTabs: false,
+    indentUnit: 2,
+    tabSize: 2,
+    lineWrapping: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    viewportMargin: Infinity,
+    extraKeys: {
+      Tab: (cm) => {
+        if (cm.somethingSelected()) cm.indentSelection("add")
+        else cm.replaceSelection("  ", "end")
+      },
+      "Shift-Tab": (cm) => cm.indentSelection("subtract"),
+      ...(options.extraKeys || {})
+    }
+  })
+
+  textarea.dataset.sqlEditorInitialized = "true"
+  textarea._sqlEditor = editor
+  editor.getWrapperElement().classList.add("nq-codemirror")
+
+  editor.on("change", () => {
+    editor.save()
+  })
+
+  return editor
+}
+
+function syncSqlEditorValue(editor) {
+  if (editor) editor.save()
+}
+
+function setButtonLoading(button, loading, { keepDisabled = false } = {}) {
   if (!button) return
   if (loading) {
     button.classList.add("is-loading")
@@ -8,8 +143,24 @@ function setButtonLoading(button, loading) {
   } else {
     button.classList.remove("is-loading")
     button.removeAttribute("aria-busy")
-    if ("disabled" in button) button.disabled = false
+    if ("disabled" in button) button.disabled = keepDisabled
   }
+}
+
+function showClientFlash(message, type = "notice") {
+  const main = document.getElementById("main_content")
+  if (!main || !message) return
+
+  main.querySelectorAll(".nq-flash-client").forEach((el) => el.remove())
+
+  const flash = document.createElement("div")
+  flash.className = `nq-flash nq-flash-${type} nq-flash-client`
+  flash.setAttribute("role", "status")
+  flash.textContent = message
+  main.prepend(flash)
+
+  window.clearTimeout(flash._nqTimeout)
+  flash._nqTimeout = window.setTimeout(() => flash.remove(), 4000)
 }
 
 function initButtonLoaders() {
@@ -21,7 +172,7 @@ function initButtonLoaders() {
 
   document.addEventListener("click", (event) => {
     const button = event.target.closest("a.nq-btn, button.nq-btn[type=button], input.nq-btn[type=button]")
-    if (!button || button.classList.contains("is-loading")) return
+    if (!button || button.classList.contains("is-loading") || button.dataset.managesLoading === "true") return
     setButtonLoading(button, true)
   })
 
@@ -73,7 +224,8 @@ function initChartPreviews() {
 }
 
 function initChartBuilders() {
-  document.querySelectorAll("[data-controller='chart-builder']").forEach(root => {
+  document.querySelectorAll("[data-controller='chart-builder']:not([data-chart-builder-initialized])").forEach(root => {
+    root.dataset.chartBuilderInitialized = "true"
     const statement = root.querySelector("[data-chart-builder-target='statement']")
     const dataSource = root.querySelector("[data-chart-builder-target='dataSource']")
     const schema = root.querySelector("[data-chart-builder-target='schema']")
@@ -98,11 +250,112 @@ function initChartBuilders() {
     const xField = root.querySelector("[data-chart-builder-target='xField']")
     const yField = root.querySelector("[data-chart-builder-target='yField']")
     const typeButtons = root.querySelectorAll("[data-chart-builder-target='typeButton']")
+    const runButton = root.querySelector("[data-action*='chart-builder#run']")
+    const formatButton = root.querySelector("[data-chart-builder-target='formatButton']") ||
+      root.querySelector("[data-action*='chart-builder#format']")
+    const saveStatus = root.querySelector("[data-chart-builder-target='saveStatus']")
+    const querySaveUrl = root.dataset.querySaveUrl
 
     let currentResult = null
     let chartInstance = null
-    let currentOutputTab = "table"
-    let currentChartType = "bar"
+    let currentChartType = typeField?.value && typeField.value !== "table" ? typeField.value : "bar"
+    let currentOutputTab = typeField?.value && typeField.value !== "table" ? "chart" : "table"
+    let statementEditor = null
+    let lastFormattedSql = null
+    let lastSavedSql = statement?.value ?? ""
+    let ignoreEditorChanges = false
+    let autosaveTimer = null
+    let saveChain = Promise.resolve()
+
+    const syncStatementField = () => {
+      syncSqlEditorValue(statementEditor)
+    }
+
+    const getStatement = () => statementEditor ? statementEditor.getValue() : (statement?.value ?? "")
+
+    const setStatement = (value, { focus = true } = {}) => {
+      if (statementEditor) {
+        statementEditor.setValue(value)
+        statementEditor.save()
+      }
+
+      if (statement) statement.value = value
+
+      if (focus) {
+        if (statementEditor) statementEditor.focus()
+        else statement?.focus()
+      }
+    }
+
+    const setFormatEnabled = (enabled) => {
+      if (!formatButton) return
+      formatButton.disabled = !enabled
+      formatButton.setAttribute("aria-disabled", enabled ? "false" : "true")
+    }
+
+    const setSaveStatus = (message, { hidden = !message } = {}) => {
+      if (!saveStatus) return
+      saveStatus.textContent = message || ""
+      saveStatus.toggleAttribute("hidden", hidden)
+    }
+
+    const saveQueryStatement = ({ notice } = {}) => {
+      if (!querySaveUrl) return Promise.resolve({ saved: false })
+
+      const run = async () => {
+        const statementText = getStatement()
+        syncStatementField()
+
+        if (statementText === lastSavedSql) {
+          if (notice) showClientFlash(notice)
+          return { saved: true, skipped: true }
+        }
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+        const res = await fetch(querySaveUrl, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-Token": csrf
+          },
+          body: JSON.stringify({ query: { statement: statementText } })
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || "Failed to save query.")
+
+        lastSavedSql = statementText
+        if (notice) showClientFlash(notice)
+        return { saved: true }
+      }
+
+      const queued = saveChain.then(run, run)
+      saveChain = queued.then(() => undefined, () => undefined)
+      return queued
+    }
+
+    const scheduleAutosave = () => {
+      if (!querySaveUrl || ignoreEditorChanges) return
+
+      clearTimeout(autosaveTimer)
+      setSaveStatus("Saving…")
+      autosaveTimer = window.setTimeout(() => {
+        saveQueryStatement()
+          .then(() => setSaveStatus("Saved"))
+          .catch((error) => {
+            setSaveStatus("")
+            showClientFlash(error.message || "Failed to save query.", "alert")
+          })
+      }, 800)
+    }
+
+    const handleStatementChange = () => {
+      if (ignoreEditorChanges) return
+
+      const current = getStatement()
+      if (lastFormattedSql === null || current !== lastFormattedSql) setFormatEnabled(true)
+      scheduleAutosave()
+    }
 
     const syncName = () => {
       if (nameInput && queryNameInput) queryNameInput.value = nameInput.value
@@ -152,7 +405,9 @@ function initChartBuilders() {
 
     const populateAxisSelects = (columns, rows) => {
       if (!xAxis || !yAxis) return
-      const { x, y } = guessAxes(columns, rows)
+      const guessed = guessAxes(columns, rows)
+      const x = xField?.value && columns.includes(xField.value) ? xField.value : guessed.x
+      const y = yField?.value && columns.includes(yField.value) ? yField.value : guessed.y
       const options = columns.map(col => `<option value="${col}">${col}</option>`).join("")
       xAxis.innerHTML = options
       yAxis.innerHTML = options
@@ -329,13 +584,14 @@ function initChartBuilders() {
     }
 
     const runQuery = async (button) => {
+      syncStatementField()
       setButtonLoading(button, true)
       try {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content
         const res = await fetch("/queries/run", {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-          body: JSON.stringify({ statement: statement?.value, data_source_id: dataSource?.value })
+          body: JSON.stringify({ statement: getStatement(), data_source_id: dataSource?.value })
         })
         const data = await res.json()
         if (!res.ok || data.error) {
@@ -366,22 +622,67 @@ function initChartBuilders() {
       if (!schema || !dataSource) return
       const response = await fetch(`/queries/schema?data_source_id=${dataSource.value}`)
       const data = await response.json()
-      schema.innerHTML = data.tables.map(table =>
-        `<li class="nq-tree-item" data-table="${table}">${table}</li>`
-      ).join("")
-      schema.querySelectorAll("[data-table]").forEach(item => {
-        item.addEventListener("click", () => {
-          if (statement) statement.value = `SELECT * FROM ${item.dataset.table} LIMIT 100`
-        })
-      })
+      renderSchemaTree(schema, data.tables)
     }
 
-    const insertTable = (table) => {
-      if (statement) statement.value = `SELECT * FROM ${table} LIMIT 100`
+    const formatStatement = async (button) => {
+      if (formatButton?.disabled) return
+
+      const sql = getStatement().trim()
+      if (!sql) return
+
+      if (button) setButtonLoading(button, true)
+      ignoreEditorChanges = true
+      clearTimeout(autosaveTimer)
+
+      try {
+        const formatted = formatSql(sql)
+        setStatement(formatted)
+        syncStatementField()
+        lastFormattedSql = formatted
+
+        if (querySaveUrl) {
+          setSaveStatus("Saving…")
+          await saveQueryStatement({ notice: "SQL formatted and saved." })
+          setSaveStatus("Saved")
+        } else {
+          showClientFlash("SQL formatted.")
+        }
+
+        setFormatEnabled(false)
+      } catch (error) {
+        showClientFlash(error.message || "Failed to format SQL.", "alert")
+        setFormatEnabled(true)
+      } finally {
+        ignoreEditorChanges = false
+        if (button) setButtonLoading(button, false, { keepDisabled: formatButton?.disabled })
+      }
     }
+
+    statementEditor = initSqlEditor(statement, {
+      extraKeys: {
+        "Cmd-Enter": () => runQuery(runButton),
+        "Ctrl-Enter": () => runQuery(runButton),
+        "Cmd-Shift-F": () => formatStatement(formatButton),
+        "Ctrl-Shift-F": () => formatStatement(formatButton)
+      }
+    })
+
+    lastSavedSql = getStatement()
+    if (statementEditor) statementEditor.on("change", handleStatementChange)
+    else statement?.addEventListener("input", handleStatementChange)
+
+    const form = root.closest("form")
+    form?.addEventListener("submit", syncStatementField, true)
+    form?.addEventListener("turbo:submit-start", syncStatementField)
 
     syncName()
     nameInput?.addEventListener("input", syncName)
+    bindSchemaTree(schema)
+
+    formatButton?.addEventListener("click", (event) => {
+      formatStatement(event.currentTarget)
+    })
 
     root.querySelector("[data-action*='chart-builder#run']")?.addEventListener("click", (event) => {
       runQuery(event.currentTarget)
@@ -402,10 +703,6 @@ function initChartBuilders() {
 
     xAxis?.addEventListener("change", updateMapping)
     yAxis?.addEventListener("change", updateMapping)
-
-    root.querySelectorAll("[data-action*='chart-builder#insertTable']").forEach(item => {
-      item.addEventListener("click", () => insertTable(item.dataset.table))
-    })
   })
 }
 
@@ -444,8 +741,14 @@ function initPage() {
   initChartPreviews()
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initPage)
-} else {
+function bootPage() {
   initPage()
 }
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootPage)
+} else {
+  bootPage()
+}
+
+document.addEventListener("turbo:load", bootPage)
