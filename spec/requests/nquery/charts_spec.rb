@@ -206,7 +206,7 @@ RSpec.describe "Nquery::Charts", type: :request do
     it "renders the same chart builder form as new" do
       get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
 
-      expect(response.body).to include("nq-chart-builder-title")
+      expect(response.body).to include("nq-chart-builder-name")
       expect(response.body).to include('value="Signups trend"')
       expect(response.body).to include('data-controller="chart-builder"')
       expect(response.body).to include("Format SQL")

@@ -1,13 +1,11 @@
 <div class="nq-page-header">
-  <div>
-    <h1><%= @collection.name %></h1>
-    <p class="nq-muted nq-resource-meta">
-      <%= collection_kind_label(@collection) %>
-      · <%= pluralize(@child_collections.size, "folder", "folders") %>
-      · <%= pluralize(@charts.size, "chart") %>
-      · <%= pluralize(@dashboards.size, "dashboard") %>
-    </p>
-  </div>
+  <h1><%= @collection.name %></h1>
+  <p class="nq-muted nq-resource-meta">
+    <%= collection_kind_label(@collection) %>
+    · <%= pluralize(@child_collections.size, "folder", "folders") %>
+    · <%= pluralize(@charts.size, "chart") %>
+    · <%= pluralize(@dashboards.size, "dashboard") %>
+  </p>
   <div class="nq-actions">
     <%= link_to edit_collection_path(@collection), class: "nq-btn" do %>
       <%= nq_icon(:edit) %>

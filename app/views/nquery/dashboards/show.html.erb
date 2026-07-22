@@ -1,12 +1,10 @@
 <div class="nq-page-header">
-  <div>
-    <h1><%= @dashboard.name %></h1>
-    <p class="nq-muted nq-resource-meta">
-      Created by <%= @dashboard.creator&.name || "—" %>
-      · Created <%= @dashboard.created_at.to_fs(:long) %>
-      · Updated <%= @dashboard.updated_at.to_fs(:long) %>
-    </p>
-  </div>
+  <h1><%= @dashboard.name %></h1>
+  <p class="nq-muted nq-resource-meta">
+    Created by <%= @dashboard.creator&.name || "—" %>
+    · Created <%= @dashboard.created_at.to_fs(:long) %>
+    · Updated <%= @dashboard.updated_at.to_fs(:long) %>
+  </p>
   <div class="nq-actions">
     <%= link_to new_dashboard_chart_path(@dashboard), class: "nq-btn nq-btn-primary" do %>
       <%= nq_icon(:chart) %>
