@@ -5,8 +5,6 @@ module Nquery
     class Error < StandardError; end
     class PermissionError < Error; end
 
-    FORBIDDEN_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|INTO)\b/i
-
     def initialize(data_source:, statement:, user: nil, query: nil)
       @data_source = data_source
       @statement = statement.to_s.strip
@@ -37,10 +35,8 @@ module Nquery
     private
 
     def validate_statement!
-      raise Error, "Query cannot be blank" if @statement.blank?
-      raise Error, "Multi-statement queries are not allowed" if @statement.include?(";")
-      raise Error, "Query must start with SELECT or WITH" unless @statement.match?(/\A\s*(SELECT|WITH)\b/i)
-      raise Error, "Only SELECT queries are allowed" if @statement.match?(FORBIDDEN_KEYWORDS)
+      message = ReadonlySql.error_message(@statement)
+      raise Error, message if message
     end
 
     def check_permissions!

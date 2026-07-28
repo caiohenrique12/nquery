@@ -11,6 +11,7 @@ SimpleCov.start do
   add_filter "/lib/tasks/"
   add_filter "/lib/nquery/seeder.rb"
   add_filter "/lib/nquery/sample_data/"
+  add_filter "/lib/nquery/version.rb"
 
   track_files "{app,lib}/**/*.rb"
 
@@ -20,9 +21,6 @@ SimpleCov.start do
   add_group "Helpers", "app/helpers"
   add_group "Lib", "lib"
 end
-
-$LOADED_FEATURES.delete_if { |path| path.end_with?("nquery/version.rb") }
-load File.expand_path("../lib/nquery/version.rb", __dir__)
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

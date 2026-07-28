@@ -95,8 +95,6 @@ module Nquery
       previous = persisted? ? load_persisted_connection_config : {}
 
       self.connection_config = case adapter
-      when "rails"
-        {}
       when "sqlite"
         {
           "adapter" => AR_ADAPTER_NAMES.fetch(adapter),

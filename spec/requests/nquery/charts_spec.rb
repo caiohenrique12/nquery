@@ -239,6 +239,16 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include("boom")
     end
 
+    it "surfaces unexpected errors when seeding the builder" do
+      allow_any_instance_of(Nquery::QueryRunner).to receive(:run).and_raise(RuntimeError, "unexpected failure")
+
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("unexpected failure")
+      expect(response.body).not_to include("Jan")
+    end
+
     it "does not create an audit when loading the builder" do
       expect {
         get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"

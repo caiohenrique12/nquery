@@ -44,6 +44,13 @@ RSpec.describe Nquery::DataSource do
     it "returns an empty hash for blank config" do
       expect(described_class.new(connection_config: nil).connection_config_hash).to eq({})
     end
+
+    it "returns an empty hash for invalid JSON" do
+      data_source = described_class.new
+      allow(data_source).to receive(:connection_config).and_return("{not-json")
+
+      expect(data_source.connection_config_hash).to eq({})
+    end
   end
 
   describe "connection fields" do
@@ -140,6 +147,22 @@ RSpec.describe Nquery::DataSource do
       expect(data_source.errors[:password]).to include("can't be blank")
     end
 
+    it "rejects invalid sslmode values" do
+      data_source = described_class.new(
+        name: "Warehouse",
+        adapter: "postgresql",
+        connection_fields_submitted: true,
+        host: "localhost",
+        database: "analytics",
+        username: "reader",
+        password: "secret",
+        sslmode: "maybe"
+      )
+
+      expect(data_source).not_to be_valid
+      expect(data_source.errors[:sslmode]).to include("is not included in the list")
+    end
+
     it "populates virtual fields from stored config" do
       data_source = described_class.create!(
         name: "Warehouse",
@@ -179,6 +202,14 @@ RSpec.describe Nquery::DataSource do
       data_source.save!
 
       expect(data_source.reload.connection_config_hash).to eq({})
+    end
+
+    it "returns an empty config for unsupported adapters when composing fields" do
+      data_source = described_class.new(adapter: "oracle")
+
+      data_source.send(:assign_connection_config_from_fields)
+
+      expect(data_source.connection_config).to eq({})
     end
   end
 end
