@@ -15,13 +15,11 @@ module Nquery
       sql = statement.to_s.strip
 
       return "Query cannot be blank" if sql.blank? && !allow_blank
-      return nil if sql.blank?
+      return if sql.blank?
 
       return "Multi-statement queries are not allowed" if sql.include?(";")
       return "Query must start with SELECT or WITH" unless sql.match?(/\A\s*(SELECT|WITH)\b/i)
       return "Only SELECT queries are allowed" if sql.match?(FORBIDDEN_KEYWORDS)
-
-      nil
     end
   end
 end
