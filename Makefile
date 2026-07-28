@@ -1,7 +1,7 @@
 .PHONY: up down restart debug setup test console bash shell
 
-up: ## Build, migrate, seed, and start app
-	docker compose up --build
+up: ## Migrate, seed, and start app
+	docker compose up
 
 down: ## Stop all services and remove orphans
 	docker compose down --remove-orphans

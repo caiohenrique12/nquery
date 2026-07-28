@@ -17,8 +17,6 @@ module Nquery
       "mysql" => 3306
     }.freeze
 
-    CONNECTION_FIELD_ATTRS = %i[host port database username password database_path sslmode].freeze
-
     # serialize must be declared before encrypts for structured attributes.
     serialize :connection_config, coder: JSON
     encrypts :connection_config
@@ -26,7 +24,7 @@ module Nquery
     has_many :data_permissions, class_name: "Nquery::DataPermission", dependent: :destroy
     has_many :queries, class_name: "Nquery::Query", dependent: :nullify
 
-    attr_accessor(*CONNECTION_FIELD_ATTRS, :connection_fields_submitted)
+    attr_accessor :host, :port, :database, :username, :password, :database_path, :sslmode, :connection_fields_submitted
 
     validates :name, presence: true
     validates :adapter, inclusion: { in: ADAPTERS }
