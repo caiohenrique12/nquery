@@ -36,6 +36,29 @@ module Nquery
       app.config.paths["db/migrate"] << migration_path unless app.config.paths["db/migrate"].include?(migration_path)
     end
 
+    initializer "nquery.schema_dumper" do
+      ActiveSupport.on_load(:active_record) do
+        ActiveRecord::SchemaDumper.ignore_tables |= Nquery::SampleData::Ecommerce::REQUIRED_TABLES
+      end
+    end
+
+    initializer "nquery.encryption", before: "active_record_encryption" do |app|
+      Nquery::Encryption.configure!(app)
+    end
+
+    initializer "nquery.filter_parameters" do |app|
+      app.config.filter_parameters += %i[
+        password
+        connection_config
+        username
+        database
+        database_path
+        host
+        port
+        sslmode
+      ]
+    end
+
     initializer "nquery.config" do
       Nquery.configure do |config|
         config.authentication_mode = ENV.fetch("NQUERY_AUTHENTICATION_MODE", "standalone").to_sym

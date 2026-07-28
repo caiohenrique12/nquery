@@ -1,0 +1,92 @@
+<% cancel_path = local_assigns.fetch(:cancel_path) %>
+<% submit_label = local_assigns.fetch(:submit_label) %>
+<% form_url = data_source.persisted? ? admin_data_source_path(data_source) : admin_data_sources_path %>
+<% form_method = data_source.persisted? ? :patch : :post %>
+
+<%= form_with model: data_source, url: form_url, method: form_method, class: "nq-form nq-card",
+              data: { controller: "data-source-form", data_source_form_adapter_value: data_source.adapter } do |f| %>
+  <% if data_source.errors.any? %>
+    <div class="nq-form-errors" role="alert">
+      <p><strong>Please fix the following:</strong></p>
+      <ul>
+        <% data_source.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="nq-form-row">
+    <%= f.label :name %>
+    <%= f.text_field :name, class: "nq-input", autofocus: !data_source.persisted? %>
+  </div>
+
+  <div class="nq-form-row">
+    <%= f.label :adapter %>
+    <%= f.select :adapter, Nquery::DataSource::ADAPTERS, {},
+                 class: "nq-input",
+                 data: { action: "change->data-source-form#toggle", data_source_form_target: "adapter" } %>
+  </div>
+
+  <section data-data-source-form-target="remoteFields" hidden>
+    <h2 class="nq-form-section-title">Connection</h2>
+
+    <div class="nq-form-row">
+      <%= f.label :host %>
+      <%= f.text_field :host, class: "nq-input", placeholder: "localhost", autocomplete: "off" %>
+    </div>
+
+    <div class="nq-form-row">
+      <%= f.label :port %>
+      <%= f.number_field :port, class: "nq-input", placeholder: data_source.adapter == "mysql" ? "3306" : "5432", min: 1, max: 65_535 %>
+    </div>
+
+    <div class="nq-form-row">
+      <%= f.label :database %>
+      <%= f.text_field :database, class: "nq-input", autocomplete: "off" %>
+    </div>
+
+    <div class="nq-form-row">
+      <%= f.label :username %>
+      <%= f.text_field :username, class: "nq-input", autocomplete: "off" %>
+    </div>
+
+    <div class="nq-form-row">
+      <%= f.label :password %>
+      <%= f.password_field :password, class: "nq-input", autocomplete: "new-password",
+                           placeholder: data_source.persisted? ? "Leave blank to keep current password" : nil %>
+    </div>
+
+    <div class="nq-form-row">
+      <%= f.label :sslmode, "SSL mode (optional)" %>
+      <%= f.select :sslmode,
+                   options_for_select([["Default", ""]] + Nquery::DataSource::SSL_MODES.map { |mode| [mode, mode] }, data_source.sslmode),
+                   {},
+                   class: "nq-input" %>
+    </div>
+  </section>
+
+  <section data-data-source-form-target="sqliteFields" hidden>
+    <h2 class="nq-form-section-title">SQLite database</h2>
+
+    <div class="nq-form-row">
+      <%= f.label :database_path, "Database path" %>
+      <%= f.text_field :database_path, class: "nq-input", placeholder: "/path/to/database.sqlite3" %>
+    </div>
+  </section>
+
+  <p data-data-source-form-target="railsHint" class="nq-field-hint" hidden>
+  Uses the host Rails application database connection. No additional credentials are required.
+  </p>
+
+  <% if data_source.persisted? %>
+    <div class="nq-form-row">
+      <label><%= f.check_box :active %> Active</label>
+    </div>
+  <% end %>
+
+  <div class="nq-form-actions">
+    <%= link_to "Cancel", cancel_path, class: "nq-btn" %>
+    <%= f.submit submit_label, class: "nq-btn nq-btn-primary" %>
+  </div>
+<% end %>

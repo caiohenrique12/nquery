@@ -1,6 +1,6 @@
-<div class="nq-page-header"><h1>New group</h1></div>
-<%= form_with model: @group, url: admin_groups_path, class: "nq-form nq-card" do |f| %>
-  <div class="nq-form-row"><%= f.label :name %><%= f.text_field :name, class: "nq-input" %></div>
-  <div class="nq-form-row"><%= f.label :description %><%= f.text_area :description, class: "nq-textarea" %></div>
-  <%= f.submit "Create", class: "nq-btn nq-btn-primary" %>
-<% end %>
+<div class="nq-page-header">
+  <h1>New group</h1>
+  <p class="nq-muted nq-resource-meta">Create a group to organize users and manage permissions together.</p>
+</div>
+
+<%= render "form", group: @group, cancel_path: admin_groups_path, submit_label: "Create group" %>

@@ -808,6 +808,23 @@ function initChartBuilders() {
       selectWorkspaceTab("output")
     }
 
+    const applyResult = (data, { outputTab } = {}) => {
+      if (!data?.columns) return
+
+      currentResult = data
+      if (outputTab) currentOutputTab = outputTab
+      populateAxisSelects(data.columns, data.rows)
+      renderTable(data)
+      if (meta) {
+        const parts = []
+        if (data.row_count != null) parts.push(`${data.row_count} rows`)
+        if (data.duration_ms != null) parts.push(`${data.duration_ms} ms`)
+        meta.textContent = parts.join(" · ")
+        meta.removeAttribute("hidden")
+      }
+      showResults()
+    }
+
     const runQuery = async (button) => {
       syncStatementField()
       setButtonLoading(button, true)
@@ -824,18 +841,7 @@ function initChartBuilders() {
           return
         }
 
-        currentResult = data
-        currentOutputTab = "table"
-        populateAxisSelects(data.columns, data.rows)
-        renderTable(data)
-        if (meta) {
-          const parts = []
-          if (data.row_count != null) parts.push(`${data.row_count} rows`)
-          if (data.duration_ms != null) parts.push(`${data.duration_ms} ms`)
-          meta.textContent = parts.join(" · ")
-          meta.removeAttribute("hidden")
-        }
-        showResults()
+        applyResult(data, { outputTab: "table" })
       } catch (e) {
         showError(e.message)
       } finally {
@@ -935,6 +941,21 @@ function initChartBuilders() {
 
     xAxis?.addEventListener("change", updateMapping)
     yAxis?.addEventListener("change", updateMapping)
+
+    // Saved charts: seed Output with the persisted query result and plot the saved viz.
+    const initialResultRaw = root.dataset.initialResult
+    if (initialResultRaw) {
+      try {
+        const initialResult = JSON.parse(initialResultRaw)
+        if (initialResult.error) {
+          showError(initialResult.error)
+        } else {
+          applyResult(initialResult)
+        }
+      } catch (_error) {
+        // Ignore malformed bootstrap payloads and keep the empty Output state.
+      }
+    }
   })
 }
 
@@ -966,6 +987,29 @@ function initQueryEditors() {
   })
 }
 
+function initDataSourceForms() {
+  document.querySelectorAll("[data-controller='data-source-form']").forEach(root => {
+    const adapterField = root.querySelector("[data-data-source-form-target='adapter']")
+    const remoteFields = root.querySelector("[data-data-source-form-target='remoteFields']")
+    const sqliteFields = root.querySelector("[data-data-source-form-target='sqliteFields']")
+    const railsHint = root.querySelector("[data-data-source-form-target='railsHint']")
+
+    const toggle = () => {
+      const adapter = adapterField?.value || root.dataset.dataSourceFormAdapterValue || "postgresql"
+      const isRemote = adapter === "postgresql" || adapter === "mysql"
+      const isSqlite = adapter === "sqlite"
+      const isRails = adapter === "rails"
+
+      remoteFields?.toggleAttribute("hidden", !isRemote)
+      sqliteFields?.toggleAttribute("hidden", !isSqlite)
+      railsHint?.toggleAttribute("hidden", !isRails)
+    }
+
+    adapterField?.addEventListener("change", toggle)
+    toggle()
+  })
+}
+
 function initPage() {
   initButtonLoaders()
   initToastEvents()
@@ -974,6 +1018,7 @@ function initPage() {
   initQueryEditors()
   initChartBuilders()
   initChartPreviews()
+  initDataSourceForms()
 }
 
 function bootPage() {

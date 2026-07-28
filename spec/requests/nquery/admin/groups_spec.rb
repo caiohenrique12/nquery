@@ -21,6 +21,28 @@ RSpec.describe "Admin groups", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(analyst.email)
     end
+
+    it "shows remove controls for custom groups" do
+      sign_in_as_admin
+      group = Nquery::Group.find_by!(name: "Engineering")
+
+      get "/admin/groups/#{group.id}"
+
+      expect(response.body).to include("Remove")
+      expect(response.body).to include("remove_member")
+      expect(response.body).to include(%(name="user_id" value="#{analyst.id}"))
+      expect(response.body).to include("onsubmit=\"return confirm(")
+      expect(response.body).to include("Remove #{analyst.name} from #{group.name}?")
+    end
+
+    it "does not show remove controls for the all users group" do
+      sign_in_as_admin
+
+      get "/admin/groups/#{all_users_group.id}"
+
+      expect(response.body).not_to include("remove_member")
+      expect(response.body).to include("automatically added to this group")
+    end
   end
 
   describe "POST /admin/groups" do
@@ -88,14 +110,35 @@ RSpec.describe "Admin groups", type: :request do
       expect(group.reload.users).not_to include(analyst)
     end
 
-    it "does not remove members from the all users group" do
+    it "removes a user via the remove button form on the group page" do
       sign_in_as_admin
-      membership = all_users_group.group_memberships.find_by!(user: analyst)
+      group = Nquery::Group.find_by!(name: "Engineering")
+
+      get "/admin/groups/#{group.id}"
+
+      form = Nokogiri::HTML(response.body).css("form").find { |node| node["action"]&.include?("remove_member") }
+      expect(form).to be_present
+
+      action = URI.parse(form["action"])
+      hidden_params = form.css("input[type=hidden]").each_with_object({}) do |input, params|
+        params[input["name"]] = input["value"]
+      end
+      query_params = Rack::Utils.parse_query(action.query)
+
+      delete action.path, params: query_params.merge(hidden_params)
+
+      expect(response).to redirect_to("/admin/groups/#{group.id}")
+      expect(group.reload.users).not_to include(analyst)
+    end
+
+    it "rejects removing a user from the all users group" do
+      sign_in_as_admin
 
       delete "/admin/groups/#{all_users_group.id}/remove_member", params: { user_id: analyst.id }
 
       expect(response).to redirect_to("/admin/groups/#{all_users_group.id}")
-      expect(Nquery::GroupMembership.exists?(membership.id)).to be(true)
+      expect(flash[:alert]).to include("cannot be removed")
+      expect(all_users_group.reload.users).to include(analyst)
     end
   end
 end

@@ -28,24 +28,41 @@ RSpec.describe "Admin data sources", type: :request do
   end
 
   describe "GET /admin/data_sources/new" do
-    it "renders the new form" do
+    it "renders connection fields instead of JSON" do
       sign_in_as_admin
       get "/admin/data_sources/new"
 
       expect(response).to have_http_status(:ok)
+      expect(response.body).to include('data-controller="data-source-form"')
+      expect(response.body).to include("Host")
+      expect(response.body).not_to include("Connection (JSON)")
     end
   end
 
   describe "POST /admin/data_sources" do
-    it "creates a data source" do
+    it "creates a data source from connection fields" do
       sign_in_as_admin
 
       expect {
         post "/admin/data_sources", params: {
-          data_source: { name: "Warehouse", adapter: "postgresql", connection_config: '{"host":"localhost"}' }
+          data_source: {
+            name: "Warehouse",
+            adapter: "postgresql",
+            host: "localhost",
+            database: "warehouse",
+            username: "reader",
+            password: "secret-pass"
+          }
         }
       }.to change(Nquery::DataSource, :count).by(1)
 
+      data_source = Nquery::DataSource.find_by!(name: "Warehouse")
+      expect(data_source.connection_config_hash).to include(
+        "host" => "localhost",
+        "database" => "warehouse",
+        "username" => "reader",
+        "password" => "secret-pass"
+      )
       expect(response).to redirect_to("/admin/data_sources")
     end
 
@@ -59,24 +76,53 @@ RSpec.describe "Admin data sources", type: :request do
   end
 
   describe "PATCH /admin/data_sources/:id" do
-    let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+    let(:data_source) do
+      Nquery::DataSource.create!(
+        name: "Warehouse",
+        adapter: "postgresql",
+        connection_fields_submitted: true,
+        host: "localhost",
+        database: "warehouse",
+        username: "reader",
+        password: "secret-pass"
+      )
+    end
 
     it "updates a data source" do
       sign_in_as_admin
 
       patch "/admin/data_sources/#{data_source.id}", params: {
-        data_source: { name: "Primary Database", adapter: "rails", connection_config: "{}" }
+        data_source: {
+          name: "Primary Warehouse",
+          adapter: "postgresql",
+          host: "db.internal",
+          database: "warehouse",
+          username: "reader",
+          password: ""
+        }
       }
 
       expect(response).to redirect_to("/admin/data_sources")
-      expect(data_source.reload.name).to eq("Primary Database")
+      expect(data_source.reload.name).to eq("Primary Warehouse")
+      expect(data_source.connection_config_hash["host"]).to eq("db.internal")
+      expect(data_source.connection_config_hash["password"]).to eq("secret-pass")
+    end
+
+    it "does not render the stored password on edit" do
+      sign_in_as_admin
+
+      get "/admin/data_sources/#{data_source.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("secret-pass")
+      expect(response.body).to include("Leave blank to keep current password")
     end
 
     it "renders errors for invalid updates" do
       sign_in_as_admin
 
       patch "/admin/data_sources/#{data_source.id}", params: {
-        data_source: { name: "", adapter: "rails" }
+        data_source: { name: "", adapter: "postgresql", host: "localhost", database: "warehouse", username: "reader" }
       }
 
       expect(response).to have_http_status(:unprocessable_content)

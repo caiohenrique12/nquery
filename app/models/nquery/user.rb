@@ -24,6 +24,10 @@ module Nquery
       [first_name, last_name].compact_blank.join(" ").presence || email
     end
 
+    def name_with_email
+      "#{name} (#{email})"
+    end
+
     def active?
       deactivated_at.nil?
     end

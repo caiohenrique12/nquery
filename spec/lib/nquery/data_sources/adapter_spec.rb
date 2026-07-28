@@ -32,7 +32,7 @@ end
 
 RSpec.describe Nquery::DataSources::PostgresqlAdapter do
   let(:data_source) do
-    Nquery::DataSource.new(adapter: "postgresql", connection_config: '{"adapter":"postgresql"}')
+    Nquery::DataSource.new(adapter: "postgresql", connection_config_hash: { "adapter" => "postgresql" })
   end
   let(:adapter) { described_class.new(data_source) }
   let(:connection) do
@@ -79,11 +79,12 @@ RSpec.describe Nquery::DataSources::PostgresqlAdapter do
     allow(Class).to receive(:new).with(ActiveRecord::Base).and_return(connection_class)
 
     sqlite_config = ActiveRecord::Base.connection_db_config.configuration_hash.merge(adapter: "sqlite3")
-    data_source = Nquery::DataSource.create!(
+    data_source = Nquery::DataSource.new(
       name: "Ephemeral PG",
-      adapter: "postgresql",
-      connection_config: sqlite_config.to_json
+      adapter: "postgresql"
     )
+    data_source.connection_config_hash = sqlite_config.stringify_keys
+    data_source.save!(validate: false)
 
     expect(described_class.new(data_source).tables).not_to be_empty
   end
@@ -91,7 +92,7 @@ end
 
 RSpec.describe Nquery::DataSources::MysqlAdapter do
   let(:data_source) do
-    Nquery::DataSource.new(adapter: "mysql", connection_config: '{"adapter":"mysql2"}')
+    Nquery::DataSource.new(adapter: "mysql", connection_config_hash: { "adapter" => "mysql2" })
   end
   let(:adapter) { described_class.new(data_source) }
   let(:connection) do

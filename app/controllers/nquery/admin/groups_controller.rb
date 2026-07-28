@@ -10,7 +10,8 @@ module Nquery
       end
 
       def show
-        @available_users = User.active.where.not(id: @group.user_ids).order(:email)
+        @members = @group.users.order(:first_name, :last_name, :email)
+        @available_users = User.active.where.not(id: @group.user_ids).order(:first_name, :last_name, :email)
       end
 
       def new
@@ -44,8 +45,13 @@ module Nquery
       end
 
       def remove_member
+        if @group.system_group == "all_users"
+          redirect_to admin_group_path(@group), alert: "Members cannot be removed from the All Users group."
+          return
+        end
+
         membership = @group.group_memberships.find_by!(user_id: params[:user_id])
-        membership.destroy unless @group.system_group == "all_users"
+        membership.destroy!
         redirect_to admin_group_path(@group), notice: "Member removed."
       end
 

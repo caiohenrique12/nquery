@@ -1,0 +1,47 @@
+<% cancel_path = local_assigns.fetch(:cancel_path) %>
+<% submit_label = local_assigns.fetch(:submit_label) %>
+<% form_url = group.persisted? ? admin_group_path(group) : admin_groups_path %>
+<% form_method = group.persisted? ? :patch : :post %>
+
+<%= form_with model: group, url: form_url, method: form_method, class: "nq-form nq-form-card" do |f| %>
+  <% if group.errors.any? %>
+    <div class="nq-form-errors" role="alert">
+      <p><strong>Please fix the following:</strong></p>
+      <ul>
+        <% group.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <% if group.persisted? && group.system? %>
+    <%= nq_flash_card "This is a system group. The name is fixed, but you can update the description.", type: :info, toast: false %>
+  <% end %>
+
+  <section class="nq-form-section">
+    <h2 class="nq-form-section-title">Group details</h2>
+
+    <div class="nq-form-row">
+      <%= f.label :name %>
+      <% if group.system? %>
+        <%= f.text_field :name, class: "nq-input", disabled: true %>
+        <p class="nq-field-hint">System group names cannot be changed.</p>
+      <% else %>
+        <%= f.text_field :name, class: "nq-input", placeholder: "e.g. Finance, Engineering", autofocus: !group.persisted? %>
+        <p class="nq-field-hint">Choose a name members will recognize.</p>
+      <% end %>
+    </div>
+
+    <div class="nq-form-row">
+      <%= f.label :description, "Description (optional)" %>
+      <%= f.text_area :description, class: "nq-input nq-textarea-prose", rows: 3, placeholder: "What this group is for and who should belong to it." %>
+      <p class="nq-field-hint">Shown on the group page and helps others understand its purpose.</p>
+    </div>
+  </section>
+
+  <div class="nq-form-actions">
+    <%= link_to "Cancel", cancel_path, class: "nq-btn" %>
+    <%= f.submit submit_label, class: "nq-btn nq-btn-primary" %>
+  </div>
+<% end %>

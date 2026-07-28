@@ -1,5 +1,14 @@
 # frozen_string_literal: true
 
+# In production, configure Active Record Encryption keys via Rails credentials:
+#
+# active_record_encryption:
+#   primary_key: ...
+#   deterministic_key: ...
+#   key_derivation_salt: ...
+#
+# See https://guides.rubyonrails.org/active_record_encryption.html
+
 Nquery.configure do |config|
   config.authentication_mode = :hybrid
   config.current_user_method = :current_user

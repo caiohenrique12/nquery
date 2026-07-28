@@ -33,8 +33,8 @@ module Nquery
 
       data_source = DataSource.create!(
         name: @name,
-        adapter: connection.adapter_name.downcase.include?("postgres") ? "postgresql" : "rails",
-        connection_config: { import_table: table_name }.to_json
+        adapter: "rails",
+        connection_config_hash: { "import_table" => table_name }
       )
 
       upload.update!(status: "completed", column_mapping: columns)

@@ -11,6 +11,12 @@ RSpec.describe "Chart builder JS" do
     expect(js).not_to match(/if \(tab === "table"\) \{\s*if \(typeField\) typeField\.value = "table"/)
   end
 
+  it "seeds saved chart results into the builder on edit" do
+    expect(js).to include("applyResult")
+    expect(js).to include("root.dataset.initialResult")
+    expect(js).to include("initialResult.error")
+  end
+
   it "renders dashboard previews for saved chart types beyond pie/bar" do
     expect(js).to include("buildPreviewChartConfig")
     expect(js).to include('type === "number"')

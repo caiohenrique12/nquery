@@ -141,6 +141,35 @@ RSpec.describe "Nquery queries", type: :request do
     expect(response).to be_redirect
   end
 
+  it "does not create a query with mutating SQL" do
+    sign_in_as(owner)
+
+    expect {
+      post "/queries", params: {
+        query: {
+          name: "Evil query",
+          statement: "DELETE FROM users",
+          data_source_id: data_source.id,
+          collection_id: restricted_collection.id
+        }
+      }
+    }.not_to change(Nquery::Query, :count)
+
+    expect(response).to have_http_status(:unprocessable_content)
+  end
+
+  it "does not update a query with mutating SQL" do
+    sign_in_as(owner)
+
+    patch "/queries/#{query.id}",
+          params: { query: { statement: "UPDATE users SET email = 'hacked@example.com'" } },
+          as: :json
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(JSON.parse(response.body)["error"]).to match(/SELECT|read-only|not allowed/i)
+    expect(query.reload.statement).to eq("SELECT 1 AS value")
+  end
+
   it "renders the new template when query creation fails" do
     sign_in_as(owner)
     allow_any_instance_of(Nquery::Query).to receive(:save).and_return(false)

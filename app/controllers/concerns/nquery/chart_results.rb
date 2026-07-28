@@ -9,14 +9,28 @@ module Nquery
     def chart_result(chart)
       return demo_result unless chart.query&.statement.present?
 
+      chart_query_result(chart)
+    rescue StandardError
+      demo_result
+    end
+
+    def chart_builder_result(chart)
+      return nil unless chart.query&.statement.present?
+
+      chart_query_result(chart, audit: false)
+    rescue QueryRunner::PermissionError, QueryRunner::Error => e
+      { error: e.message }
+    rescue StandardError => e
+      { error: e.message }
+    end
+
+    def chart_query_result(chart, audit: true)
       QueryRunner.new(
         data_source: chart.query.data_source || DataSource.first,
         statement: chart.query.statement,
         user: current_nquery_user,
         query: chart.query
-      ).run
-    rescue StandardError
-      demo_result
+      ).run(audit: audit)
     end
 
     def demo_result

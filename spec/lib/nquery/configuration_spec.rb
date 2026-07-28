@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "nquery"
-require "nquery"
 require "spec_helper"
 
 RSpec.describe Nquery do
