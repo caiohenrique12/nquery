@@ -22,7 +22,7 @@ module Nquery
 
       data_source = DataSource.find_or_create_by!(name: "Main Database") do |ds|
         ds.adapter = "rails"
-        ds.connection_config = {}.to_json
+        ds.connection_config_hash = {}
       end
 
       root_collection = Collection.find_or_create_by!(name: "Our analytics", kind: "root")

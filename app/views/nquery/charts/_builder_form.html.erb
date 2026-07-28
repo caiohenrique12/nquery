@@ -1,11 +1,13 @@
 <% viz = chart.visualization.is_a?(Hash) ? chart.visualization : {} %>
 <% chart_type = viz["type"].presence || "table" %>
 <% active_chart_type = chart_builder_chart_types.include?(chart_type) ? chart_type : "bar" %>
+<% builder_data = {
+     controller: "chart-builder",
+     query_save_url: chart.query&.persisted? ? query_path(chart.query) : nil
+   } %>
+<% builder_data[:initial_result] = result if local_assigns[:result].present? %>
 <%= form_with model: chart, url: form_url, class: "nq-form nq-chart-builder-form", html: {
-      data: {
-        controller: "chart-builder",
-        query_save_url: chart.query&.persisted? ? query_path(chart.query) : nil
-      }
+      data: builder_data
     } do |f| %>
   <%= render "nquery/charts/new_header",
              f: f,

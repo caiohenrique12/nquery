@@ -14,7 +14,7 @@ module Nquery
       @query = query
     end
 
-    def run
+    def run(audit: true)
       validate_statement!
       check_permissions!
 
@@ -25,12 +25,12 @@ module Nquery
         row_limit: Nquery.configuration.query_row_limit
       )
 
-      record_audit!(result, "success")
+      record_audit!(result, "success") if audit
       result
     rescue PermissionError
       raise
     rescue StandardError => e
-      record_audit!({}, "error", e.message)
+      record_audit!({}, "error", e.message) if audit
       raise Error, e.message
     end
 

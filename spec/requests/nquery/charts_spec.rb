@@ -222,8 +222,27 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include("Save chart")
       expect(response.body).to include("SELECT 1 AS value")
       expect(response.body).to include('value="bar"')
+      expect(response.body).to include("data-initial-result=")
+      expect(response.body).to include("columns")
       expect(response.body).not_to include('data-controller="query-editor"')
       expect(response.body).not_to include('data-controller="chart-preview"')
+    end
+
+    it "does not seed demo data when the query runner fails" do
+      allow_any_instance_of(Nquery::QueryRunner).to receive(:run).and_raise(Nquery::QueryRunner::Error, "boom")
+
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("Jan")
+      expect(response.body).to include("data-initial-result=")
+      expect(response.body).to include("boom")
+    end
+
+    it "does not create an audit when loading the builder" do
+      expect {
+        get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+      }.not_to change(Nquery::Audit, :count)
     end
   end
 

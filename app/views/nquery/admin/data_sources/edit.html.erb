@@ -1,8 +1,2 @@
 <div class="nq-page-header"><h1>Edit data source</h1></div>
-<%= form_with model: @data_source, url: admin_data_source_path(@data_source), method: :patch, class: "nq-form nq-card" do |f| %>
-  <div class="nq-form-row"><%= f.label :name %><%= f.text_field :name, class: "nq-input" %></div>
-  <div class="nq-form-row"><%= f.label :adapter %><%= f.select :adapter, Nquery::DataSource::ADAPTERS, {}, class: "nq-input" %></div>
-  <div class="nq-form-row"><%= f.label :connection_config %><%= f.text_area :connection_config, class: "nq-textarea", rows: 4 %></div>
-  <div class="nq-form-row"><label><%= f.check_box :active %> Active</label></div>
-  <%= f.submit "Update", class: "nq-btn nq-btn-primary" %>
-<% end %>
+<%= render "form", data_source: @data_source, cancel_path: admin_data_sources_path, submit_label: "Update" %>

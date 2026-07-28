@@ -1,6 +1,15 @@
-<div class="nq-page-header"><h1>Edit group</h1></div>
-<%= form_with model: @group, url: admin_group_path(@group), method: :patch, class: "nq-form nq-card" do |f| %>
-  <div class="nq-form-row"><%= f.label :name %><%= f.text_field :name, class: "nq-input", disabled: @group.system? %></div>
-  <div class="nq-form-row"><%= f.label :description %><%= f.text_area :description, class: "nq-textarea" %></div>
-  <%= f.submit "Update", class: "nq-btn nq-btn-primary" unless @group.system? && @group.system_group != "custom" %>
-<% end %>
+<div class="nq-page-header">
+  <h1>Edit group</h1>
+  <p class="nq-muted nq-resource-meta">
+    <%= @group.name %>
+    · <%= group_type_label(@group) %>
+    · <%= pluralize(@group.users.size, "member") %>
+  </p>
+  <div class="nq-actions">
+    <%= link_to admin_group_path(@group), class: "nq-btn" do %>
+      <span>View members</span>
+    <% end %>
+  </div>
+</div>
+
+<%= render "form", group: @group, cancel_path: admin_group_path(@group), submit_label: "Save changes" %>

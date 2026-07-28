@@ -51,6 +51,14 @@ RSpec.describe Nquery::QueryRunner do
     expect(result[:row_count]).to eq(1)
   end
 
+  it "skips audit records when audit is disabled" do
+    runner = described_class.new(data_source: data_source, statement: "SELECT 1 AS value", user: user)
+
+    expect {
+      runner.run(audit: false)
+    }.not_to change(Nquery::Audit, :count)
+  end
+
   it "re-raises permission errors without wrapping" do
     viewer_group = Nquery::Group.create!(name: "Blocked", system_group: "custom")
     viewer = Nquery::User.create!(email: "blocked@example.com", password: "password123").tap do |u|

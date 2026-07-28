@@ -15,6 +15,8 @@ module Nquery
 
       def create
         @data_source = DataSource.new(data_source_params)
+        @data_source.connection_fields_submitted = connection_fields_required?(@data_source.adapter)
+
         if @data_source.save
           redirect_to admin_data_sources_path, notice: "Data source created."
         else
@@ -23,12 +25,17 @@ module Nquery
       end
 
       def edit
+        @data_source.assign_connection_fields_from_config
       end
 
       def update
-        if @data_source.update(data_source_params)
+        @data_source.assign_attributes(data_source_params)
+        @data_source.connection_fields_submitted = connection_fields_required?(@data_source.adapter)
+
+        if @data_source.save
           redirect_to admin_data_sources_path, notice: "Data source updated."
         else
+          @data_source.assign_connection_fields_from_config unless @data_source.connection_fields_submitted?
           render :edit, status: :unprocessable_content
         end
       end
@@ -40,7 +47,22 @@ module Nquery
       end
 
       def data_source_params
-        params.require(:data_source).permit(:name, :adapter, :active, :connection_config)
+        params.require(:data_source).permit(
+          :name,
+          :adapter,
+          :active,
+          :host,
+          :port,
+          :database,
+          :username,
+          :password,
+          :database_path,
+          :sslmode
+        )
+      end
+
+      def connection_fields_required?(adapter)
+        DataSource::REMOTE_ADAPTERS.include?(adapter) || adapter == "sqlite"
       end
     end
   end

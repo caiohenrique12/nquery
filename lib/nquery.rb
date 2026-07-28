@@ -4,6 +4,7 @@ require "turbo-rails"
 
 require "nquery/version"
 require "nquery/configuration"
+require "nquery/encryption"
 require "nquery/permissions/resolver"
 require "nquery/authorizes_collection"
 require "nquery/data_sources/adapter"

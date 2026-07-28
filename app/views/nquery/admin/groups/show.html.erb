@@ -1,24 +1,103 @@
-<div class="nq-page-header"><h1><%= @group.name %></h1></div>
-<div class="nq-grid nq-grid-2">
-  <section class="nq-card">
-    <h2>Members</h2>
-    <ul class="nq-list">
-      <% @group.users.each do |user| %>
-        <li>
-          <%= user.name %> (<%= user.email %>)
-          <% unless @group.system_group == "all_users" %>
-            <%= button_to "Remove", remove_member_admin_group_path(@group, user_id: user.id), method: :delete, class: "nq-btn nq-btn-ghost" %>
-          <% end %>
-        </li>
-      <% end %>
-    </ul>
+<div class="nq-page-header">
+  <h1><%= @group.name %></h1>
+  <p class="nq-muted nq-resource-meta">
+    <span class="nq-badge <%= group_type_badge_class(@group) %>"><%= group_type_label(@group) %></span>
+    · <%= pluralize(@members.size, "member") %>
+  </p>
+  <div class="nq-actions">
+    <%= link_to edit_admin_group_path(@group), class: "nq-btn" do %>
+      <%= nq_icon(:edit) %>
+      <span>Edit</span>
+    <% end %>
+    <%= link_to by_group_admin_permissions_path(group_id: @group.id), class: "nq-btn" do %>
+      <span>Permissions</span>
+    <% end %>
+  </div>
+</div>
+
+<% if @group.description.present? %>
+  <div class="nq-card nq-group-description nq-mb">
+    <p><%= @group.description %></p>
+  </div>
+<% end %>
+
+<div class="nq-grid nq-grid-2 nq-group-layout">
+  <section class="nq-section">
+    <h2 class="nq-section-title">Members</h2>
+
+    <% if @members.any? %>
+      <div class="nq-card nq-card-table">
+        <table class="nq-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @members.each do |user| %>
+              <tr>
+                <td><%= link_to user.name, admin_user_path(user) %></td>
+                <td class="nq-muted"><%= user.email %></td>
+                <td>
+                  <% unless @group.system_group == "all_users" %>
+                    <div class="nq-actions">
+                      <%= button_to "Remove",
+                                    remove_member_admin_group_path(@group),
+                                    method: :delete,
+                                    params: { user_id: user.id },
+                                    class: "nq-btn nq-btn-ghost",
+                                    form: { onsubmit: "return confirm('#{j("Remove #{user.name} from #{@group.name}?")}');" } %>
+                    </div>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="nq-card nq-empty-state">
+        <h2>No members yet</h2>
+        <p class="nq-muted">Add users to this group to grant them shared permissions.</p>
+      </div>
+    <% end %>
   </section>
+
   <% if @available_users.any? %>
-    <section class="nq-card">
-      <h2>Add member</h2>
-      <% @available_users.limit(10).each do |user| %>
-        <%= button_to "Add #{user.email}", add_member_admin_group_path(@group, user_id: user.id), method: :post, class: "nq-btn" %>
-      <% end %>
+    <section class="nq-section">
+      <h2 class="nq-section-title">Add member</h2>
+
+      <div class="nq-card">
+        <%= form_with url: add_member_admin_group_path(@group), method: :post, class: "nq-form nq-add-member-form" do %>
+          <div class="nq-form-row">
+            <%= label_tag :user_id, "User" %>
+            <%= select_tag :user_id,
+                           options_from_collection_for_select(@available_users, :id, :name_with_email),
+                           include_blank: "Select a user…",
+                           class: "nq-input",
+                           required: true %>
+            <p class="nq-field-hint">Only active users who are not already in this group are listed.</p>
+          </div>
+          <%= submit_tag "Add to group", class: "nq-btn nq-btn-primary" %>
+        <% end %>
+      </div>
+    </section>
+  <% elsif @group.system_group == "all_users" %>
+    <section class="nq-section">
+      <h2 class="nq-section-title">Add member</h2>
+      <div class="nq-card">
+        <%= nq_flash_card "Every active user is automatically added to this group.", type: :info, toast: false %>
+      </div>
+    </section>
+  <% else %>
+    <section class="nq-section">
+      <h2 class="nq-section-title">Add member</h2>
+      <div class="nq-card nq-empty-state">
+        <h2>Everyone is already here</h2>
+        <p class="nq-muted">All active users are already members of this group.</p>
+      </div>
     </section>
   <% end %>
 </div>

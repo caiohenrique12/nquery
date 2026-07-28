@@ -134,6 +134,20 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-textarea { font-family: ui-monospace, monospace; resize: vertical; }
 .nq-form-row { margin-bottom: 1rem; }
 .nq-form-row label { display: block; margin-bottom: 0.25rem; font-weight: 500; font-size: 0.875rem; }
+.nq-form-card { max-width: 40rem; }
+.nq-form-section { margin-bottom: 0.5rem; }
+.nq-form-section-title { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nq-muted); }
+.nq-form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; align-items: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--nq-border); }
+.nq-form-errors { margin-bottom: 1.25rem; padding: 0.875rem 1rem; border-radius: 8px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 0.875rem; }
+.nq-form-errors p { margin: 0 0 0.5rem; }
+.nq-form-errors ul { margin: 0; padding-left: 1.25rem; }
+.nq-field-hint { margin: 0.375rem 0 0; font-size: 0.8125rem; color: var(--nq-muted); line-height: 1.4; }
+.nq-textarea-prose { font-family: inherit; resize: vertical; min-height: 5rem; }
+.nq-badge-system { background: #dbeafe; color: #1d4ed8; }
+.nq-badge-custom { background: #e2e8f0; color: #334155; }
+.nq-group-description p { margin: 0; line-height: 1.5; color: var(--nq-text); }
+.nq-group-layout { align-items: start; }
+.nq-add-member-form .nq-form-row:last-of-type { margin-bottom: 1.25rem; }
 .nq-table { width: 100%; border-collapse: collapse; }
 .nq-table th, .nq-table td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--nq-border); }
 .nq-card-table { padding: 0; overflow: hidden; }

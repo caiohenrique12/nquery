@@ -1,21 +1,26 @@
-<div class="nq-page-header"><h1>Groups</h1><%= link_to "New group", new_admin_group_path, class: "nq-btn nq-btn-primary" %></div>
-
-<div class="nq-card nq-card-table">
-  <table class="nq-table">
-    <thead><tr><th>Name</th><th>Type</th><th>Members</th><th></th></tr></thead>
-    <tbody>
-      <% @groups.each do |group| %>
-        <tr>
-          <td><%= link_to group.name, admin_group_path(group) %></td>
-          <td><span class="nq-badge"><%= group.system_group %></span></td>
-          <td><%= group.users.count %></td>
-          <td>
-            <div class="nq-actions">
-              <%= link_to "Edit", edit_admin_group_path(group), class: "nq-btn" unless group.system? && group.system_group != "custom" %>
-            </div>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+<div class="nq-page-header">
+  <h1>Groups</h1>
+  <p class="nq-muted nq-resource-meta">Organize users into groups to manage access and permissions.</p>
+  <%= link_to new_admin_group_path, class: "nq-btn nq-btn-primary" do %>
+    <%= nq_icon(:plus) %>
+    <span>New group</span>
+  <% end %>
 </div>
+
+<%= nq_card_table columns: ["Name", "Description", "Type", "Members", ""] do %>
+  <% @groups.each do |group| %>
+    <tr>
+      <td><%= link_to group.name, admin_group_path(group) %></td>
+      <td class="nq-muted"><%= group.description.presence || "—" %></td>
+      <td>
+        <span class="nq-badge <%= group_type_badge_class(group) %>"><%= group_type_label(group) %></span>
+      </td>
+      <td><%= group.users.size %></td>
+      <td>
+        <div class="nq-actions">
+          <%= link_to "Edit", edit_admin_group_path(group), class: "nq-btn" %>
+        </div>
+      </td>
+    </tr>
+  <% end %>
+<% end %>
