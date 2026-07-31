@@ -6,7 +6,7 @@ RSpec.describe "Admin permissions", type: :request do
   let(:admin) { Nquery::User.find_by!(email: "admin@nquery.dev") }
   let(:root_collection) { Nquery::Collection.roots.first }
   let(:engineering_group) { Nquery::Group.find_by!(name: "Engineering") }
-  let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+  let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
 
   def sign_in_as_admin
     post "/login", params: { email: admin.email, password: "password123" }

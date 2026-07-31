@@ -2,7 +2,7 @@
 
 module Nquery
   class User < ApplicationRecord
-    has_secure_password validations: false
+    devise :database_authenticatable, :confirmable, :recoverable, :rememberable, :validatable
 
     has_many :group_memberships, class_name: "Nquery::GroupMembership", dependent: :destroy
     has_many :groups, through: :group_memberships, class_name: "Nquery::Group"
@@ -16,9 +16,37 @@ module Nquery
             class_name: "Nquery::Collection", foreign_key: :owner_id, inverse_of: :owner, dependent: :destroy
 
     validates :email, presence: true, uniqueness: true
-    validates :password, length: { minimum: 8 }, if: -> { password.present? }
 
     scope :active, -> { where(deactivated_at: nil) }
+
+    def self.new(attributes = nil, &block)
+      if attributes.is_a?(Hash)
+        super(apply_creation_defaults(attributes), &block)
+      else
+        super
+      end
+    end
+
+    def self.apply_creation_defaults(attributes)
+      attributes = attributes.stringify_keys
+      attributes["password_confirmation"] ||= attributes["password"]
+      if attributes["confirmed_at"].blank? && !Nquery.configuration.devise_authentication?
+        attributes["confirmed_at"] = Time.current
+      end
+      attributes
+    end
+
+    def send_confirmation_instructions
+      return unless Nquery.configuration.devise_authentication?
+
+      super
+    end
+
+    def send_on_create_confirmation_instructions
+      return unless Nquery.configuration.devise_authentication?
+
+      super
+    end
 
     def name
       [first_name, last_name].compact_blank.join(" ").presence || email
@@ -40,14 +68,6 @@ module Nquery
       Permissions::Resolver.new(self).admin?
     end
 
-    def self.find_or_create_from_sso!(host_user)
-      external_id = host_user.id.to_s
-      find_or_create_by!(external_id: external_id) do |user|
-        user.email = host_user.try(:email) || "#{external_id}@sso.local"
-        user.first_name = host_user.try(:first_name) || host_user.try(:name)
-      end.tap(&:ensure_all_users_membership!)
-    end
-
     def ensure_all_users_membership!
       all_users = Group.find_by!(system_group: "all_users")
       group_memberships.find_or_create_by!(group: all_users)
@@ -57,6 +77,18 @@ module Nquery
       return personal_collection if personal_collection
 
       create_personal_collection!(name: "#{name}'s Personal Collection", kind: "personal")
+    end
+
+    def password_required?
+      return false if new_record? && password.blank?
+
+      super
+    end
+
+    protected
+
+    def send_devise_notification(notification, *args)
+      Nquery::DeviseMailer.send(notification, self, *args).deliver_now
     end
   end
 end

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "devise"
+
 module Nquery
   class Engine < ::Rails::Engine
     isolate_namespace Nquery
@@ -49,6 +51,7 @@ module Nquery
     initializer "nquery.filter_parameters" do |app|
       app.config.filter_parameters += %i[
         password
+        password_confirmation
         connection_config
         username
         database
@@ -59,9 +62,33 @@ module Nquery
       ]
     end
 
-    initializer "nquery.config" do
-      Nquery.configure do |config|
-        config.authentication_mode = ENV.fetch("NQUERY_AUTHENTICATION_MODE", "standalone").to_sym
+    initializer "nquery.mailer" do
+      config.to_prepare do
+        mailer_sender = Nquery.configuration.mailer_sender
+        smtp_settings = Nquery.configuration.smtp&.deep_symbolize_keys
+
+        [Nquery::ApplicationMailer, Nquery::DeviseMailer].each do |mailer_class|
+          mailer_class.default from: mailer_sender if mailer_sender.present?
+          mailer_class.smtp_settings = smtp_settings if smtp_settings.present?
+        end
+      end
+    end
+
+    def self.configure_devise!
+      Devise.setup do |config|
+        config.mailer = "Nquery::DeviseMailer"
+        config.mailer_sender = Nquery.configuration.mailer_sender || "noreply@example.com"
+        config.parent_mailer = "Nquery::ApplicationMailer"
+      end
+    end
+
+    initializer "nquery.devise" do
+      ActiveSupport.on_load(:devise) { Nquery::Engine.configure_devise! }
+    end
+
+    initializer "nquery.devise_mapping", after: :load_config_initializers do
+      config.to_prepare do
+        Devise.add_mapping(:nquery_user, class_name: "Nquery::User") unless Devise.mappings.key?(:nquery_user)
       end
     end
 

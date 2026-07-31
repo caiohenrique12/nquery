@@ -207,7 +207,7 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       query = Nquery::Query.create!(
         name: "Layout query",
         statement: "SELECT 1 AS value",
-        data_source: Nquery::DataSource.find_by!(name: "Main Database"),
+        data_source: Nquery::DataSource.find_by!(key: "main"),
         creator: admin,
         collection: root_collection
       )

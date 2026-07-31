@@ -4,7 +4,7 @@ require "nquery"
 require_relative "../../rails_helper"
 
 RSpec.describe "Nquery collection authorization", type: :request do
-  let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+  let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
   let(:restricted_collection) do
     Nquery::Collection.create!(name: "Finance", kind: "standard", parent: Nquery::Collection.roots.first)
   end

@@ -1,0 +1,21 @@
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Create your admin account",
+             subtitle: "We'll email you a link to set your password."
+           } do %>
+  <%= form_with model: @user, url: onboarding_admin_path, class: "nq-form nq-auth-form" do |form| %>
+    <div class="nq-form-row">
+      <%= form.label :first_name, "First name" %>
+      <%= form.text_field :first_name, class: "nq-input", required: true, autofocus: true %>
+    </div>
+    <div class="nq-form-row">
+      <%= form.label :last_name, "Last name" %>
+      <%= form.text_field :last_name, class: "nq-input", required: true %>
+    </div>
+    <div class="nq-form-row">
+      <%= form.label :email, "Email address" %>
+      <%= form.email_field :email, class: "nq-input", required: true, autocomplete: "email" %>
+    </div>
+    <button type="submit" class="nq-btn nq-btn-primary nq-btn-block nq-auth-submit">Send confirmation email</button>
+  <% end %>
+<% end %>

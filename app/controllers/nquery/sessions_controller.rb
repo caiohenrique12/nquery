@@ -3,6 +3,7 @@
 module Nquery
   class SessionsController < ApplicationController
     skip_before_action :_authenticate!
+    skip_before_action :redirect_to_onboarding
     layout "nquery/auth"
 
     def new
@@ -11,8 +12,8 @@ module Nquery
 
     def create
       user = User.active.find_by(email: params[:email]&.downcase)
-      if user&.authenticate(params[:password])
-        session[:nquery_user_id] = user.id
+      if password_authenticated?(user, params[:password])
+        sign_in_nquery_user(user)
         redirect_to root_path, notice: "Signed in successfully."
       else
         flash.now[:alert] = "Invalid email or password."
@@ -21,8 +22,20 @@ module Nquery
     end
 
     def destroy
-      session.delete(:nquery_user_id)
+      sign_out_nquery_user
       redirect_to login_path, notice: "Signed out."
+    end
+
+    private
+
+    def password_authenticated?(user, password)
+      return false unless user&.valid_password?(password)
+
+      if Nquery.configuration.devise_authentication?
+        user.confirmed?
+      else
+        true
+      end
     end
   end
 end

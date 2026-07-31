@@ -11,14 +11,17 @@ module Nquery
 
     helper_method :current_nquery_user, :permission_resolver
 
+    before_action :redirect_to_onboarding, unless: :skip_onboarding_redirect?
     before_action :_authenticate!
     before_action :set_current_user_context
 
     private
 
     def _authenticate!
-      if Nquery.configuration.authenticate
-        instance_eval(&Nquery.configuration.authenticate)
+      return if auth_exempt?
+
+      if Nquery.configuration.devise_authentication?
+        authenticate_nquery_user!
       else
         default_authenticate!
       end
@@ -26,33 +29,70 @@ module Nquery
 
     def default_authenticate!
       return if current_nquery_user
-      return if auth_exempt?
 
       redirect_to login_path, alert: "Please sign in to continue."
     end
 
+    def redirect_to_onboarding
+      return if Onboarding.complete?
+
+      redirect_to new_onboarding_company_path
+    end
+
+    def skip_onboarding_redirect?
+      auth_exempt? || Onboarding.complete?
+    end
+
     def auth_exempt?
-      controller_path.in?(%w[nquery/sessions nquery/registrations nquery/embed/charts nquery/embed/dashboards])
+      controller_path.in?(%w[
+        nquery/sessions
+        nquery/onboarding/companies
+        nquery/onboarding/admins
+        nquery/onboarding/congrats
+        nquery/onboarding/confirmations
+        nquery/embed/charts
+        nquery/embed/dashboards
+      ])
     end
 
     def current_nquery_user
-      @current_nquery_user ||= resolve_current_user
+      @current_nquery_user ||= if Nquery.configuration.devise_authentication?
+        warden.user(:nquery_user)
+      else
+        session_user
+      end
     end
 
-    def resolve_current_user
-      if session[:nquery_user_id]
-        return User.active.find_by(id: session[:nquery_user_id])
-      end
+    def session_user
+      return unless session[:nquery_user_id]
 
-      if Nquery.configuration.authentication_mode.in?(%i[sso hybrid])
-        host_method = Nquery.configuration.current_user_method
-        host_user = host_method.is_a?(Symbol) ? send(host_method) : instance_eval(&host_method)
-        if host_user && Nquery.configuration.resolve_user
-          return instance_eval { Nquery.configuration.resolve_user.call(host_user) }
-        end
-      end
+      User.active.find_by(id: session[:nquery_user_id])
+    end
 
-      nil
+    def authenticate_nquery_user!
+      return if current_nquery_user
+
+      redirect_to login_path, alert: "Please sign in to continue."
+    end
+
+    def sign_in_nquery_user(user)
+      if Nquery.configuration.devise_authentication?
+        warden.set_user(user, scope: :nquery_user)
+      else
+        session[:nquery_user_id] = user.id
+      end
+    end
+
+    def sign_out_nquery_user
+      if Nquery.configuration.devise_authentication?
+        warden.logout(:nquery_user)
+      else
+        session.delete(:nquery_user_id)
+      end
+    end
+
+    def warden
+      request.env["warden"]
     end
 
     def set_current_user_context

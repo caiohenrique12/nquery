@@ -1,0 +1,5 @@
+Welcome <%= @email %>!
+
+You can confirm your account email through the link below:
+
+<%= onboarding_confirm_url(confirmation_token: @token) %>

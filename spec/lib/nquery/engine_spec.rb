@@ -7,13 +7,29 @@ RSpec.describe Nquery::Engine do
     expect(described_class).to be < Rails::Engine
   end
 
-  it "configures authentication mode from the environment" do
-    expect(Nquery.configuration.authentication_mode).to be_a(Symbol)
+  it "defaults authentication_provider to devise" do
+    Nquery.reset_configuration!
+
+    expect(Nquery.configuration.authentication_provider).to eq(:devise)
   end
 
   it "registers engine initializers" do
     names = described_class.initializers.map(&:name)
-    expect(names).to include("nquery.assets", "nquery.config", "nquery.migrations", "nquery.components")
+    expect(names).to include(
+      "nquery.assets",
+      "nquery.migrations",
+      "nquery.mailer",
+      "nquery.devise",
+      "nquery.devise_mapping",
+      "nquery.components"
+    )
+  end
+
+  it "configures Devise mailer settings" do
+    described_class.configure_devise!
+
+    expect(Devise.mailer).to eq(Nquery::DeviseMailer)
+    expect(Devise.parent_mailer).to eq("Nquery::ApplicationMailer")
   end
 
   it "executes conditional initializer branches" do
@@ -57,5 +73,6 @@ RSpec.describe Nquery::Engine do
     Rails.application.load_tasks
 
     expect(Rake::Task.task_defined?("nquery:seed")).to be(true)
+    expect(Rake::Task.task_defined?("nquery:setup")).to be(true)
   end
 end

@@ -40,8 +40,14 @@ mount Nquery::Engine, at: "/nquery"
 
 ```bash
 rails generate nquery:install
-rails db:migrate
+rails active_storage:install   # organization branding uses Active Storage attachments
+rails db:migrate               # includes engine migrations from the gem
+rails nquery:setup
 ```
+
+Then mount the engine, set `mailer_sender` and `smtp` in `config/initializers/nquery.rb`, and visit `/nquery` to complete the onboarding wizard.
+
+Demo Docker (`make up`) still uses `nquery:seed` for local quick start with sample data.
 
 ## Contributing
 

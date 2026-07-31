@@ -29,6 +29,14 @@ RSpec.configure do |config|
     host! "www.example.com"
   end
 
+  config.after(:each) do
+    Nquery.reset_configuration!
+    Nquery.configure do |config|
+      config.authentication_provider = :native
+      config.mailer_sender = "noreply@nquery.dev"
+    end
+  end
+
   config.before(:each, type: :system) do
     driven_by :rack_test
   end

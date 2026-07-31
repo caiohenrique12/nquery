@@ -4,7 +4,7 @@ require_relative "../../rails_helper"
 
 RSpec.describe Nquery::Chart do
   let(:admin) { Nquery::User.find_by!(email: "admin@nquery.dev") }
-  let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+  let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
   let(:root_collection) { Nquery::Collection.roots.first }
 
   describe "#unarchive!" do

@@ -27,6 +27,7 @@ module Nquery
     attr_accessor :host, :port, :database, :username, :password, :database_path, :sslmode, :connection_fields_submitted
 
     validates :name, presence: true
+    validates :key, uniqueness: true, allow_nil: true
     validates :adapter, inclusion: { in: ADAPTERS }
     validate :validate_connection_fields, if: :connection_fields_submitted?
 

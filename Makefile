@@ -11,17 +11,17 @@ restart: down up ## Stop and restart all services
 debug: ## Start app with Ruby debugger (attach on port 12345)
 	docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
 
-setup: ## Migrate and seed without starting server
-	docker compose run --rm nquery bin/setup
+setup: ## Migrate and seed without starting server (requires running nquery service)
+	docker compose exec nquery bin/setup
 
-tests: ## Run RSpec
-	docker compose run --rm nquery bash -lc "cd /app && bundle exec rspec"
+tests: ## Run RSpec (requires running nquery service)
+	docker compose exec nquery bash -lc "cd /app && bundle exec rspec"
 
-coverage: ## Run RSpec with SimpleCov report (output in coverage/)
-	docker compose run --rm nquery bash -lc "cd /app && bundle exec rspec"
+coverage: ## Run RSpec with SimpleCov report (requires running nquery service)
+	docker compose exec nquery bash -lc "cd /app && bundle exec rspec"
 
-console: ## Rails console
-	docker compose run --rm nquery bash -lc "cd server && bundle exec rails console"
+console: ## Rails console (requires running nquery service)
+	docker compose exec nquery bash -lc "cd server && bundle exec rails console"
 
 bash: ## Bash inside nquery container
 	docker compose exec nquery bash

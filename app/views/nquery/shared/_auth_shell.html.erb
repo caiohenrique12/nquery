@@ -12,7 +12,7 @@
 
     <%= yield %>
 
-    <% if footer_link.present? %>
+    <% if local_assigns[:footer_link].present? %>
       <footer class="nq-auth-footer">
         <span class="nq-muted"><%= footer_text %></span>
         <%= link_to footer_label, footer_link, class: "nq-auth-link" %>

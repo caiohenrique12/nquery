@@ -12,50 +12,48 @@ RSpec.describe "Authentication", type: :request do
     end
   end
 
-  describe "custom authentication" do
+  describe "Devise sign-in" do
     around do |example|
-      original = Nquery.configuration.authenticate
-      Nquery.configure do |config|
-        config.authenticate_with do
-          redirect_to "/login", alert: "Custom auth required." unless session[:custom_auth]
-        end
-      end
+      Nquery.reset_configuration!
+      Nquery.configure { |config| config.authentication_provider = :devise }
       example.run
-      Nquery.configuration.instance_variable_set(:@authenticate_with, original)
     end
 
-    it "uses a custom authenticate block" do
+    it "redirects unauthenticated users to login" do
       get "/collections"
 
       expect(response).to redirect_to("/login")
-      expect(flash[:alert]).to eq("Custom auth required.")
-    end
-  end
-
-  describe "SSO user resolution" do
-    let(:host_user) { double(id: 42, email: "sso@example.com", first_name: "SSO", name: nil) }
-
-    around do |example|
-      original_mode = Nquery.configuration.authentication_mode
-      original_resolver = Nquery.configuration.resolve_user
-      Nquery.configure do |config|
-        config.authentication_mode = :sso
-        config.resolve_nquery_user { |user| Nquery::User.find_or_create_from_sso!(user) }
-      end
-      example.run
-      Nquery.configuration.authentication_mode = original_mode
-      Nquery.configuration.instance_variable_set(:@resolve_nquery_user, original_resolver)
+      expect(flash[:alert]).to eq("Please sign in to continue.")
     end
 
-    it "resolves users from the host application" do
-      controller = Nquery::ApplicationController.new
-      allow(controller).to receive(:session).and_return({})
-      allow(controller).to receive(:send).and_call_original
-      allow(controller).to receive(:send).with(:current_nquery_user).and_return(host_user)
+    it "rejects unconfirmed users" do
+      user = Nquery::User.create!(
+        email: "pending@acme.example.com",
+        first_name: "Pending",
+        last_name: "User",
+        password: "password123",
+        password_confirmation: "password123"
+      )
 
-      user = controller.send(:resolve_current_user)
+      post "/login", params: { email: user.email, password: "password123" }
 
-      expect(user.email).to eq("sso@example.com")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(flash[:alert]).to eq("Invalid email or password.")
+    end
+
+    it "signs in and signs out a confirmed user" do
+      user = Nquery::User.find_by!(email: "admin@nquery.dev")
+      user.update!(confirmed_at: Time.current) if user.confirmed_at.blank?
+
+      post "/login", params: { email: user.email, password: "password123" }
+      expect(response).to redirect_to("/")
+
+      delete "/logout"
+      expect(response).to redirect_to("/login")
+      expect(flash[:notice]).to eq("Signed out.")
+
+      get "/collections"
+      expect(response).to redirect_to("/login")
     end
   end
 end

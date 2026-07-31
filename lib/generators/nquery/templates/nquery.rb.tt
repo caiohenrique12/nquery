@@ -10,14 +10,21 @@
 # See https://guides.rubyonrails.org/active_record_encryption.html
 
 Nquery.configure do |config|
-  config.authentication_mode = :hybrid
-  config.current_user_method = :current_user
+  config.authentication_provider = :devise
 
-  config.authenticate_with do
-    redirect_to main_app.root_path unless current_user
-  end
+  config.mailer_sender = "noreply@example.com"
+  config.smtp = {
+    address: "smtp.example.com",
+    port: 587,
+    domain: "example.com",
+    user_name: "smtp-user",
+    password: "smtp-password",
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
 
-  config.resolve_nquery_user do |host_user|
-    Nquery::User.find_or_create_from_sso!(host_user)
-  end
+  config.data_sources = {
+    main: { adapter: :rails, name: "Application database" }
+  }
+  config.default_data_source = :main
 end

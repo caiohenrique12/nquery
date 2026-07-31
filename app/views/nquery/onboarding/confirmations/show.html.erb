@@ -1,0 +1,17 @@
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Set your password",
+             subtitle: "Choose a password for your admin account."
+           } do %>
+  <%= form_with model: @user, url: onboarding_confirm_path(confirmation_token: params[:confirmation_token]), method: :patch, class: "nq-form nq-auth-form" do |form| %>
+    <div class="nq-form-row">
+      <%= form.label :password, "Password" %>
+      <%= form.password_field :password, class: "nq-input", required: true, autofocus: true, autocomplete: "new-password" %>
+    </div>
+    <div class="nq-form-row">
+      <%= form.label :password_confirmation, "Confirm password" %>
+      <%= form.password_field :password_confirmation, class: "nq-input", required: true, autocomplete: "new-password" %>
+    </div>
+    <button type="submit" class="nq-btn nq-btn-primary nq-btn-block nq-auth-submit">Confirm and sign in</button>
+  <% end %>
+<% end %>

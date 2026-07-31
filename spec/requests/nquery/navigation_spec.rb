@@ -93,7 +93,7 @@ RSpec.describe "Navigation layout", type: :request do
   it "renders breadcrumbs on admin group and data source pages" do
     sign_in_as_admin
     group = Nquery::Group.find_by!(name: "Engineering")
-    data_source = Nquery::DataSource.find_by!(name: "Main Database")
+    data_source = Nquery::DataSource.find_by!(key: "main")
 
     get "/admin/groups/#{group.id}"
     expect(response).to have_http_status(:ok)

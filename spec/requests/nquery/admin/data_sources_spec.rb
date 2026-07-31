@@ -16,7 +16,7 @@ RSpec.describe "Admin data sources", type: :request do
       get "/admin/data_sources"
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Main Database")
+      expect(response.body).to include("Application database")
     end
 
     it "denies non-admin users" do
