@@ -72,10 +72,6 @@ module Nquery
       sign_in(:nquery_user, user)
     end
 
-    def sign_out_nquery_user
-      sign_out(:nquery_user)
-    end
-
     def set_current_user_context
       @permission_resolver = Permissions::Resolver.new(current_nquery_user) if current_nquery_user
     end

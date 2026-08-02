@@ -22,6 +22,18 @@ RSpec.describe "Error pages", type: :request do
     end
   end
 
+  describe "missing records" do
+    it "renders a branded 404 for ActiveRecord::RecordNotFound" do
+      sign_in_with_devise(email: "admin@nquery.dev")
+
+      get "/collections/0"
+
+      expect(response).to have_http_status(:not_found)
+      expect(response.body).to include("Page not found")
+      expect(response.body).not_to include("ActiveRecord::RecordNotFound")
+    end
+  end
+
   describe "unhandled errors" do
     around do |example|
       previous = Rails.application.config.consider_all_requests_local
