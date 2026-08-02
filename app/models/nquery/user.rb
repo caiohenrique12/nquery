@@ -3,7 +3,7 @@
 module Nquery
   class User < ApplicationRecord
     devise :database_authenticatable, :confirmable, :validatable,
-           confirm_within: 3.days
+           confirm_within: 1.hour
 
     has_many :group_memberships, class_name: "Nquery::GroupMembership", dependent: :destroy
     has_many :groups, through: :group_memberships, class_name: "Nquery::Group"

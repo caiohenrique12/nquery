@@ -11,7 +11,13 @@ development:
 
 test:
   <<: *default
+  # Full suite + demo Puma in the same container can briefly contend on SQLite.
+  # Give writers longer to wait, and use WAL so readers don't block writers.
   database: <%= Rails.root.join("db/test.sqlite3") %>
+  timeout: 15000
+  pragmas:
+    journal_mode: wal
+    busy_timeout: 15000
 
 production:
   <<: *default

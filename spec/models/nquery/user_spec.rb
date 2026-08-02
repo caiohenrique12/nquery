@@ -3,6 +3,12 @@
 require_relative "../../rails_helper"
 
 RSpec.describe Nquery::User do
+  describe "confirmable" do
+    it "expires confirmation within 1 hour" do
+      expect(described_class.confirm_within).to eq(1.hour)
+    end
+  end
+
   describe ".create" do
     context "when password is present" do
       it "stays unconfirmed until skip_confirmation! or confirm" do

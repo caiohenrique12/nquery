@@ -2,7 +2,7 @@
 
 module Nquery
   class Organization < ApplicationRecord
-    IMAGE_CONTENT_TYPES = %w[image/png image/jpeg image/jpg image/webp image/gif].freeze
+    IMAGE_CONTENT_TYPES = %w[image/png image/jpeg image/jpg image/webp].freeze
     MAX_IMAGE_BYTE_SIZE = 5.megabytes
 
     has_one_attached :logo
@@ -27,7 +27,7 @@ module Nquery
       return unless attachment.attached?
 
       unless attachment.blob.content_type.in?(IMAGE_CONTENT_TYPES)
-        errors.add(name, "must be a PNG, JPEG, WebP, or GIF")
+        errors.add(name, "must be a PNG, JPEG, or WebP")
       end
 
       return unless attachment.blob.byte_size > MAX_IMAGE_BYTE_SIZE

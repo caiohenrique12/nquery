@@ -43,7 +43,43 @@ RSpec.describe Nquery::Organization do
     )
 
     expect(organization).not_to be_valid
-    expect(organization.errors[:logo]).to include("must be a PNG, JPEG, WebP, or GIF")
+    expect(organization.errors[:logo]).to include("must be a PNG, JPEG, or WebP")
+  end
+
+  it "rejects GIF logos" do
+    organization = described_class.create!(name: "Acme")
+    organization.logo.attach(
+      io: StringIO.new("GIF89a"),
+      filename: "logo.gif",
+      content_type: "image/gif"
+    )
+
+    expect(organization).not_to be_valid
+    expect(organization.errors[:logo]).to include("must be a PNG, JPEG, or WebP")
+  end
+
+  it "rejects cover images with an unsupported content type" do
+    organization = described_class.create!(name: "Acme")
+    organization.cover_image.attach(
+      io: StringIO.new("%PDF-1.4"),
+      filename: "malware.pdf",
+      content_type: "application/pdf"
+    )
+
+    expect(organization).not_to be_valid
+    expect(organization.errors[:cover_image]).to include("must be a PNG, JPEG, or WebP")
+  end
+
+  it "rejects GIF cover images" do
+    organization = described_class.create!(name: "Acme")
+    organization.cover_image.attach(
+      io: StringIO.new("GIF89a"),
+      filename: "cover.gif",
+      content_type: "image/gif"
+    )
+
+    expect(organization).not_to be_valid
+    expect(organization.errors[:cover_image]).to include("must be a PNG, JPEG, or WebP")
   end
 
   it "rejects cover images that exceed the size limit" do

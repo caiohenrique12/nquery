@@ -144,7 +144,7 @@ Authentication is handled by [Devise](https://github.com/heartcombo/devise) end-
 
 * **Sessions** — `Devise::SessionsController` (sign in / sign out via Warden)
 * **Passwords** — Devise `:database_authenticatable` + `:validatable` on `Nquery::User`
-* **Confirmation** — Devise `:confirmable` (first admin sets a password from the confirmation link; tokens expire after 3 days)
+* **Confirmation** — Devise `:confirmable` (first admin sets a password from the confirmation link; tokens expire after 1 hour)
 
 There is **no** public signup route (`:registerable` is not enabled). Password reset (`:recoverable`) and remember-me (`:rememberable`) are not enabled. The first admin is created through [onboarding](#first-admin-onboarding); additional users are invited by an administrator under **Admin → Users** (confirmation email; invitee sets their password via the confirmation link).
 

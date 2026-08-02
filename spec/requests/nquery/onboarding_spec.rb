@@ -235,7 +235,7 @@ RSpec.describe "Onboarding", type: :request do
         user: { email: "founder@acme.example.com", first_name: "Ada", last_name: "Admin" }
       }
       user = Nquery::User.find_by!(email: "founder@acme.example.com")
-      user.update_columns(confirmation_sent_at: 4.days.ago)
+      user.update_columns(confirmation_sent_at: 2.hours.ago)
 
       patch onboarding_confirm_path(confirmation_token: user.confirmation_token), params: {
         user: { password: "password123", password_confirmation: "password123" }
