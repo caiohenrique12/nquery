@@ -16,7 +16,7 @@ RSpec.describe "Nquery::Charts", type: :request do
   end
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /charts/new" do

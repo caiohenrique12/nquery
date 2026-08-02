@@ -12,5 +12,10 @@ Rails.application.configure do
   config.active_record.migration_error = :page_load
   config.active_record.verbose_query_logs = true
   config.active_storage.service = :local
+  # Avoid SMTP to localhost (ECONNREFUSED) during onboarding / invites.
+  # Mails are written under tmp/mail for inspection.
+  config.action_mailer.delivery_method = :file
+  config.action_mailer.file_settings = { location: Rails.root.join("tmp/mail") }
+  config.action_mailer.raise_delivery_errors = true
   config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
 end

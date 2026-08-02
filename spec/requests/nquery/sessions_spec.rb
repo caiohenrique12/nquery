@@ -3,33 +3,43 @@
 require_relative "../../rails_helper"
 
 RSpec.describe "Sessions", type: :request do
+  include Nquery::Engine.routes.url_helpers
+
+  def sign_in_admin!
+    post nquery_user_session_path, params: {
+      nquery_user: { email: "admin@nquery.dev", password: "password123" }
+    }
+  end
+
   describe "GET /login" do
     it "redirects signed-in users to root" do
-      post "/login", params: { email: "admin@nquery.dev", password: "password123" }
+      sign_in_admin!
 
-      get "/login"
+      get new_nquery_user_session_path
 
-      expect(response).to redirect_to("/")
+      expect(response).to redirect_to(root_path)
     end
   end
 
-  describe "POST /login" do
+  describe "POST Devise session" do
     it "rejects invalid credentials" do
-      post "/login", params: { email: "admin@nquery.dev", password: "wrong" }
+      post nquery_user_session_path, params: {
+        nquery_user: { email: "admin@nquery.dev", password: "wrong" }
+      }
 
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include("Invalid email or password")
+      expect(flash[:alert]).to be_present
+      expect(request.env["warden"].user(:nquery_user)).to be_nil
     end
   end
 
-  describe "DELETE /logout" do
+  describe "DELETE Devise session" do
     it "signs the user out" do
-      post "/login", params: { email: "admin@nquery.dev", password: "password123" }
+      sign_in_admin!
 
-      delete "/logout"
+      delete destroy_nquery_user_session_path
 
-      expect(response).to redirect_to("/login")
-      expect(flash[:notice]).to eq("Signed out.")
+      expect(response).to redirect_to(new_nquery_user_session_path)
+      expect(flash[:notice]).to eq(I18n.t("devise.sessions.signed_out"))
     end
   end
 end

@@ -65,6 +65,10 @@ Git commands run on the **host** (outside the container).
 - When changing configurable behavior, test **default and explicit overrides**.
 - For temporary class-level config in specs, prefer `Object#with` over manual save/restore.
 
+## Devise (engine)
+
+Authentication is **Devise-only** (`Nquery::User` + engine `devise_for`). Do **not** mutate global Devise settings (`parent_controller`, Warden `failure_app`, `navigational_formats`, mailer) from the engine — use per-mapping `devise_for` options (`router_name: :nquery`, `sign_out_via`, custom sessions controller) and `User#send_devise_notification`. Stock `Devise::FailureApp` with `router_name: :nquery` preserves the engine mount prefix on unauthenticated redirects.
+
 ## RSpec: Better Specs
 
 Follow **[Better Specs](https://www.betterspecs.org/)**:

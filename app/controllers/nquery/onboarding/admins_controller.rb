@@ -13,9 +13,14 @@ module Nquery
       def create
         @user = User.new(admin_params)
         if @user.valid?
-          Onboarding::AdminProvisioner.call(@user)
-          session[:onboarding_admin_email] = @user.email
-          redirect_to onboarding_congrats_path
+          result = Onboarding::AdminProvisioner.call(@user)
+          session[:onboarding_admin_email] = result.user.email
+          if result.mail_delivered?
+            redirect_to onboarding_congrats_path
+          else
+            redirect_to onboarding_congrats_path,
+                        alert: "Your admin account was created, but the confirmation email could not be sent. Check your mailer settings."
+          end
         else
           render :new, status: :unprocessable_content
         end

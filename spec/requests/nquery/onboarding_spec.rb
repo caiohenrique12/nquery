@@ -5,12 +5,6 @@ require_relative "../../rails_helper"
 RSpec.describe "Onboarding", type: :request do
   include Nquery::Engine.routes.url_helpers
 
-  around do |example|
-    Nquery.reset_configuration!
-    Nquery.configure { |config| config.authentication_provider = :devise }
-    example.run
-  end
-
   before do
     ActionMailer::Base.deliveries.clear
   end
@@ -142,6 +136,29 @@ RSpec.describe "Onboarding", type: :request do
       expect(Nquery::Organization.first.onboarding_completed_at).to be_present
     end
 
+    it "still provisions the admin when confirmation email delivery fails" do
+      post "/onboarding/company", params: {
+        organization: { name: "Acme Analytics", website: "https://acme.example.com" }
+      }
+
+      allow_any_instance_of(ActionMailer::MessageDelivery).to receive(:deliver_now)
+        .and_raise(Errno::ECONNREFUSED)
+
+      expect {
+        post "/onboarding/admin", params: {
+          user: { email: "founder@acme.example.com", first_name: "Ada", last_name: "Admin" }
+        }
+      }.to change(Nquery::User, :count).by(1)
+
+      expect(response).to redirect_to("/onboarding/congrats")
+      expect(flash[:alert]).to include("confirmation email could not be sent")
+
+      user = Nquery::User.find_by!(email: "founder@acme.example.com")
+      expect(user).not_to be_confirmed
+      expect(user.confirmation_token).to be_present
+      expect(user.admin?).to be(true)
+    end
+
     it "reuses the existing organization on repeated company submissions" do
       post "/onboarding/company", params: {
         organization: { name: "Acme Analytics", website: "https://acme.example.com" }
@@ -169,6 +186,64 @@ RSpec.describe "Onboarding", type: :request do
 
       expect(response).to redirect_to("/login")
       expect(flash[:alert]).to eq("Invalid confirmation link.")
+    end
+
+    it "rejects confirmation update without a token" do
+      victim = Nquery::User.find_by!(email: "admin@nquery.dev")
+      expect(victim.confirmation_token).to be_nil
+
+      patch "/onboarding/confirm", params: {
+        user: { password: "hackedpassword1", password_confirmation: "hackedpassword1" }
+      }
+
+      expect(response).to redirect_to("/login")
+      expect(flash[:alert]).to eq("Invalid confirmation link.")
+      expect(victim.reload.valid_password?("hackedpassword1")).to be(false)
+      expect(request.env["warden"].user(:nquery_user)).to be_nil
+    end
+
+    it "rejects confirmation update with a blank token" do
+      victim = Nquery::User.find_by!(email: "admin@nquery.dev")
+
+      patch onboarding_confirm_path(confirmation_token: ""), params: {
+        user: { password: "hackedpassword1", password_confirmation: "hackedpassword1" }
+      }
+
+      expect(response).to redirect_to("/login")
+      expect(flash[:alert]).to eq("Invalid confirmation link.")
+      expect(victim.reload.valid_password?("hackedpassword1")).to be(false)
+    end
+
+    it "rejects confirmation for an already-confirmed user" do
+      victim = Nquery::User.find_by!(email: "admin@nquery.dev")
+      victim.update_columns(confirmation_token: "already-confirmed-token", confirmation_sent_at: Time.current)
+
+      patch onboarding_confirm_path(confirmation_token: "already-confirmed-token"), params: {
+        user: { password: "hackedpassword1", password_confirmation: "hackedpassword1" }
+      }
+
+      expect(response).to redirect_to("/login")
+      expect(flash[:alert]).to eq("Invalid confirmation link.")
+      expect(victim.reload.valid_password?("hackedpassword1")).to be(false)
+    end
+
+    it "rejects an expired confirmation token" do
+      post "/onboarding/company", params: {
+        organization: { name: "Acme Analytics", website: "https://acme.example.com" }
+      }
+      post "/onboarding/admin", params: {
+        user: { email: "founder@acme.example.com", first_name: "Ada", last_name: "Admin" }
+      }
+      user = Nquery::User.find_by!(email: "founder@acme.example.com")
+      user.update_columns(confirmation_sent_at: 4.days.ago)
+
+      patch onboarding_confirm_path(confirmation_token: user.confirmation_token), params: {
+        user: { password: "password123", password_confirmation: "password123" }
+      }
+
+      expect(response).to redirect_to("/login")
+      expect(flash[:alert]).to eq("Invalid confirmation link.")
+      expect(user.reload.confirmed?).to be(false)
     end
 
     it "locks company and admin writes after an unconfirmed admin is created" do
@@ -251,6 +326,8 @@ RSpec.describe "Onboarding", type: :request do
       get "/signup"
 
       expect(response).to have_http_status(:not_found)
+      expect(response.body).to include("Page not found")
+      expect(response.body).not_to include("Routing Error")
     end
 
     it "does not show create account on login" do

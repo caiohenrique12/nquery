@@ -32,10 +32,20 @@ RSpec.configure do |config|
   config.after(:each) do
     Nquery.reset_configuration!
     Nquery.configure do |config|
-      config.authentication_provider = :native
       config.mailer_sender = "noreply@nquery.dev"
     end
   end
+
+  config.include Module.new {
+    def sign_in_with_devise(email:, password: "password123")
+      # Devise refuses a second sign-in while a Warden session exists.
+      delete "/logout"
+      follow_redirect! if response.redirect?
+
+      post "/login", params: { nquery_user: { email: email, password: password } }
+      follow_redirect! if response.redirect?
+    end
+  }, type: :request
 
   config.before(:each, type: :system) do
     driven_by :rack_test

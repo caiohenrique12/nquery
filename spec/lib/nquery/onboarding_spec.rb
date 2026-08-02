@@ -3,12 +3,6 @@
 require_relative "../../rails_helper"
 
 RSpec.describe Nquery::Onboarding do
-  around do |example|
-    Nquery.reset_configuration!
-    Nquery.configure { |config| config.authentication_provider = :devise }
-    example.run
-  end
-
   describe ".required?" do
     it "is the inverse of complete?" do
       expect(described_class.required?).to eq(!described_class.complete?)

@@ -3,6 +3,8 @@
 module Nquery
   module Onboarding
     class AdminProvisioner
+      Result = Data.define(:user, :mail_delivered?)
+
       def self.call(user)
         new(user).call
       end
@@ -12,6 +14,8 @@ module Nquery
       end
 
       def call
+        @user.skip_confirmation_notification!
+
         ActiveRecord::Base.transaction do
           @user.save!
           administrators_group.group_memberships.find_or_create_by!(user: @user)
@@ -19,10 +23,14 @@ module Nquery
           @user.ensure_personal_collection!
         end
 
-        @user
+        Result.new(user: @user, mail_delivered?: deliver_confirmation_email)
       end
 
       private
+
+      def deliver_confirmation_email
+        @user.send_confirmation_instructions != false
+      end
 
       def administrators_group
         Group.find_by!(system_group: "administrators")

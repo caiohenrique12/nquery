@@ -73,9 +73,14 @@ Nquery::Engine.routes.draw do
     end
   end
 
-  get "login", to: "sessions#new"
-  post "login", to: "sessions#create"
-  delete "logout", to: "sessions#destroy"
+  devise_for :nquery_users,
+             class_name: "Nquery::User",
+             path: "",
+             path_names: { sign_in: "login", sign_out: "logout" },
+             controllers: { sessions: "nquery/sessions" },
+             router_name: :nquery,
+             sign_out_via: :delete,
+             skip: %i[registrations passwords confirmations unlocks]
 
   devise_scope :nquery_user do
     get "users/confirmation", to: "onboarding/confirmations#show", as: :nquery_user_confirmation
@@ -85,4 +90,7 @@ Nquery::Engine.routes.draw do
     get "charts/show", to: "charts#show", as: :public_chart
     get "dashboards/show", to: "dashboards#show", as: :public_dashboard
   end
+
+  match "*unmatched", to: "errors#not_found", via: :all
 end
+

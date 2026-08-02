@@ -7,7 +7,7 @@ RSpec.describe "Collection parent authorization", type: :request do
   let(:root_collection) { Nquery::Collection.roots.first }
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   it "authorizes the target parent when updating a collection" do

@@ -74,23 +74,12 @@ module Nquery
       end
     end
 
-    def self.configure_devise!
-      Devise.setup do |config|
-        config.mailer = "Nquery::DeviseMailer"
-        config.mailer_sender = Nquery.configuration.mailer_sender || "noreply@example.com"
-        config.parent_mailer = "Nquery::ApplicationMailer"
-      end
-    end
-
-    initializer "nquery.devise" do
-      ActiveSupport.on_load(:devise) { Nquery::Engine.configure_devise! }
-    end
-
-    initializer "nquery.devise_mapping", after: :load_config_initializers do
-      config.to_prepare do
-        Devise.add_mapping(:nquery_user, class_name: "Nquery::User") unless Devise.mappings.key?(:nquery_user)
-      end
-    end
+    # Devise mapping options (router_name, sign_out_via) live on devise_for in
+    # config/routes.rb. Mail is sent via User#send_devise_notification.
+    # Do not mutate global Devise settings (parent_controller, Warden failure_app,
+    # navigational_formats, mailer) — host apps that also use Devise must keep
+    # their own settings. Stock Devise::FailureApp + router_name: :nquery preserves
+    # the engine mount prefix on unauthenticated redirects.
 
     initializer "nquery.components" do
       ActiveSupport.on_load(:action_controller) do

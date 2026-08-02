@@ -10,8 +10,6 @@
 # See https://guides.rubyonrails.org/active_record_encryption.html
 
 Nquery.configure do |config|
-  config.authentication_provider = :devise
-
   config.mailer_sender = "noreply@example.com"
   config.smtp = {
     address: "smtp.example.com",

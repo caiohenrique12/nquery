@@ -3,7 +3,7 @@
 module Nquery
   module Onboarding
     class BaseController < ApplicationController
-      skip_before_action :_authenticate!
+      skip_before_action :authenticate_nquery_user!
       skip_before_action :redirect_to_onboarding
       before_action :ensure_onboarding_available!
 

@@ -1,0 +1,10 @@
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Something went wrong",
+             subtitle: "We hit an unexpected error. Please try again in a moment.",
+             footer_text: "Head back to",
+             footer_label: "home",
+             footer_link: root_path
+           } do %>
+  <p class="nq-muted">Error 500</p>
+<% end %>

@@ -10,13 +10,13 @@ RSpec.describe "Nquery queries", type: :request do
   end
   let(:restricted_group) { Nquery::Group.create!(name: "Restricted", system_group: "custom") }
   let(:owner) do
-    Nquery::User.create!(email: "owner@example.com", password: "password123").tap do |user|
+    Nquery::User.create!(email: "owner@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
       Nquery::GroupMembership.create!(user: user, group: restricted_group)
       user.ensure_all_users_membership!
     end
   end
   let(:outsider) do
-    Nquery::User.create!(email: "outsider@example.com", password: "password123").tap(&:ensure_all_users_membership!)
+    Nquery::User.create!(email: "outsider@example.com", password: "password123", confirmed_at: Time.current).tap(&:ensure_all_users_membership!)
   end
   let!(:query) do
     Nquery::Query.create!(
@@ -49,7 +49,7 @@ RSpec.describe "Nquery queries", type: :request do
   end
 
   def sign_in_as(user)
-    post "/login", params: { email: user.email, password: "password123" }
+    sign_in_with_devise(email: user.email)
     follow_redirect! if response.redirect?
   end
 

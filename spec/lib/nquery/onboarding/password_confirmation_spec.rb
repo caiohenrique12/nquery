@@ -3,12 +3,6 @@
 require_relative "../../../rails_helper"
 
 RSpec.describe Nquery::Onboarding::PasswordConfirmation do
-  around do |example|
-    Nquery.reset_configuration!
-    Nquery.configure { |config| config.authentication_provider = :devise }
-    example.run
-  end
-
   describe ".call" do
     let(:user) do
       Nquery::User.create!(

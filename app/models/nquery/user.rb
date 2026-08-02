@@ -2,7 +2,8 @@
 
 module Nquery
   class User < ApplicationRecord
-    devise :database_authenticatable, :confirmable, :recoverable, :rememberable, :validatable
+    devise :database_authenticatable, :confirmable, :validatable,
+           confirm_within: 3.days
 
     has_many :group_memberships, class_name: "Nquery::GroupMembership", dependent: :destroy
     has_many :groups, through: :group_memberships, class_name: "Nquery::Group"
@@ -19,34 +20,8 @@ module Nquery
 
     scope :active, -> { where(deactivated_at: nil) }
 
-    def self.new(attributes = nil, &block)
-      if attributes.is_a?(Hash)
-        super(apply_creation_defaults(attributes), &block)
-      else
-        super
-      end
-    end
-
-    def self.apply_creation_defaults(attributes)
-      attributes = attributes.stringify_keys
-      attributes["password_confirmation"] ||= attributes["password"]
-      if attributes["confirmed_at"].blank? && !Nquery.configuration.devise_authentication?
-        attributes["confirmed_at"] = Time.current
-      end
-      attributes
-    end
-
-    def send_confirmation_instructions
-      return unless Nquery.configuration.devise_authentication?
-
-      super
-    end
-
-    def send_on_create_confirmation_instructions
-      return unless Nquery.configuration.devise_authentication?
-
-      super
-    end
+    # Set by #deliver_devise_notification so controllers can flash delivery failures.
+    attr_accessor :last_devise_notification_delivered
 
     def name
       [first_name, last_name].compact_blank.join(" ").presence || email
@@ -58,6 +33,14 @@ module Nquery
 
     def active?
       deactivated_at.nil?
+    end
+
+    def active_for_authentication?
+      super && active?
+    end
+
+    def inactive_message
+      active? ? super : :inactive
     end
 
     def deactivate!
@@ -85,10 +68,26 @@ module Nquery
       super
     end
 
+    def confirmation_expired?
+      confirmation_period_expired?
+    end
+
+    # Returns false when delivery fails so callers can flash a warning instead of 500ing.
+    def deliver_devise_notification(notification, *args)
+      Nquery::DeviseMailer.send(notification, self, *args).deliver_now
+      self.last_devise_notification_delivered = true
+    rescue StandardError => error
+      self.last_devise_notification_delivered = false
+      Rails.logger.error(
+        "[nquery] Failed to deliver Devise #{notification} to #{email}: #{error.class}: #{error.message}"
+      )
+      false
+    end
+
     protected
 
     def send_devise_notification(notification, *args)
-      Nquery::DeviseMailer.send(notification, self, *args).deliver_now
+      deliver_devise_notification(notification, *args)
     end
   end
 end

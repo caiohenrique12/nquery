@@ -2,6 +2,7 @@
 
 module Nquery
   class ApplicationController < ActionController::Base
+    include Devise::Controllers::Helpers
     include Nquery::AuthorizesCollection
     include Nquery::Breadcrumbs
     include Nquery::Engine.routes.url_helpers
@@ -9,29 +10,16 @@ module Nquery
     protect_from_forgery with: :exception
     layout "nquery/application"
 
-    helper_method :current_nquery_user, :permission_resolver
+    helper_method :current_nquery_user, :permission_resolver, :login_path, :logout_path
 
     before_action :redirect_to_onboarding, unless: :skip_onboarding_redirect?
-    before_action :_authenticate!
+    before_action :authenticate_nquery_user!, unless: :auth_exempt?
     before_action :set_current_user_context
 
+    rescue_from StandardError, with: :render_internal_server_error
+    rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
+
     private
-
-    def _authenticate!
-      return if auth_exempt?
-
-      if Nquery.configuration.devise_authentication?
-        authenticate_nquery_user!
-      else
-        default_authenticate!
-      end
-    end
-
-    def default_authenticate!
-      return if current_nquery_user
-
-      redirect_to login_path, alert: "Please sign in to continue."
-    end
 
     def redirect_to_onboarding
       return if Onboarding.complete?
@@ -52,47 +40,40 @@ module Nquery
         nquery/onboarding/confirmations
         nquery/embed/charts
         nquery/embed/dashboards
+        nquery/errors
       ])
     end
 
-    def current_nquery_user
-      @current_nquery_user ||= if Nquery.configuration.devise_authentication?
-        warden.user(:nquery_user)
-      else
-        session_user
-      end
+    def render_not_found(_error = nil)
+      render template: "nquery/errors/not_found", layout: "nquery/auth", status: :not_found
     end
 
-    def session_user
-      return unless session[:nquery_user_id]
+    def render_internal_server_error(error)
+      raise error if show_detailed_exceptions?
 
-      User.active.find_by(id: session[:nquery_user_id])
+      Rails.logger.error("[nquery] #{error.class}: #{error.message}\n#{error.backtrace&.first(15)&.join("\n")}")
+      render template: "nquery/errors/internal_server_error", layout: "nquery/auth", status: :internal_server_error
     end
 
-    def authenticate_nquery_user!
-      return if current_nquery_user
+    def show_detailed_exceptions?
+      Rails.application.config.consider_all_requests_local
+    end
 
-      redirect_to login_path, alert: "Please sign in to continue."
+
+    def login_path(**options)
+      new_nquery_user_session_path(**options)
+    end
+
+    def logout_path(**options)
+      destroy_nquery_user_session_path(**options)
     end
 
     def sign_in_nquery_user(user)
-      if Nquery.configuration.devise_authentication?
-        warden.set_user(user, scope: :nquery_user)
-      else
-        session[:nquery_user_id] = user.id
-      end
+      sign_in(:nquery_user, user)
     end
 
     def sign_out_nquery_user
-      if Nquery.configuration.devise_authentication?
-        warden.logout(:nquery_user)
-      else
-        session.delete(:nquery_user_id)
-      end
-    end
-
-    def warden
-      request.env["warden"]
+      sign_out(:nquery_user)
     end
 
     def set_current_user_context

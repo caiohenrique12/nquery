@@ -7,7 +7,7 @@ RSpec.describe "Nquery::Dashboards", type: :request do
   let(:admin) { Nquery::User.find_by!(email: "admin@nquery.dev") }
 
   def sign_in_as(user)
-    post "/login", params: { email: user.email, password: "password123" }
+    sign_in_with_devise(email: user.email)
   end
 
   def sign_in_as_admin
@@ -302,7 +302,7 @@ RSpec.describe "Nquery::Dashboards", type: :request do
     context "when the user lacks curate access" do
       let(:finance_group) { Nquery::Group.create!(name: "Finance", system_group: "custom") }
       let(:member) do
-        Nquery::User.create!(email: "finance@example.com", password: "password123").tap do |user|
+        Nquery::User.create!(email: "finance@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
           Nquery::GroupMembership.create!(user: user, group: finance_group)
           user.ensure_all_users_membership!
         end

@@ -9,7 +9,7 @@ RSpec.describe "Admin permissions", type: :request do
   let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /admin/permissions" do

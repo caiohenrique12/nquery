@@ -6,12 +6,12 @@ module Nquery
       skip_before_action :ensure_onboarding_available!
 
       def show
-        @user = User.find_by(confirmation_token: params[:confirmation_token])
+        @user = find_confirmable_user
         redirect_to login_path, alert: "Invalid confirmation link." unless @user
       end
 
       def update
-        @user = User.find_by(confirmation_token: params[:confirmation_token])
+        @user = find_confirmable_user
         return redirect_to login_path, alert: "Invalid confirmation link." unless @user
 
         result = Onboarding::PasswordConfirmation.call(
@@ -29,6 +29,16 @@ module Nquery
       end
 
       private
+
+      def find_confirmable_user
+        token = params[:confirmation_token].to_s
+        return if token.blank?
+
+        user = User.find_by(confirmation_token: token, confirmed_at: nil)
+        return if user.nil? || user.confirmation_expired?
+
+        user
+      end
 
       def confirmation_params
         params.require(:user).permit(:password, :password_confirmation)

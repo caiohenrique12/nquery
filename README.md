@@ -72,7 +72,7 @@ Mount the engine in `config/routes.rb`:
 mount Nquery::Engine, at: "/nquery"
 ```
 
-Edit `config/initializers/nquery.rb` to set `mailer_sender` and `smtp` (required when using the default `:devise` provider). Visit `/nquery` and complete the [first admin onboarding](#first-admin-onboarding) wizard.
+Edit `config/initializers/nquery.rb` to set `mailer_sender` and `smtp` (required for confirmation email). Visit `/nquery` and complete the [first admin onboarding](#first-admin-onboarding) wizard.
 
 | Task | When to use | Creates users? | Creates demo charts? |
 |------|-------------|----------------|----------------------|
@@ -108,8 +108,6 @@ Default permissions from setup give administrators full application features and
 
 ```ruby
 Nquery.configure do |config|
-  config.authentication_provider = :devise
-
   config.mailer_sender = "noreply@example.com"
   config.smtp = {
     address: "smtp.example.com",
@@ -130,7 +128,6 @@ end
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `authentication_provider` | `:devise` | `:devise` or `:native` — see [Authentication](#authentication) |
 | `mailer_sender` | `nil` | From address for Devise / app mail |
 | `smtp` | `{}` | Passed to `ActionMailer::Base.smtp_settings` when present |
 | `data_sources` | `{ main: { adapter: :rails, name: "Application database" } }` | Identity-only map of configured sources |
@@ -143,16 +140,15 @@ end
 
 ## Authentication
 
-nquery supports two providers only:
+Authentication is handled by [Devise](https://github.com/heartcombo/devise) end-to-end:
 
-| Provider | Typical use | Sessions | Confirmation email |
-|----------|-------------|----------|--------------------|
-| `:devise` | Host apps (install generator default) | Devise / Warden | Yes (`:confirmable`) |
-| `:native` | Demo `server/` | Cookie session (`session[:nquery_user_id]`) | No (users are confirmed for native flows) |
+* **Sessions** — `Devise::SessionsController` (sign in / sign out via Warden)
+* **Passwords** — Devise `:database_authenticatable` + `:validatable` on `Nquery::User`
+* **Confirmation** — Devise `:confirmable` (first admin sets a password from the confirmation link; tokens expire after 3 days)
 
-There is **no** public signup route. Devise is loaded **without** `:registerable`. Additional users are created by an administrator under **Admin → Users**.
+There is **no** public signup route (`:registerable` is not enabled). Password reset (`:recoverable`) and remember-me (`:rememberable`) are not enabled. The first admin is created through [onboarding](#first-admin-onboarding); additional users are invited by an administrator under **Admin → Users** (confirmation email; invitee sets their password via the confirmation link).
 
-SSO / hybrid modes (`authentication_mode`, `authenticate_with`, `resolve_nquery_user`) have been removed.
+Login and logout use Devise routes (`/login`, `/logout`) backed by Warden. Authentication is Devise-only; custom session cookie auth and SSO/hybrid hooks are not supported.
 
 ## First admin onboarding
 
@@ -174,11 +170,11 @@ Paths assume `mount Nquery::Engine, at: "/nquery"`. Drop the `/nquery` prefix wh
 | Step | Path | What the user does | Result |
 |------|------|--------------------|--------|
 | 1. Company | `GET /nquery/onboarding/company/new` | Name, optional website, logo, cover | Creates `Organization`; advances to admin step |
-| 2. Admin | `GET /nquery/onboarding/admin/new` | First name, last name, email | Provisions admin into `administrators` + `all_users`; sends confirmation when using `:devise` |
+| 2. Admin | `GET /nquery/onboarding/admin/new` | First name, last name, email | Provisions admin into `administrators` + `all_users`; sends Devise confirmation email |
 | 3. Congrats | `GET /nquery/onboarding/congrats` | Read instructions | Explains that a confirmation email was sent |
 | 4. Confirm | `GET /nquery/onboarding/confirm?confirmation_token=…` | Choose password | Confirms the user, signs them in, locks the wizard |
 
-### Flow (Devise — default)
+### Flow
 
 ```text
 Visit /nquery
@@ -190,7 +186,7 @@ Visit /nquery
   → Signed in as admin; wizard locked
 ```
 
-Mail must work for step 2 → 4. If SMTP is misconfigured, the admin user may be created but the confirmation email will fail — fix mail settings before retrying.
+Mail must work for step 2 → 4. If SMTP is misconfigured, the admin user is still created and the wizard continues to congrats with a warning flash — fix mail settings and resend or use the confirmation token before continuing. The Docker demo writes mail to `server/tmp/mail` (`:file` delivery) instead of SMTP.
 
 ### After the first admin
 
@@ -202,14 +198,13 @@ Mail must work for step 2 → 4. If SMTP is misconfigured, the admin user may be
 
 1. `rails nquery:setup` succeeded
 2. Engine mounted
-3. `authentication_provider` set (`:devise` recommended)
-4. `mailer_sender` + `smtp` configured (for `:devise`)
-5. Action Mailer default URL options set in the host app (so confirmation links resolve)
-6. Active Storage installed if you want logo/cover uploads during company setup
+3. `mailer_sender` + `smtp` configured
+4. Action Mailer default URL options set in the host app (so confirmation links resolve)
+5. Active Storage installed if you want logo/cover uploads during company setup
 
 ## Mail and SMTP
 
-With `:devise`, confirmation (and recoverable) mail uses `Nquery::DeviseMailer` and `Nquery.configuration.mailer_sender`.
+Confirmation mail uses `Nquery::DeviseMailer` and `Nquery.configuration.mailer_sender`.
 
 Also configure the host app’s Action Mailer URL options so links in email are absolute:
 
@@ -266,7 +261,7 @@ make up
 |-------|----------|
 | `admin@nquery.dev` | `password123` |
 
-The demo uses `authentication_provider = :native` and seeds an organization + admin so you skip the first-run wizard.
+The demo seeds an organization + confirmed admin so you skip the first-run wizard and can sign in with Devise immediately.
 
 | Command | Description |
 |---------|-------------|

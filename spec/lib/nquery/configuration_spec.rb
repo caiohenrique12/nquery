@@ -17,10 +17,6 @@ RSpec.describe Nquery::Configuration do
   subject(:config) { described_class.new }
 
   describe "defaults" do
-    it "uses devise as the authentication provider" do
-      expect(config.authentication_provider).to eq(:devise)
-    end
-
     it "declares identity-only data sources" do
       expect(config.data_sources).to eq(
         main: { adapter: :rails, name: "Application database" }
@@ -37,7 +33,12 @@ RSpec.describe Nquery::Configuration do
     end
   end
 
-  describe "SSO API removal" do
+  describe "authentication API" do
+    it "does not expose authentication_provider" do
+      expect(config).not_to respond_to(:authentication_provider)
+      expect(config).not_to respond_to(:authentication_provider=)
+    end
+
     it "does not expose authentication_mode" do
       expect(config).not_to respond_to(:authentication_mode)
       expect(config).not_to respond_to(:authentication_mode=)
@@ -56,30 +57,6 @@ RSpec.describe Nquery::Configuration do
     it "does not expose current_user_method" do
       expect(config).not_to respond_to(:current_user_method)
       expect(config).not_to respond_to(:current_user_method=)
-    end
-  end
-
-  describe "#devise_authentication?" do
-    it "is true when provider is devise" do
-      config.authentication_provider = :devise
-      expect(config).to be_devise_authentication
-    end
-
-    it "is false when provider is native" do
-      config.authentication_provider = :native
-      expect(config).not_to be_devise_authentication
-    end
-  end
-
-  describe "#native_authentication?" do
-    it "is true when provider is native" do
-      config.authentication_provider = :native
-      expect(config).to be_native_authentication
-    end
-
-    it "is false when provider is devise" do
-      config.authentication_provider = :devise
-      expect(config).not_to be_native_authentication
     end
   end
 end

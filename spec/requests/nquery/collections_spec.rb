@@ -6,7 +6,7 @@ RSpec.describe "Nquery::Collections", type: :request do
   let(:root_collection) { Nquery::Collection.roots.first }
 
   def sign_in_as_admin
-    post "/login", params: { email: "admin@nquery.dev", password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /collections" do

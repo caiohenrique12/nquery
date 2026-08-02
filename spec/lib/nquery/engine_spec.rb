@@ -7,10 +7,10 @@ RSpec.describe Nquery::Engine do
     expect(described_class).to be < Rails::Engine
   end
 
-  it "defaults authentication_provider to devise" do
-    Nquery.reset_configuration!
-
-    expect(Nquery.configuration.authentication_provider).to eq(:devise)
+  it "does not register global Devise configuration initializers" do
+    names = described_class.initializers.map(&:name)
+    expect(names).not_to include("nquery.devise")
+    expect(names).not_to include("nquery.devise_failure_app")
   end
 
   it "registers engine initializers" do
@@ -19,17 +19,19 @@ RSpec.describe Nquery::Engine do
       "nquery.assets",
       "nquery.migrations",
       "nquery.mailer",
-      "nquery.devise",
-      "nquery.devise_mapping",
       "nquery.components"
     )
   end
 
-  it "configures Devise mailer settings" do
-    described_class.configure_devise!
+  it "keeps Devise mapping on the engine router without a custom failure app" do
+    mapping = Devise.mappings[:nquery_user]
 
-    expect(Devise.mailer).to eq(Nquery::DeviseMailer)
-    expect(Devise.parent_mailer).to eq("Nquery::ApplicationMailer")
+    expect(mapping.router_name).to eq(:nquery)
+    expect(mapping.failure_app).to eq(Devise::FailureApp)
+  end
+
+  it "does not define a custom DeviseFailureApp" do
+    expect(defined?(Nquery::DeviseFailureApp)).to be_nil
   end
 
   it "executes conditional initializer branches" do
