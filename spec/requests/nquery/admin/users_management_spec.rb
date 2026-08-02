@@ -7,7 +7,7 @@ RSpec.describe "Admin users management", type: :request do
   let(:analyst) { Nquery::User.find_by!(email: "analyst@nquery.dev") }
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /admin/users/new" do
@@ -37,6 +37,53 @@ RSpec.describe "Admin users management", type: :request do
       }.to change(Nquery::User, :count).by(1)
 
       expect(response).to redirect_to("/admin/users")
+    end
+
+    it "invites a user without a password via confirmation email" do
+      sign_in_as_admin
+      ActionMailer::Base.deliveries.clear
+
+      expect {
+        post "/admin/users", params: {
+          user: {
+            email: "invitee@example.com",
+            first_name: "Invited",
+            last_name: "User"
+          }
+        }
+      }.to change(Nquery::User, :count).by(1)
+        .and change(ActionMailer::Base.deliveries, :size).by(1)
+
+      expect(response).to redirect_to("/admin/users")
+
+      user = Nquery::User.find_by!(email: "invitee@example.com")
+      expect(user).not_to be_confirmed
+      expect(user.confirmation_token).to be_present
+      expect(user.encrypted_password).to be_blank
+    end
+
+    it "still invites the user when confirmation email delivery fails" do
+      sign_in_as_admin
+
+      allow_any_instance_of(ActionMailer::MessageDelivery).to receive(:deliver_now)
+        .and_raise(Errno::ECONNREFUSED)
+
+      expect {
+        post "/admin/users", params: {
+          user: {
+            email: "invitee@example.com",
+            first_name: "Invited",
+            last_name: "User"
+          }
+        }
+      }.to change(Nquery::User, :count).by(1)
+
+      expect(response).to redirect_to("/admin/users")
+      expect(flash[:alert]).to include("confirmation email could not be sent")
+
+      user = Nquery::User.find_by!(email: "invitee@example.com")
+      expect(user).not_to be_confirmed
+      expect(user.confirmation_token).to be_present
     end
 
     it "renders errors for invalid users" do

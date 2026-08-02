@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "devise"
+
 module Nquery
   class Engine < ::Rails::Engine
     isolate_namespace Nquery
@@ -49,6 +51,7 @@ module Nquery
     initializer "nquery.filter_parameters" do |app|
       app.config.filter_parameters += %i[
         password
+        password_confirmation
         connection_config
         username
         database
@@ -59,11 +62,24 @@ module Nquery
       ]
     end
 
-    initializer "nquery.config" do
-      Nquery.configure do |config|
-        config.authentication_mode = ENV.fetch("NQUERY_AUTHENTICATION_MODE", "standalone").to_sym
+    initializer "nquery.mailer" do
+      config.to_prepare do
+        mailer_sender = Nquery.configuration.mailer_sender
+        smtp_settings = Nquery.configuration.smtp&.deep_symbolize_keys
+
+        [Nquery::ApplicationMailer, Nquery::DeviseMailer].each do |mailer_class|
+          mailer_class.default from: mailer_sender if mailer_sender.present?
+          mailer_class.smtp_settings = smtp_settings if smtp_settings.present?
+        end
       end
     end
+
+    # Devise mapping options (router_name, sign_out_via) live on devise_for in
+    # config/routes.rb. Mail is sent via User#send_devise_notification.
+    # Do not mutate global Devise settings (parent_controller, Warden failure_app,
+    # navigational_formats, mailer) — host apps that also use Devise must keep
+    # their own settings. Stock Devise::FailureApp + router_name: :nquery preserves
+    # the engine mount prefix on unauthenticated redirects.
 
     initializer "nquery.components" do
       ActiveSupport.on_load(:action_controller) do

@@ -12,16 +12,16 @@ RSpec.describe "Navigation", type: :system do
 
   it "signs in and visits home" do
     visit "/login"
-    fill_in "email", with: "admin@nquery.dev"
-    fill_in "password", with: "password123"
+    fill_in "Email address", with: "admin@nquery.dev"
+    fill_in "Password", with: "password123"
     click_button "Sign in"
     expect(page).to have_content("Home")
   end
 
   it "navigates to collections index" do
     visit "/login"
-    fill_in "email", with: "admin@nquery.dev"
-    fill_in "password", with: "password123"
+    fill_in "Email address", with: "admin@nquery.dev"
+    fill_in "Password", with: "password123"
     click_button "Sign in"
     expect(page).to have_content("Home")
     visit "/collections"
@@ -30,8 +30,8 @@ RSpec.describe "Navigation", type: :system do
 
   it "navigates to admin groups" do
     visit "/login"
-    fill_in "email", with: "admin@nquery.dev"
-    fill_in "password", with: "password123"
+    fill_in "Email address", with: "admin@nquery.dev"
+    fill_in "Password", with: "password123"
     click_button "Sign in"
     expect(page).to have_content("Home")
     visit "/admin/groups"
@@ -45,8 +45,8 @@ RSpec.describe "Navigation", type: :system do
 
   it "highlights the active sidebar item on dashboards index" do
     visit "/login"
-    fill_in "email", with: "admin@nquery.dev"
-    fill_in "password", with: "password123"
+    fill_in "Email address", with: "admin@nquery.dev"
+    fill_in "Password", with: "password123"
     click_button "Sign in"
     visit "/dashboards"
     within(".nq-sidebar") do
@@ -57,8 +57,8 @@ RSpec.describe "Navigation", type: :system do
 
   it "highlights the active sidebar item on collections index" do
     visit "/login"
-    fill_in "email", with: "admin@nquery.dev"
-    fill_in "password", with: "password123"
+    fill_in "Email address", with: "admin@nquery.dev"
+    fill_in "Password", with: "password123"
     click_button "Sign in"
     visit "/collections"
     within(".nq-sidebar") do

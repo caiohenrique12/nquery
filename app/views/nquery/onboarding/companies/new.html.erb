@@ -1,0 +1,25 @@
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Set up your company",
+             subtitle: "Tell us about your organization to get started."
+           } do %>
+  <%= form_with model: @organization, url: onboarding_company_path, class: "nq-form nq-auth-form" do |form| %>
+    <div class="nq-form-row">
+      <%= form.label :name, "Company name" %>
+      <%= form.text_field :name, class: "nq-input", required: true, autofocus: true %>
+    </div>
+    <div class="nq-form-row">
+      <%= form.label :website, "Website" %>
+      <%= form.url_field :website, class: "nq-input", placeholder: "https://example.com" %>
+    </div>
+    <div class="nq-form-row">
+      <%= form.label :logo, "Logo" %>
+      <%= form.file_field :logo, class: "nq-input" %>
+    </div>
+    <div class="nq-form-row">
+      <%= form.label :cover_image, "Cover image" %>
+      <%= form.file_field :cover_image, class: "nq-input" %>
+    </div>
+    <button type="submit" class="nq-btn nq-btn-primary nq-btn-block nq-auth-submit">Continue</button>
+  <% end %>
+<% end %>

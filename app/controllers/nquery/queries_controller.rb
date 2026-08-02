@@ -2,7 +2,6 @@
 
 module Nquery
   class QueriesController < ApplicationController
-    skip_before_action :_authenticate!, only: [] # always auth
     before_action :set_query, only: %i[show edit update]
     before_action :authorize_query_collection!, only: %i[show edit update]
     before_action :set_data_source_for_run, only: %i[run schema]

@@ -4,11 +4,11 @@ require_relative "../../../rails_helper"
 
 RSpec.describe "Admin logs", type: :request do
   def sign_in_as_admin
-    post "/login", params: { email: "admin@nquery.dev", password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   def sign_in_as_analyst
-    post "/login", params: { email: "analyst@nquery.dev", password: "password123" }
+    sign_in_with_devise(email: "analyst@nquery.dev")
   end
 
   let(:admin) { Nquery::User.find_by!(email: "admin@nquery.dev") }

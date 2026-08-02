@@ -7,7 +7,7 @@ RSpec.describe "Admin data sources", type: :request do
   let(:analyst) { Nquery::User.find_by!(email: "analyst@nquery.dev") }
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /admin/data_sources" do
@@ -16,11 +16,11 @@ RSpec.describe "Admin data sources", type: :request do
       get "/admin/data_sources"
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Main Database")
+      expect(response.body).to include("Application database")
     end
 
     it "denies non-admin users" do
-      post "/login", params: { email: analyst.email, password: "password123" }
+      sign_in_with_devise(email: analyst.email)
       get "/admin/data_sources"
 
       expect(response).to redirect_to("/")

@@ -8,7 +8,7 @@ RSpec.describe "Admin groups", type: :request do
   let(:all_users_group) { Nquery::Group.find_by!(system_group: "all_users") }
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /admin/groups/:id" do

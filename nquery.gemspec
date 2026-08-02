@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "rails", ">= 7.1", "< 9"
+  spec.add_dependency "devise", "~> 4.9"
   spec.add_dependency "bcrypt", "~> 3.1"
   spec.add_dependency "csv"
   spec.add_dependency "importmap-rails"

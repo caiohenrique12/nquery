@@ -1,15 +1,14 @@
 <%= render layout: "nquery/shared/auth_shell",
            locals: {
              title: "Welcome back",
-             subtitle: "Sign in to explore your charts and dashboards.",
-             footer_text: "Don't have an account?",
-             footer_link: signup_path,
-             footer_label: "Create an account"
+             subtitle: "Sign in to explore your charts and dashboards."
            } do %>
-  <%= form_with url: login_path, class: "nq-form nq-auth-form" do %>
+  <%= form_with url: nquery_user_session_path,
+                scope: :nquery_user,
+                html: { class: "nq-form nq-auth-form", id: "new_nquery_user" } do |form| %>
     <div class="nq-form-row">
-      <%= label_tag :email, "Email address" %>
-      <%= email_field_tag :email, nil,
+      <%= form.label :email, "Email address" %>
+      <%= form.email_field :email,
             class: "nq-input",
             required: true,
             autofocus: true,
@@ -17,8 +16,8 @@
             placeholder: "you@company.com" %>
     </div>
     <div class="nq-form-row">
-      <%= label_tag :password, "Password" %>
-      <%= password_field_tag :password, nil,
+      <%= form.label :password, "Password" %>
+      <%= form.password_field :password,
             class: "nq-input",
             required: true,
             autocomplete: "current-password",

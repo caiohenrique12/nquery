@@ -12,7 +12,7 @@ RSpec.describe "Imports", type: :request do
   end
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   after do
@@ -64,8 +64,8 @@ RSpec.describe "Imports", type: :request do
     end
 
     it "denies access to non-curators" do
-      viewer = Nquery::User.create!(email: "viewer@example.com", password: "password123").tap(&:ensure_all_users_membership!)
-      post "/login", params: { email: viewer.email, password: "password123" }
+      viewer = Nquery::User.create!(email: "viewer@example.com", password: "password123", confirmed_at: Time.current).tap(&:ensure_all_users_membership!)
+      sign_in_with_devise(email: viewer.email)
 
       post "/imports", params: {
         file: Rack::Test::UploadedFile.new(csv_file.path, "text/csv"),

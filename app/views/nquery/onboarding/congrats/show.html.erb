@@ -1,0 +1,11 @@
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Check your email",
+             subtitle: if @email.present?
+                         "We sent a confirmation link to #{@email}. Follow it to set your password and sign in."
+                       else
+                         "We sent a confirmation link to your administrator email. Follow it to set your password and sign in."
+                       end
+           } do %>
+  <p class="nq-muted">Didn't receive it? Check spam or contact your administrator.</p>
+<% end %>

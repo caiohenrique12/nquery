@@ -7,13 +7,31 @@ RSpec.describe Nquery::Engine do
     expect(described_class).to be < Rails::Engine
   end
 
-  it "configures authentication mode from the environment" do
-    expect(Nquery.configuration.authentication_mode).to be_a(Symbol)
+  it "does not register global Devise configuration initializers" do
+    names = described_class.initializers.map(&:name)
+    expect(names).not_to include("nquery.devise")
+    expect(names).not_to include("nquery.devise_failure_app")
   end
 
   it "registers engine initializers" do
     names = described_class.initializers.map(&:name)
-    expect(names).to include("nquery.assets", "nquery.config", "nquery.migrations", "nquery.components")
+    expect(names).to include(
+      "nquery.assets",
+      "nquery.migrations",
+      "nquery.mailer",
+      "nquery.components"
+    )
+  end
+
+  it "keeps Devise mapping on the engine router without a custom failure app" do
+    mapping = Devise.mappings[:nquery_user]
+
+    expect(mapping.router_name).to eq(:nquery)
+    expect(mapping.failure_app).to eq(Devise::FailureApp)
+  end
+
+  it "does not define a custom DeviseFailureApp" do
+    expect(defined?(Nquery::DeviseFailureApp)).to be_nil
   end
 
   it "executes conditional initializer branches" do
@@ -57,5 +75,6 @@ RSpec.describe Nquery::Engine do
     Rails.application.load_tasks
 
     expect(Rake::Task.task_defined?("nquery:seed")).to be(true)
+    expect(Rake::Task.task_defined?("nquery:setup")).to be(true)
   end
 end

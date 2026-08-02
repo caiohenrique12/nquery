@@ -1,28 +1,25 @@
 # frozen_string_literal: true
 
 module Nquery
-  class SessionsController < ApplicationController
-    skip_before_action :_authenticate!
+  # Inherits Devise::SessionsController (→ host ApplicationController via Devise's
+  # global parent_controller). Intentionally does NOT inherit Nquery::ApplicationController
+  # so engine auth/onboarding callbacks are not applied to the sign-in flow.
+  class SessionsController < Devise::SessionsController
+    include Nquery::Engine.routes.url_helpers
+
+    helper Nquery::ComponentsHelper
+    helper Nquery::IconHelper
+
     layout "nquery/auth"
 
-    def new
-      redirect_to root_path if current_nquery_user
+    private
+
+    def after_sign_in_path_for(_resource)
+      stored_location_for(:nquery_user) || root_path
     end
 
-    def create
-      user = User.active.find_by(email: params[:email]&.downcase)
-      if user&.authenticate(params[:password])
-        session[:nquery_user_id] = user.id
-        redirect_to root_path, notice: "Signed in successfully."
-      else
-        flash.now[:alert] = "Invalid email or password."
-        render :new, status: :unprocessable_content
-      end
-    end
-
-    def destroy
-      session.delete(:nquery_user_id)
-      redirect_to login_path, notice: "Signed out."
+    def after_sign_out_path_for(_resource_or_scope)
+      new_nquery_user_session_path
     end
   end
 end

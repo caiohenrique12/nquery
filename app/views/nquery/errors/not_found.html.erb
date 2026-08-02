@@ -1,0 +1,10 @@
+<%= render layout: "nquery/shared/auth_shell",
+           locals: {
+             title: "Page not found",
+             subtitle: "The page you were looking for doesn’t exist or is no longer available.",
+             footer_text: "Head back to",
+             footer_label: "home",
+             footer_link: root_path
+           } do %>
+  <p class="nq-muted">Error 404</p>
+<% end %>

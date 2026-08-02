@@ -5,7 +5,7 @@ require_relative "../../rails_helper"
 RSpec.describe "Nquery::Charts", type: :request do
   let(:root_collection) { Nquery::Collection.roots.first }
   let(:admin) { Nquery::User.find_by!(email: "admin@nquery.dev") }
-  let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+  let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
 
   let!(:dashboard) do
     Nquery::Dashboard.create!(
@@ -16,7 +16,7 @@ RSpec.describe "Nquery::Charts", type: :request do
   end
 
   def sign_in_as_admin
-    post "/login", params: { email: admin.email, password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   describe "GET /charts/new" do

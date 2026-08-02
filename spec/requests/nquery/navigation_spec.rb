@@ -4,7 +4,7 @@ require_relative "../../rails_helper"
 
 RSpec.describe "Navigation layout", type: :request do
   def sign_in_as_admin
-    post "/login", params: { email: "admin@nquery.dev", password: "password123" }
+    sign_in_with_devise(email: "admin@nquery.dev")
   end
 
   it "redirects /browse to /collections" do
@@ -93,7 +93,7 @@ RSpec.describe "Navigation layout", type: :request do
   it "renders breadcrumbs on admin group and data source pages" do
     sign_in_as_admin
     group = Nquery::Group.find_by!(name: "Engineering")
-    data_source = Nquery::DataSource.find_by!(name: "Main Database")
+    data_source = Nquery::DataSource.find_by!(key: "main")
 
     get "/admin/groups/#{group.id}"
     expect(response).to have_http_status(:ok)

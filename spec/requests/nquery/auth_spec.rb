@@ -3,59 +3,86 @@
 require_relative "../../rails_helper"
 
 RSpec.describe "Authentication", type: :request do
+  include Nquery::Engine.routes.url_helpers
+
+  def sign_in_with(email:, password:)
+    post nquery_user_session_path, params: {
+      nquery_user: { email: email, password: password }
+    }
+  end
+
   describe "protected routes" do
-    it "redirects unauthenticated users to login" do
+    it "redirects unauthenticated users to the Devise sign-in page" do
       get "/collections"
 
-      expect(response).to redirect_to("/login")
-      expect(flash[:alert]).to eq("Please sign in to continue.")
+      expect(response).to redirect_to(new_nquery_user_session_path)
     end
-  end
 
-  describe "custom authentication" do
-    around do |example|
-      original = Nquery.configuration.authenticate
-      Nquery.configure do |config|
-        config.authenticate_with do
-          redirect_to "/login", alert: "Custom auth required." unless session[:custom_auth]
+    context "when the engine is mounted at a non-root path" do
+      around do |example|
+        Rails.application.routes.draw do
+          mount Nquery::Engine, at: "/nquery"
         end
+        example.run
+      ensure
+        Rails.application.reload_routes!
       end
-      example.run
-      Nquery.configuration.instance_variable_set(:@authenticate_with, original)
-    end
 
-    it "uses a custom authenticate block" do
-      get "/collections"
+      it "redirects unauthenticated users to the mount-prefixed login path" do
+        get "/nquery/collections"
 
-      expect(response).to redirect_to("/login")
-      expect(flash[:alert]).to eq("Custom auth required.")
+        expect(response).to redirect_to("/nquery/login")
+      end
     end
   end
 
-  describe "SSO user resolution" do
-    let(:host_user) { double(id: 42, email: "sso@example.com", first_name: "SSO", name: nil) }
+  describe "Devise sessions" do
+    it "rejects unconfirmed users" do
+      user = Nquery::User.create!(
+        email: "pending@acme.example.com",
+        first_name: "Pending",
+        last_name: "User",
+        password: "password123",
+        password_confirmation: "password123",
+        confirmed_at: nil
+      )
 
-    around do |example|
-      original_mode = Nquery.configuration.authentication_mode
-      original_resolver = Nquery.configuration.resolve_user
-      Nquery.configure do |config|
-        config.authentication_mode = :sso
-        config.resolve_nquery_user { |user| Nquery::User.find_or_create_from_sso!(user) }
-      end
-      example.run
-      Nquery.configuration.authentication_mode = original_mode
-      Nquery.configuration.instance_variable_set(:@resolve_nquery_user, original_resolver)
+      sign_in_with(email: user.email, password: "password123")
+
+      expect(flash[:alert]).to eq(I18n.t("devise.failure.unconfirmed"))
+      expect(request.env["warden"].user(:nquery_user)).to be_nil
     end
 
-    it "resolves users from the host application" do
-      controller = Nquery::ApplicationController.new
-      allow(controller).to receive(:session).and_return({})
-      allow(controller).to receive(:send).and_call_original
-      allow(controller).to receive(:send).with(:current_nquery_user).and_return(host_user)
+    it "signs in a confirmed user through Devise/Warden" do
+      user = Nquery::User.find_by!(email: "admin@nquery.dev")
+      user.confirm unless user.confirmed?
 
-      user = controller.send(:resolve_current_user)
+      sign_in_with(email: user.email, password: "password123")
 
-      expect(user.email).to eq("sso@example.com")
+      expect(response).to redirect_to(root_path)
+      expect(request.env["warden"].user(:nquery_user)).to eq(user)
+    end
+
+    it "signs out through Devise" do
+      user = Nquery::User.find_by!(email: "admin@nquery.dev")
+      user.confirm unless user.confirmed?
+
+      sign_in_with(email: user.email, password: "password123")
+      delete destroy_nquery_user_session_path
+
+      expect(response).to redirect_to(new_nquery_user_session_path)
+      expect(flash[:notice]).to eq(I18n.t("devise.sessions.signed_out"))
+      expect(request.env["warden"].user(:nquery_user)).to be_nil
+
+      get "/collections"
+      expect(response).to redirect_to(new_nquery_user_session_path)
+    end
+
+    it "rejects invalid credentials through Devise" do
+      sign_in_with(email: "admin@nquery.dev", password: "wrong")
+
+      expect(flash[:alert]).to be_present
+      expect(request.env["warden"].user(:nquery_user)).to be_nil
     end
   end
 end

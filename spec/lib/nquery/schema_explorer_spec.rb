@@ -3,7 +3,7 @@
 require_relative "../../rails_helper"
 
 RSpec.describe Nquery::SchemaExplorer do
-  let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+  let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
 
   describe ".tables_for" do
     it "returns tables with column metadata" do

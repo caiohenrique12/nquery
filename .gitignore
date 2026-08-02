@@ -16,3 +16,6 @@ spec/examples.txt
 *.sqlite3-shm
 *.sqlite3-wal
 /server/db/*.sqlite3
+
+# Local Cursor / agent rules (keep on disk; do not commit)
+.cursor/

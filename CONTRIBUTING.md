@@ -2,6 +2,8 @@
 
 Thank you for considering a contribution. nquery follows the same contribution model used across the Ruby on Rails ecosystem: discuss significant changes first, keep pull requests focused, and include tests.
 
+**AI / agent contributors:** follow [AGENTS.md](AGENTS.md). Local Cursor rules under `.cursor/rules/` are gitignored and not committed.
+
 For general Rails conventions (commit messages, pull request etiquette, and coding style), see the official guide: [Contributing to Ruby on Rails](https://edgeguides.rubyonrails.org/contributing_to_ruby_on_rails.html).
 
 ## Did you find a bug?

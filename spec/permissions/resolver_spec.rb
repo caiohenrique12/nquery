@@ -1,18 +1,11 @@
 # frozen_string_literal: true
 
-require "nquery"
-require "spec_helper"
+require_relative "../rails_helper"
 
 RSpec.describe Nquery::Permissions::Resolver do
-  let(:admin_group) { Nquery::Group.create!(name: "Administrators", system_group: "administrators") }
-  let(:user) { Nquery::User.create!(email: "test@example.com", password: "password123") }
-
-  before do
-    Nquery::GroupMembership.create!(user: user, group: admin_group)
-  end
-
   it "identifies admin users" do
-    resolver = described_class.new(user)
+    admin = Nquery::User.find_by!(email: "admin@nquery.dev")
+    resolver = described_class.new(admin)
     expect(resolver.admin?).to be true
   end
 
@@ -25,7 +18,7 @@ RSpec.describe Nquery::Permissions::Resolver do
       end
     end
     let(:collection) { Nquery::Collection.create!(name: "Shared", kind: "standard", parent: Nquery::Collection.roots.first) }
-    let(:data_source) { Nquery::DataSource.find_by!(name: "Main Database") }
+    let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
 
     before do
       Nquery::CollectionPermission.create!(group: viewer_group, collection: collection, access_level: "view")

@@ -23,7 +23,12 @@ module Nquery
           assign_groups(@user)
           @user.ensure_all_users_membership!
           @user.ensure_personal_collection!
-          redirect_to admin_users_path, notice: "User created."
+          if @user.last_devise_notification_delivered == false
+            redirect_to admin_users_path,
+                        alert: "User invited, but the confirmation email could not be sent. Check your mailer settings."
+          else
+            redirect_to admin_users_path, notice: "User invited. A confirmation email was sent."
+          end
         else
           @groups = Group.order(:name)
           render :new, status: :unprocessable_content
