@@ -94,12 +94,12 @@ module Nquery
       previous = persisted? ? load_persisted_connection_config : {}
 
       self.connection_config = case adapter
-      when "sqlite"
+                               when "sqlite"
         {
           "adapter" => AR_ADAPTER_NAMES.fetch(adapter),
           "database" => database_path.to_s
         }
-      when *REMOTE_ADAPTERS
+                               when *REMOTE_ADAPTERS
         config = {
           "adapter" => AR_ADAPTER_NAMES.fetch(adapter),
           "host" => host.to_s,
@@ -110,9 +110,9 @@ module Nquery
         config["password"] = resolved_password(previous)
         config["sslmode"] = sslmode if sslmode.present?
         config
-      else
+                               else
         {}
-      end
+                               end
     end
 
     def resolved_port

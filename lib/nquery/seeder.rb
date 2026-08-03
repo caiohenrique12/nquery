@@ -16,7 +16,6 @@ module Nquery
       seed_sample_data!
 
       admin_group = Group.find_by!(system_group: "administrators")
-      all_users_group = Group.find_by!(system_group: "all_users")
       engineering = ensure_group!("Engineering", "custom", "Engineering team")
 
       admin = ensure_user!("admin@nquery.dev", "Admin", "User", "password123")

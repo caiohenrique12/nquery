@@ -31,7 +31,7 @@ module Nquery
       create_import_table(connection, table_name, columns)
       insert_rows(connection, table_name, rows, columns)
 
-      data_source = DataSource.create!(
+      DataSource.create!(
         name: @name,
         adapter: "rails",
         connection_config_hash: { "import_table" => table_name }

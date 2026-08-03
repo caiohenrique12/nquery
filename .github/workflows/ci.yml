@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    name: bin/ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Install server dependencies
+        run: |
+          bundle check || bundle install
+          cd server
+          bundle check || bundle install
+
+      - name: Prepare test database
+        run: |
+          cd server
+          bundle exec rails db:prepare
+        env:
+          RAILS_ENV: test
+
+      - name: Run CI suite
+        run: |
+          chmod +x bin/ci
+          bin/ci

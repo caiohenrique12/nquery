@@ -93,4 +93,3 @@ Nquery::Engine.routes.draw do
 
   match "*unmatched", to: "errors#not_found", via: :all
 end
-

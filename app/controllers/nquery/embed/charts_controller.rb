@@ -4,6 +4,7 @@ module Nquery
   module Embed
     class ChartsController < ActionController::Base
       include Nquery::Engine.routes.url_helpers
+      protect_from_forgery with: :exception
       layout "nquery/embed"
 
       def show

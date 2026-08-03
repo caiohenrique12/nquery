@@ -19,7 +19,7 @@ module Nquery
 
       return "Multi-statement queries are not allowed" if sql.include?(";")
       return "Query must start with SELECT or WITH" unless sql.match?(/\A\s*(SELECT|WITH)\b/i)
-      return "Only SELECT queries are allowed" if sql.match?(FORBIDDEN_KEYWORDS)
+      "Only SELECT queries are allowed" if sql.match?(FORBIDDEN_KEYWORDS)
     end
   end
 end

@@ -169,11 +169,11 @@ module Nquery
     def breadcrumb_parent_collection
       @breadcrumb_parent_collection ||= if @parent_collection
                                         @parent_collection
-                                      elsif @collection&.persisted?
+                                        elsif @collection&.persisted?
                                         @collection
-                                      elsif params[:collection_id].present?
+                                        elsif params[:collection_id].present?
                                         Collection.find_by(id: params[:collection_id])
-                                      end
+                                        end
     end
 
     def breadcrumb_dashboard

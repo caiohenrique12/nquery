@@ -1,0 +1,38 @@
+# frozen_string_literal: true
+
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.2
+  Exclude:
+    - "bin/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "coverage/**/*"
+    - "server/tmp/**/*"
+    - "server/log/**/*"
+    - "server/db/schema.rb"
+    - "server/db/*.sqlite3"
+    - "server/storage/**/*"
+    - "node_modules/**/*"
+
+Security:
+  Enabled: true
+
+Lint/Debugger:
+  Enabled: true
+
+Lint/UselessAssignment:
+  Enabled: true
+
+Rails/OutputSafety:
+  Enabled: true
+
+# Prefer existing project conventions over omakase defaults.
+Layout/SpaceInsideArrayLiteralBrackets:
+  EnforcedStyle: no_space
+
+Layout/EndAlignment:
+  EnforcedStyleAlignWith: keyword

@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "rails", ">= 7.1", "< 9"
-  spec.add_dependency "devise", "~> 4.9"
+  spec.add_dependency "devise", ">= 5.0.4", "< 6"
   spec.add_dependency "bcrypt", "~> 3.1"
   spec.add_dependency "csv"
   spec.add_dependency "importmap-rails"
@@ -36,6 +36,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "selenium-webdriver", "~> 4.0"
   spec.add_development_dependency "sqlite3", "~> 2.0"
   spec.add_development_dependency "pg", "~> 1.5"
-  spec.add_development_dependency "puma", "~> 6.0"
+  spec.add_development_dependency "puma", ">= 7.2.1", "< 8"
   spec.add_development_dependency "simplecov", "~> 0.22"
+  spec.add_development_dependency "rubocop", "~> 1.75"
+  spec.add_development_dependency "rubocop-rails-omakase", "~> 1.1"
+  spec.add_development_dependency "brakeman", "~> 7.0"
+  spec.add_development_dependency "bundler-audit", "~> 0.9"
 end

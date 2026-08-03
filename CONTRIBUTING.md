@@ -21,7 +21,7 @@ For general Rails conventions (commit messages, pull request etiquette, and codi
 
 1. Fork the repository and create a branch from `main`.
 2. Add or update specs that demonstrate the bug and your fix.
-3. Run the test suite (see [Development setup](#development-setup) below).
+3. Run the validation suite (see [CI](#ci) below).
 4. Open a pull request with a clear description of the problem and solution.
 5. Reference the related issue in the PR description when one exists.
 
@@ -52,7 +52,8 @@ Useful commands:
 |---------|-------------|
 | `make up` | Build, migrate, seed, and start server |
 | `make setup` | Migrate and seed only (without starting server) |
-| `make test` | Run RSpec |
+| `make tests` | Run RSpec (requires running `nquery` service) |
+| `make ci` | Full CI suite via the running `nquery` service (same as GitHub Actions) |
 | `make console` | Rails console |
 | `make shell` | Bash inside the container |
 
@@ -74,11 +75,48 @@ Run tests from the repository root:
 bundle exec rspec
 ```
 
+## CI
+
+GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and every push to `main`. The workflow prepares Ruby/Bundler and the demo app test database, then invokes **`bin/ci`** — the same script you should run locally before opening a PR.
+
+`bin/ci` runs, in order:
+
+1. RuboCop
+2. Brakeman
+3. bundler-audit
+4. `gem build nquery.gemspec` (smoke check)
+5. RSpec
+
+Run it with Docker (recommended; uses the existing `nquery` container — start with `make up` first):
+
+```bash
+make ci
+```
+
+Or with a local Ruby install from the repository root (after `bundle install` and a prepared test DB):
+
+```bash
+bin/ci
+```
+
+JavaScript lint/security scanning is deferred for now: the engine ships Stimulus controllers via importmap and has no `package.json` / npm toolchain. When/if JS tooling is added, fold it into `bin/ci` so CI picks it up automatically.
+
+A multi-Ruby / multi-Rails CI matrix (Appraisal or GitHub Actions `matrix`) is also deferred for now. CI currently runs on a single Ruby version; the gemspec requires Ruby `>= 3.2`. Expand the matrix when we are ready to keep multiple versions green.
+
+### Dependency security floors
+
+Minimum versions are pinned in `nquery.gemspec` (and mirrored for Puma in `server/Gemfile`) for known CVEs:
+
+- **devise** `>= 5.0.4`, `< 6` — CVE-2026-32700, CVE-2026-40295
+- **puma** `>= 7.2.1`, `< 8` — CVE-2026-47736, CVE-2026-47737
+
+Prefer tightening these floors over loose `~>` ranges when security advisories require it.
+
 ## Pull request checklist
 
 Before requesting review, please confirm:
 
-- [ ] Specs pass (`make test` or `bundle exec rspec`)
+- [ ] `bin/ci` / `make ci` passes (RuboCop, Brakeman, bundler-audit, gem build, RSpec)
 - [ ] New behavior is covered by specs where appropriate
 - [ ] The change is limited to the stated goal (no unrelated refactors)
 - [ ] Commit messages are clear and use the imperative mood (e.g. "Fix query timeout for large datasets")
@@ -100,6 +138,7 @@ Host apps install nquery migrations into their own database (Devise-style). The 
 - Use `# frozen_string_literal: true` at the top of new Ruby files.
 - Prefer small, readable methods over clever abstractions.
 - Follow Rails naming and directory conventions for engine code.
+- Run RuboCop via `bin/ci` (config in `.rubocop.yml`).
 
 ## License
 
