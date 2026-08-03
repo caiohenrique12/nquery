@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+
+inherit_from: .rubocop_todo.yml
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.2
+  Exclude:
+    - "bin/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "coverage/**/*"
+    - "server/tmp/**/*"
+    - "server/log/**/*"
+    - "server/db/schema.rb"
+    - "server/db/*.sqlite3"
+    - "server/storage/**/*"
+    - "node_modules/**/*"

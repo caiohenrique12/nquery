@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Runs the same validation suite as GitHub Actions (.github/workflows/ci.yml).
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+echo "==> RuboCop"
+bundle exec rubocop
+
+echo "==> Brakeman"
+bundle exec brakeman --no-pager --force
+
+echo "==> bundler-audit"
+bundle exec bundler-audit check --update
+
+echo "==> gem build"
+gem build nquery.gemspec
+rm -f nquery-*.gem
+
+echo "==> RSpec"
+bundle exec rspec
+
+echo "==> CI OK"
