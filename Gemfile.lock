@@ -4,7 +4,7 @@ PATH
     nquery (0.1.0)
       bcrypt (~> 3.1)
       csv
-      devise (~> 5.0)
+      devise (>= 5.0.4, < 6)
       importmap-rails
       propshaft
       rails (>= 7.1, < 9)
@@ -345,7 +345,7 @@ DEPENDENCIES
   capybara (~> 3.40)
   nquery!
   pg (~> 1.5)
-  puma (~> 7.2)
+  puma (>= 7.2.1, < 8)
   rspec-rails (~> 7.0)
   rubocop (~> 1.75)
   rubocop-rails-omakase (~> 1.1)

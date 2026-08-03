@@ -47,16 +47,16 @@ RSpec.describe Nquery::Query, type: :model do
   ].each do |keyword|
     it "rejects #{keyword} statements on create" do
       statement = case keyword
-      when "INSERT" then "INSERT INTO users (email) VALUES ('x@example.com')"
-      when "UPDATE" then "UPDATE users SET email = 'x@example.com'"
-      when "DELETE" then "DELETE FROM users"
-      when "DROP" then "DROP TABLE users"
-      when "ALTER" then "ALTER TABLE users ADD COLUMN x text"
-      when "CREATE" then "CREATE TABLE evil (id integer)"
-      when "TRUNCATE" then "TRUNCATE TABLE users"
-      when "MERGE" then "MERGE INTO users USING t ON users.id = t.id WHEN MATCHED THEN UPDATE SET email = t.email"
-      when "REPLACE" then "REPLACE INTO users (id, email) VALUES (1, 'x@example.com')"
-      end
+                  when "INSERT" then "INSERT INTO users (email) VALUES ('x@example.com')"
+                  when "UPDATE" then "UPDATE users SET email = 'x@example.com'"
+                  when "DELETE" then "DELETE FROM users"
+                  when "DROP" then "DROP TABLE users"
+                  when "ALTER" then "ALTER TABLE users ADD COLUMN x text"
+                  when "CREATE" then "CREATE TABLE evil (id integer)"
+                  when "TRUNCATE" then "TRUNCATE TABLE users"
+                  when "MERGE" then "MERGE INTO users USING t ON users.id = t.id WHEN MATCHED THEN UPDATE SET email = t.email"
+                  when "REPLACE" then "REPLACE INTO users (id, email) VALUES (1, 'x@example.com')"
+                  end
 
       query = build_query(statement: statement)
 

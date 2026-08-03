@@ -4,7 +4,7 @@ PATH
     nquery (0.1.0)
       bcrypt (~> 3.1)
       csv
-      devise (~> 5.0)
+      devise (>= 5.0.4, < 6)
       importmap-rails
       propshaft
       rails (>= 7.1, < 9)
@@ -295,7 +295,7 @@ DEPENDENCIES
   importmap-rails
   nquery!
   propshaft
-  puma (~> 7.2)
+  puma (>= 7.2.1, < 8)
   rails (~> 8.0)
   rspec-rails (~> 7.0)
   selenium-webdriver (~> 4.0)

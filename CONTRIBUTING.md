@@ -101,6 +101,17 @@ bin/ci
 
 JavaScript lint/security scanning is deferred for now: the engine ships Stimulus controllers via importmap and has no `package.json` / npm toolchain. When/if JS tooling is added, fold it into `bin/ci` so CI picks it up automatically.
 
+A multi-Ruby / multi-Rails CI matrix (Appraisal or GitHub Actions `matrix`) is also deferred for now. CI currently runs on a single Ruby version; the gemspec requires Ruby `>= 3.2`. Expand the matrix when we are ready to keep multiple versions green.
+
+### Dependency security floors
+
+Minimum versions are pinned in `nquery.gemspec` (and mirrored for Puma in `server/Gemfile`) for known CVEs:
+
+- **devise** `>= 5.0.4`, `< 6` — CVE-2026-32700, CVE-2026-40295
+- **puma** `>= 7.2.1`, `< 8` — CVE-2026-47736, CVE-2026-47737
+
+Prefer tightening these floors over loose `~>` ranges when security advisories require it.
+
 ## Pull request checklist
 
 Before requesting review, please confirm:
@@ -127,7 +138,7 @@ Host apps install nquery migrations into their own database (Devise-style). The 
 - Use `# frozen_string_literal: true` at the top of new Ruby files.
 - Prefer small, readable methods over clever abstractions.
 - Follow Rails naming and directory conventions for engine code.
-- Run RuboCop via `bin/ci` (config in `.rubocop.yml`, baseline todo in `.rubocop_todo.yml`).
+- Run RuboCop via `bin/ci` (config in `.rubocop.yml`).
 
 ## License
 

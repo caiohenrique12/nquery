@@ -195,7 +195,6 @@ RSpec.describe "Nquery::Collections", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
     end
-
   end
 
   describe "GET /collections/:id/edit" do

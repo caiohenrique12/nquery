@@ -11,9 +11,9 @@ module Nquery
       pattern = "%#{sanitize_sql_like(term.downcase)}%"
       full_name_sql = if connection.adapter_name.downcase.include?("mysql")
         "CONCAT(nquery_users.first_name, ' ', nquery_users.last_name)"
-      else
+                      else
         "nquery_users.first_name || ' ' || nquery_users.last_name"
-      end
+                      end
 
       joins(:user).where(
         "LOWER(nquery_users.email) LIKE :q OR LOWER(#{full_name_sql}) LIKE :q",
