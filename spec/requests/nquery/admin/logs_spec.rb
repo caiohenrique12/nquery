@@ -45,6 +45,11 @@ RSpec.describe "Admin logs", type: :request do
     expect(response.body).to include("success")
     expect(response.body).to include("Executive overview")
     expect(response.body).to include('class="nq-nav-link active" href="/admin/logs"')
+    expect(response.body).to include("nq-logs-table")
+    expect(response.body).to include('data-label="Query"')
+    expect(response.body).to include("nq-badge-success")
+    expect(response.body).to include("nq-logs-query")
+    expect(response.body).to include("nquery_sample_orders")
   end
 
   it "does not show activity on the home page" do

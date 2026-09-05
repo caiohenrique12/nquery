@@ -5,6 +5,15 @@ require_relative "../../rails_helper"
 RSpec.describe Nquery::Collection do
   let(:root_collection) { described_class.roots.first }
 
+  describe "associations" do
+    it "destroys dashboards when the collection is destroyed" do
+      collection = described_class.create!(name: "Temporary", kind: "standard", parent: root_collection)
+      Nquery::Dashboard.create!(name: "Temp board", collection: collection)
+
+      expect { collection.destroy! }.to change(Nquery::Dashboard, :count).by(-1)
+    end
+  end
+
   describe "archiving" do
     let(:collection) do
       described_class.create!(name: "Marketing", kind: "standard", parent: root_collection)

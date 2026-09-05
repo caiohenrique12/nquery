@@ -127,7 +127,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000005) do
 
   create_table "nquery_dashboards", force: :cascade do |t|
     t.datetime "archived_at"
-    t.bigint "collection_id"
+    t.bigint "collection_id", null: false
     t.datetime "created_at", null: false
     t.bigint "creator_id"
     t.text "description"

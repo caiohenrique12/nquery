@@ -20,10 +20,7 @@ module Nquery
       def collection_access(collection)
         return :curate if admin?
 
-        levels = @groups.filter_map do |group|
-          perm = Nquery::CollectionPermission.find_by(group: group, collection: collection)
-          perm&.access_level
-        end
+        levels = collection_access_levels_by_id[collection.id] || []
         max_level(levels, COLLECTION_LEVELS)&.to_sym || :no_access
       end
 
@@ -61,6 +58,19 @@ module Nquery
       end
 
       private
+
+      def collection_access_levels_by_id
+        @collection_access_levels_by_id ||= load_collection_access_levels_by_id
+      end
+
+      def load_collection_access_levels_by_id
+        return {} if @groups.empty?
+
+        Nquery::CollectionPermission
+          .where(group_id: @groups.map(&:id))
+          .group_by(&:collection_id)
+          .transform_values { |permissions| permissions.map(&:access_level) }
+      end
 
       def max_level(levels, map)
         levels.max_by { |l| map[l] || -1 }

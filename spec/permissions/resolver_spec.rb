@@ -31,6 +31,29 @@ RSpec.describe Nquery::Permissions::Resolver do
       expect(resolver.collection_access(collection)).to eq(:view)
     end
 
+    it "loads collection permissions once when resolving multiple collections" do
+      other = Nquery::Collection.create!(name: "Also shared", kind: "standard", parent: Nquery::Collection.roots.first)
+      Nquery::CollectionPermission.create!(group: viewer_group, collection: other, access_level: "curate")
+      resolver = described_class.new(viewer)
+
+      queries = []
+      callback = lambda do |_name, _started, _finished, _id, payload|
+        sql = payload[:sql]
+        next if payload[:cached]
+        next unless sql.match?(/nquery_collection_permissions/i)
+        next if sql.match?(/\A\s*(BEGIN|COMMIT|ROLLBACK|RELEASE|SAVEPOINT)/i)
+
+        queries << sql
+      end
+
+      ActiveSupport::Notifications.subscribed(callback, "sql.active_record") do
+        expect(resolver.collection_access(collection)).to eq(:view)
+        expect(resolver.collection_access(other)).to eq(:curate)
+      end
+
+      expect(queries.size).to eq(1)
+    end
+
     it "resolves data access" do
       resolver = described_class.new(viewer)
       expect(resolver.data_access(data_source)).to eq(:can_view)

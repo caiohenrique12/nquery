@@ -44,6 +44,38 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       expect(response.body).to include('href="/dashboards/new"')
     end
 
+    context "when the user lacks curate access" do
+      let(:finance_group) { Nquery::Group.create!(name: "Finance", system_group: "custom") }
+      let(:member) do
+        Nquery::User.create!(email: "finance@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
+          Nquery::GroupMembership.create!(user: user, group: finance_group)
+          user.ensure_all_users_membership!
+        end
+      end
+      let(:restricted_collection) do
+        Nquery::Collection.create!(
+          name: "Finance",
+          kind: "standard",
+          parent: root_collection
+        )
+      end
+      let!(:view_permission) do
+        Nquery::CollectionPermission.create!(
+          group: finance_group,
+          collection: restricted_collection,
+          access_level: "view"
+        )
+      end
+
+      before { sign_in_as(member) }
+
+      it "hides the top-level new link" do
+        get "/dashboards"
+
+        expect(response.body).not_to include('href="/dashboards/new"')
+      end
+    end
+
     context "when a dashboard is archived" do
       let!(:dashboard) do
         Nquery::Dashboard.create!(
@@ -149,6 +181,74 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       expect(response.body).to include("New dashboard")
       expect(response.body).to include("Collection")
     end
+
+    context "when the user lacks curate access" do
+      let(:finance_group) { Nquery::Group.create!(name: "Finance", system_group: "custom") }
+      let(:member) do
+        Nquery::User.create!(email: "finance@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
+          Nquery::GroupMembership.create!(user: user, group: finance_group)
+          user.ensure_all_users_membership!
+        end
+      end
+      let(:restricted_collection) do
+        Nquery::Collection.create!(
+          name: "Finance",
+          kind: "standard",
+          parent: root_collection
+        )
+      end
+      let!(:view_permission) do
+        Nquery::CollectionPermission.create!(
+          group: finance_group,
+          collection: restricted_collection,
+          access_level: "view"
+        )
+      end
+
+      before { sign_in_as(member) }
+
+      it "redirects instead of rendering an empty form" do
+        get "/dashboards/new"
+
+        expect(response).to redirect_to("/dashboards")
+        expect(flash[:alert]).to include("permission")
+      end
+    end
+
+    context "when the user can curate a non-root collection" do
+      let(:ops_group) { Nquery::Group.create!(name: "Ops", system_group: "custom") }
+      let(:member) do
+        Nquery::User.create!(email: "ops@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
+          Nquery::GroupMembership.create!(user: user, group: ops_group)
+          user.ensure_all_users_membership!
+        end
+      end
+      let(:ops_collection) do
+        Nquery::Collection.create!(
+          name: "Operations",
+          kind: "standard",
+          parent: root_collection
+        )
+      end
+      let!(:curate_permission) do
+        Nquery::CollectionPermission.create!(
+          group: ops_group,
+          collection: ops_collection,
+          access_level: "curate"
+        )
+      end
+
+      before { sign_in_as(member) }
+
+      it "defaults the form to that collection" do
+        get "/dashboards/new"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(
+          %(selected="selected" value="#{ops_collection.id}">#{ops_collection.name})
+        )
+      end
+    end
   end
 
   describe "POST /dashboards" do
@@ -174,11 +274,50 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
-    it "renders errors when the collection is missing" do
-      post "/dashboards", params: { dashboard: { name: "No collection" } }
+    it "does not create when the collection is missing" do
+      expect {
+        post "/dashboards", params: { dashboard: { name: "No collection" } }
+      }.not_to change(Nquery::Dashboard, :count)
 
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include("Collection")
+      expect(response.body).to include("Collection must exist")
+    end
+
+    context "when the user lacks curate access" do
+      let(:finance_group) { Nquery::Group.create!(name: "Finance", system_group: "custom") }
+      let(:member) do
+        Nquery::User.create!(email: "finance@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
+          Nquery::GroupMembership.create!(user: user, group: finance_group)
+          user.ensure_all_users_membership!
+        end
+      end
+      let(:restricted_collection) do
+        Nquery::Collection.create!(
+          name: "Finance",
+          kind: "standard",
+          parent: root_collection
+        )
+      end
+      let!(:view_permission) do
+        Nquery::CollectionPermission.create!(
+          group: finance_group,
+          collection: restricted_collection,
+          access_level: "view"
+        )
+      end
+
+      before { sign_in_as(member) }
+
+      it "does not create a dashboard in a view-only collection" do
+        expect {
+          post "/dashboards", params: {
+            dashboard: { name: "Forbidden", collection_id: restricted_collection.id }
+          }
+        }.not_to change(Nquery::Dashboard, :count)
+
+        expect(response).to redirect_to("/")
+        expect(flash[:alert]).to include("permission")
+      end
     end
   end
 

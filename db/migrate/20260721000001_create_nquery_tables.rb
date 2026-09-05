@@ -95,7 +95,7 @@ class CreateNqueryTables < ActiveRecord::Migration[8.0]
     create_table :nquery_dashboards do |t|
       t.string :name, null: false
       t.text :description
-      t.references :collection, foreign_key: { to_table: :nquery_collections }
+      t.references :collection, null: false, foreign_key: { to_table: :nquery_collections }
       t.references :creator, foreign_key: { to_table: :nquery_users }
       t.json :settings, null: false, default: {}
       t.timestamps

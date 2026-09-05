@@ -1,6 +1,5 @@
 <header class="nq-topbar">
   <div class="nq-topbar-actions">
-    <span class="nq-badge"><%= Nquery::DataSource.active.first&.name || "Main DB" %></span>
     <% if current_nquery_user %>
       <span class="nq-user"><%= current_nquery_user.name %></span>
       <%= button_to "Sign out", logout_path, method: :delete, class: "nq-btn nq-btn-ghost" %>

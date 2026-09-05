@@ -16,20 +16,20 @@ module Nquery
 
     def new
       @collections = assignable_collections
+      if @collections.empty?
+        redirect_to dashboards_path, alert: "You do not have permission to create a dashboard."
+        return
+      end
       @dashboard = Dashboard.new(collection: default_dashboard_collection)
     end
 
     def create
       @collections = assignable_collections
-      collection = Collection.find_by(id: dashboard_params[:collection_id])
-      authorize_collection_access!(collection, required: :curate) if collection
+      @dashboard = Dashboard.new(dashboard_params.merge(creator: current_nquery_user))
+      authorize_collection_access!(@dashboard.collection, required: :curate) if @dashboard.collection
       return if performed?
 
-      @dashboard = Dashboard.new(dashboard_params.merge(creator: current_nquery_user))
-      if collection.blank?
-        @dashboard.errors.add(:collection_id, "can't be blank")
-        render :new, status: :unprocessable_content
-      elsif @dashboard.save
+      if @dashboard.save
         redirect_to dashboard_path(@dashboard), notice: "Dashboard created."
       else
         render :new, status: :unprocessable_content
