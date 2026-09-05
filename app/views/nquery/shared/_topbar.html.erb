@@ -1,7 +1,4 @@
 <header class="nq-topbar">
-  <div class="nq-search">
-    <input type="search" placeholder="Search charts, dashboards..." class="nq-input" />
-  </div>
   <div class="nq-topbar-actions">
     <span class="nq-badge"><%= Nquery::DataSource.active.first&.name || "Main DB" %></span>
     <% if current_nquery_user %>

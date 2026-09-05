@@ -35,7 +35,7 @@ Nquery::Engine.routes.draw do
     end
   end
 
-  resources :dashboards, except: %i[new create] do
+  resources :dashboards do
     resources :charts, module: :dashboard do
       member do
         get :embed

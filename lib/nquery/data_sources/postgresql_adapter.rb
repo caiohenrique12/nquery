@@ -35,11 +35,20 @@ module Nquery
 
       def with_connection
         config = @data_source.connection_config_hash
-        klass = Class.new(ActiveRecord::Base) { self.abstract_class = true }
+        klass = ephemeral_connection_class
         klass.establish_connection(config)
         yield klass.connection
       ensure
         klass.remove_connection if defined?(klass) && klass.connected?
+      end
+
+      def ephemeral_connection_class
+        class_name = "Nquery::DataSources::EphemeralConnection#{@data_source.id || "new"}#{object_id}"
+        Class.new(ActiveRecord::Base) do
+          self.abstract_class = true
+
+          define_singleton_method(:name) { class_name }
+        end
       end
     end
   end

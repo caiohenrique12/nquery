@@ -69,15 +69,6 @@ RSpec.describe Nquery::DataSources::PostgresqlAdapter do
   end
 
   it "opens and closes ephemeral connections" do
-    connection_class = Class.new(ActiveRecord::Base) do
-      self.abstract_class = true
-
-      def self.name
-        "Nquery::EphemeralConnection"
-      end
-    end
-    allow(Class).to receive(:new).with(ActiveRecord::Base).and_return(connection_class)
-
     sqlite_config = ActiveRecord::Base.connection_db_config.configuration_hash.merge(adapter: "sqlite3")
     data_source = Nquery::DataSource.new(
       name: "Ephemeral PG",

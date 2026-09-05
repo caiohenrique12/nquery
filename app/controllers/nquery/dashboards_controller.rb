@@ -11,6 +11,29 @@ module Nquery
 
     def index
       @dashboards = filter_viewable_dashboards(Dashboard.active.includes(:collection).order(:name))
+      @collections = assignable_collections
+    end
+
+    def new
+      @collections = assignable_collections
+      @dashboard = Dashboard.new(collection: default_dashboard_collection)
+    end
+
+    def create
+      @collections = assignable_collections
+      collection = Collection.find_by(id: dashboard_params[:collection_id])
+      authorize_collection_access!(collection, required: :curate) if collection
+      return if performed?
+
+      @dashboard = Dashboard.new(dashboard_params.merge(creator: current_nquery_user))
+      if collection.blank?
+        @dashboard.errors.add(:collection_id, "can't be blank")
+        render :new, status: :unprocessable_content
+      elsif @dashboard.save
+        redirect_to dashboard_path(@dashboard), notice: "Dashboard created."
+      else
+        render :new, status: :unprocessable_content
+      end
     end
 
     def show
@@ -85,6 +108,13 @@ module Nquery
 
     def dashboard_params
       params.require(:dashboard).permit(:name, :description, :collection_id, settings: {})
+    end
+
+    def default_dashboard_collection
+      root = Collection.roots.first
+      return root if root && @collections.include?(root)
+
+      @collections.first
     end
   end
 end

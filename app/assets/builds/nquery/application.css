@@ -28,7 +28,7 @@ body.nq-body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe
 .nq-breadcrumb-item a[aria-current="page"] { color: var(--nq-text); font-weight: 500; }
 .nq-nav-section { font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; margin: 1rem 0 0.5rem; }
 .nq-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.nq-topbar { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.5rem; background: var(--nq-card); border-bottom: 1px solid var(--nq-border); }
+.nq-topbar { display: flex; justify-content: flex-end; align-items: center; padding: 0.75rem 1.5rem; background: var(--nq-card); border-bottom: 1px solid var(--nq-border); }
 .nq-content { padding: 1.5rem; flex: 1; }
 .nq-page-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title actions" "meta meta"; gap: 0.375rem 1rem; align-items: start; margin-bottom: 1.5rem; }
 .nq-page-header h1 { grid-area: title; margin: 0; font-size: 1.5rem; }
@@ -134,6 +134,8 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-textarea { font-family: ui-monospace, monospace; resize: vertical; }
 .nq-form-row { margin-bottom: 1rem; }
 .nq-form-row label { display: block; margin-bottom: 0.25rem; font-weight: 500; font-size: 0.875rem; }
+.nq-form-grid { margin-bottom: 1rem; }
+.nq-form-grid .nq-form-row { margin-bottom: 0; }
 .nq-form-card { max-width: 40rem; }
 .nq-form-section { margin-bottom: 0.5rem; }
 .nq-form-section-title { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nq-muted); }
@@ -243,7 +245,6 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-auth-footer { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.375rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--nq-border); font-size: 0.875rem; }
 .nq-auth-link { color: var(--nq-primary); font-weight: 600; text-decoration: none; }
 .nq-auth-link:hover { color: var(--nq-primary-dark); text-decoration: underline; }
-.nq-search .nq-input { width: 320px; }
 .nq-topbar-actions { display: flex; align-items: center; gap: 1rem; }
 .nq-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: flex-end; }
 .nq-actions form { display: inline-flex; margin: 0; }

@@ -37,10 +37,11 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       expect(response.body).to include('<span aria-current="page">Dashboards</span>')
     end
 
-    it "does not expose a top-level new link" do
+    it "links to a top-level new dashboard form" do
       get "/dashboards"
 
-      expect(response.body).not_to include('href="/dashboards/new"')
+      expect(response.body).to include("New dashboard")
+      expect(response.body).to include('href="/dashboards/new"')
     end
 
     context "when a dashboard is archived" do
@@ -141,10 +142,43 @@ RSpec.describe "Nquery::Dashboards", type: :request do
   describe "GET /dashboards/new" do
     before { sign_in_as_admin }
 
-    it "is not found" do
+    it "renders the new dashboard form" do
       get "/dashboards/new"
 
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("New dashboard")
+      expect(response.body).to include("Collection")
+    end
+  end
+
+  describe "POST /dashboards" do
+    before { sign_in_as_admin }
+
+    it "creates a dashboard" do
+      expect {
+        post "/dashboards", params: {
+          dashboard: { name: "Ops overview", description: "Daily ops", collection_id: root_collection.id }
+        }
+      }.to change(Nquery::Dashboard, :count).by(1)
+
+      dashboard = Nquery::Dashboard.find_by!(name: "Ops overview")
+      expect(dashboard.collection).to eq(root_collection)
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}")
+    end
+
+    it "renders errors when the name is blank" do
+      post "/dashboards", params: {
+        dashboard: { name: "", collection_id: root_collection.id }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "renders errors when the collection is missing" do
+      post "/dashboards", params: { dashboard: { name: "No collection" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include("Collection")
     end
   end
 
