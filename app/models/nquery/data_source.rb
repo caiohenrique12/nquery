@@ -2,7 +2,13 @@
 
 module Nquery
   class DataSource < ApplicationRecord
-    ADAPTERS = %w[rails postgresql mysql sqlite].freeze
+    ADAPTER_OPTIONS = [
+      ["Application database", "rails"],
+      ["PostgreSQL", "postgresql"],
+      ["MySQL", "mysql"],
+      ["SQLite", "sqlite"]
+    ].freeze
+    ADAPTERS = ADAPTER_OPTIONS.map(&:last).freeze
     REMOTE_ADAPTERS = %w[postgresql mysql].freeze
     SSL_MODES = %w[disable require verify-ca verify-full].freeze
 

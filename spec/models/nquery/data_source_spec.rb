@@ -3,6 +3,18 @@
 require_relative "../../rails_helper"
 
 RSpec.describe Nquery::DataSource do
+  describe "ADAPTER_OPTIONS" do
+    it "lists every adapter with a display label" do
+      expect(described_class::ADAPTER_OPTIONS).to eq([
+        ["Application database", "rails"],
+        ["PostgreSQL", "postgresql"],
+        ["MySQL", "mysql"],
+        ["SQLite", "sqlite"]
+      ])
+      expect(described_class::ADAPTER_OPTIONS.map(&:last)).to match_array(described_class::ADAPTERS)
+    end
+  end
+
   describe "encryption" do
     it "encrypts connection_config at rest" do
       data_source = described_class.create!(

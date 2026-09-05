@@ -2,12 +2,6 @@
 <% submit_label = local_assigns.fetch(:submit_label) %>
 <% form_url = data_source.persisted? ? admin_data_source_path(data_source) : admin_data_sources_path %>
 <% form_method = data_source.persisted? ? :patch : :post %>
-<% adapter_options = [
-     ["Application database", "rails"],
-     ["PostgreSQL", "postgresql"],
-     ["MySQL", "mysql"],
-     ["SQLite", "sqlite"]
-   ] %>
 <% default_port = data_source.adapter == "mysql" ? "3306" : "5432" %>
 
 <%= form_with model: data_source, url: form_url, method: form_method, class: "nq-form nq-card",
@@ -36,7 +30,7 @@
       <div class="nq-form-row">
         <%= f.label :adapter %>
         <%= f.select :adapter,
-                     options_for_select(adapter_options, data_source.adapter),
+                     options_for_select(Nquery::DataSource::ADAPTER_OPTIONS, data_source.adapter),
                      {},
                      class: "nq-input",
                      data: { action: "change->data-source-form#toggle", data_source_form_target: "adapter" } %>
