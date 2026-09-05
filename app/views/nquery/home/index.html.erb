@@ -11,9 +11,11 @@
           <%= nq_icon(:chart) %>
           <span>New question</span>
         <% end %>
-        <%= link_to new_collection_dashboard_path(@root_collection), class: "nq-btn nq-btn-primary nq-home-hero-cta" do %>
-          <%= nq_icon(:plus) %>
-          <span>New dashboard</span>
+        <% if @collections.any? %>
+          <%= link_to new_dashboard_path, class: "nq-btn nq-btn-primary nq-home-hero-cta" do %>
+            <%= nq_icon(:plus) %>
+            <span>New dashboard</span>
+          <% end %>
         <% end %>
       </div>
     <% end %>
@@ -76,8 +78,8 @@
         <div class="nq-home-empty">
           <%= nq_icon(:dashboard, class: "nq-icon-lg") %>
           <p class="nq-muted">No dashboards yet</p>
-          <% if @root_collection %>
-            <%= link_to new_collection_dashboard_path(@root_collection), class: "nq-btn nq-btn-primary" do %>
+          <% if @collections.any? %>
+            <%= link_to new_dashboard_path, class: "nq-btn nq-btn-primary" do %>
               <%= nq_icon(:plus) %>
               <span>Create dashboard</span>
             <% end %>

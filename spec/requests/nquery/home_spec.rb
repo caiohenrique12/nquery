@@ -24,5 +24,25 @@ RSpec.describe "Home", type: :request do
       expect(response.body).not_to include("Open Our analytics")
       expect(response.body).not_to include(">Analytics</span>")
     end
+
+    it "links to a new dashboard" do
+      get "/"
+
+      expect(response.body).to include("New dashboard")
+      expect(response.body).to include('href="/dashboards/new"')
+    end
+
+    context "when the user lacks curate access" do
+      before { sign_in_with_devise(email: "analyst@nquery.dev") }
+
+      it "hides the new dashboard action" do
+        get "/"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).not_to include("New dashboard")
+        expect(response.body).not_to include('href="/dashboards/new"')
+        expect(response.body).not_to include("/dashboards/new")
+      end
+    end
   end
 end
