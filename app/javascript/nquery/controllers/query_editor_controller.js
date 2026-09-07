@@ -16,7 +16,7 @@ export default class extends Controller {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content
 
     try {
-      const response = await fetch("/queries/run", {
+      const response = await fetch(this.element.dataset.queryRunUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
         body: JSON.stringify({ statement, data_source_id: dataSourceId })
@@ -30,8 +30,10 @@ export default class extends Controller {
 
   async loadSchema() {
     if (!this.hasSchemaTarget) return
+    const schemaUrl = this.element.dataset.querySchemaUrl
+    if (!schemaUrl) return
     const dataSourceId = this.dataSourceTarget.value
-    const response = await fetch(`/queries/schema?data_source_id=${dataSourceId}`)
+    const response = await fetch(`${schemaUrl}?data_source_id=${dataSourceId}`)
     const data = await response.json()
     this.schemaTarget.innerHTML = data.tables.map(t => {
       const name = typeof t === "string" ? t : t.name

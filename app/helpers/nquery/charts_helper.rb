@@ -29,5 +29,14 @@ module Nquery
     def chart_builder_chart_types
       Chart::CHART_TYPES - %w[table]
     end
+
+    def chart_builder_data(chart, result: nil)
+      {
+        controller: "chart-builder",
+        query_save_url: chart.query&.persisted? ? query_path(chart.query) : nil,
+        query_run_url: run_queries_path,
+        query_schema_url: schema_queries_path
+      }.tap { |data| data[:initial_result] = result if result.present? }
+    end
   end
 end

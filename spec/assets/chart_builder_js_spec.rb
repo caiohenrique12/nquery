@@ -24,4 +24,11 @@ RSpec.describe "Chart builder JS" do
     expect(js).to include('type === "scatter"')
     expect(js).to include('fill: type === "area"')
   end
+
+  it "posts query runs and schema loads to engine-provided URLs" do
+    expect(js).to include("queryRunUrl")
+    expect(js).to include("querySchemaUrl")
+    expect(js).not_to include('fetch("/queries/run"')
+    expect(js).not_to include("fetch(`/queries/schema")
+  end
 end
