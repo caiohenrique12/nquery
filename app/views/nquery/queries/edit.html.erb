@@ -3,7 +3,7 @@
 </div>
 
 <%= form_with model: @query, url: query_path(@query), method: :patch, class: "nq-form" do |f| %>
-  <div class="nq-grid nq-grid-editor" data-controller="query-editor">
+  <div class="nq-grid nq-grid-editor" <%= tag.attributes(data: query_editor_data) %>>
     <aside class="nq-card nq-schema-panel">
       <h3>Schema</h3>
       <ul class="nq-tree" data-query-editor-target="schema">

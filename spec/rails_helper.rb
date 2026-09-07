@@ -27,12 +27,12 @@ RSpec.configure do |config|
   end
 
   config.include Module.new {
-    def sign_in_with_devise(email:, password: "password123")
+    def sign_in_with_devise(email:, password: "password123", path_prefix: "")
       # Devise refuses a second sign-in while a Warden session exists.
-      delete "/logout"
+      delete "#{path_prefix}/logout"
       follow_redirect! if response.redirect?
 
-      post "/login", params: { nquery_user: { email: email, password: password } }
+      post "#{path_prefix}/login", params: { nquery_user: { email: email, password: password } }
       follow_redirect! if response.redirect?
     end
   }, type: :request

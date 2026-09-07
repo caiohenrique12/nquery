@@ -448,6 +448,8 @@ function initChartBuilders() {
       root.querySelector("[data-action*='chart-builder#format']")
     const saveStatus = root.querySelector("[data-chart-builder-target='saveStatus']")
     const querySaveUrl = root.dataset.querySaveUrl
+    const queryRunUrl = root.dataset.queryRunUrl
+    const querySchemaUrl = root.dataset.querySchemaUrl
 
     let currentResult = null
     let chartInstance = null
@@ -830,7 +832,7 @@ function initChartBuilders() {
       setButtonLoading(button, true)
       try {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-        const res = await fetch("/queries/run", {
+        const res = await fetch(queryRunUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
           body: JSON.stringify({ statement: getStatement(), data_source_id: dataSource?.value })
@@ -851,7 +853,7 @@ function initChartBuilders() {
 
     const loadSchema = async () => {
       if (!schema || !dataSource) return
-      const response = await fetch(`/queries/schema?data_source_id=${dataSource.value}`)
+      const response = await fetch(`${querySchemaUrl}?data_source_id=${dataSource.value}`)
       const data = await response.json()
       renderSchemaTree(schema, data.tables)
     }
@@ -969,7 +971,7 @@ function initQueryEditors() {
       setButtonLoading(button, true)
       try {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-        const res = await fetch("/queries/run", {
+        const res = await fetch(el.dataset.queryRunUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
           body: JSON.stringify({ statement: statement?.value, data_source_id: dataSource?.value })

@@ -45,6 +45,8 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include('class="nq-output-tab is-active"')
       expect(response.body).to include('data-tab="chart"')
       expect(response.body).to include("Save chart")
+      expect(response.body).to include('data-query-run-url="/queries/run"')
+      expect(response.body).to include('data-query-schema-url="/queries/schema"')
       expect(response.body).not_to include("data-query-save-url=")
       expect(response.body).not_to include('data-controller="query-editor"')
     end
@@ -91,6 +93,8 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include('data-controller="chart-builder"')
       expect(response.body).to include("Output")
       expect(response.body).to include('data-tab="chart"')
+      expect(response.body).to include('data-query-run-url="/queries/run"')
+      expect(response.body).to include('data-query-schema-url="/queries/schema"')
       expect(response.body).not_to include('data-controller="query-editor"')
     end
   end
@@ -216,6 +220,8 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include("nq-sql-save-status")
       expect(response.body).to include('data-chart-builder-target="formatButton"')
       expect(response.body).to include("data-query-save-url=\"/queries/#{chart.query.id}\"")
+      expect(response.body).to include('data-query-run-url="/queries/run"')
+      expect(response.body).to include('data-query-schema-url="/queries/schema"')
       expect(response.body).to include("nq-schema-toggle")
       expect(response.body).to include("nq-schema-column-type")
       expect(response.body).to include("Output")
@@ -494,6 +500,38 @@ RSpec.describe "Nquery::Charts", type: :request do
       delete "/charts/#{chart.id}"
 
       expect(response).to redirect_to("/")
+    end
+  end
+
+  context "when the engine is mounted at a non-root path" do
+    # with_routing remounts the engine but leaks SCRIPT_NAME after teardown.
+    around do |example|
+      Rails.application.routes.draw do
+        mount Nquery::Engine, at: "/nquery"
+      end
+      example.run
+    ensure
+      Rails.application.reload_routes!
+    end
+
+    it "renders mount-prefixed query run and schema URLs" do
+      sign_in_with_devise(email: "admin@nquery.dev", path_prefix: "/nquery")
+
+      get "/nquery/dashboards/#{dashboard.id}/charts/new"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('data-query-run-url="/nquery/queries/run"')
+      expect(response.body).to include('data-query-schema-url="/nquery/queries/schema"')
+    end
+
+    it "renders a mount-prefixed query run URL on the query editor" do
+      sign_in_with_devise(email: "admin@nquery.dev", path_prefix: "/nquery")
+
+      get "/nquery/queries/new"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('data-query-run-url="/nquery/queries/run"')
+      expect(response.body).not_to include("data-query-schema-url=")
     end
   end
 end

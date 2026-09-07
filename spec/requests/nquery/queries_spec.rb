@@ -122,6 +122,18 @@ RSpec.describe "Nquery queries", type: :request do
     get "/queries/new"
 
     expect(response).to have_http_status(:ok)
+    expect(response.body).to include('data-query-run-url="/queries/run"')
+    expect(response.body).not_to include("data-query-schema-url=")
+  end
+
+  it "renders engine query URLs on the edit form" do
+    sign_in_as(owner)
+
+    get "/queries/#{query.id}/edit"
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('data-query-run-url="/queries/run"')
+    expect(response.body).not_to include("data-query-schema-url=")
   end
 
   it "creates a query" do
