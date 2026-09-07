@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0] - 2026-09-07
+## [0.1.1] - 2026-09-07
 
 Host apps should `bundle update nquery` and run `rails db:migrate`. Re-run `rails generate nquery:install` if you installed 0.1.0 and need the updated initializer.
 

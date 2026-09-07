@@ -31,7 +31,7 @@ case "$cmd" in
     exec bundle exec rails "$@"
     ;;
   version)
-    echo "nquery 0.2.0"
+    echo "nquery 0.1.1"
     ;;
   *)
     echo "Usage: nquery {server|setup|console|test|generate|version}"
