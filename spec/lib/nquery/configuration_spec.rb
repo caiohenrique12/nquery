@@ -63,6 +63,6 @@ end
 
 RSpec.describe Nquery::VERSION do
   it "defines the gem version" do
-    expect(Nquery::VERSION).to eq("0.1.2")
+    expect(Nquery::VERSION).to eq("0.1.1")
   end
 end
