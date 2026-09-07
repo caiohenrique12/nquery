@@ -9,13 +9,14 @@ Gem::Specification.new do |spec|
   spec.email       = ["hello@nquery.dev"]
   spec.summary     = "SQL charts, dashboards, and data visualization for Rails"
   spec.description = "Mountable Rails engine for SQL charts, dashboards, and analytics."
-  spec.homepage    = "https://github.com/nquery/nquery"
+  spec.homepage    = "https://github.com/caiohenrique12/nquery"
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
 
   spec.files = Dir.chdir(__dir__) do
     Dir["{app,config,db,lib}/**/*", "README.md", "CHANGELOG.md", "LICENSE", "Rakefile", "nquery.gemspec"]
