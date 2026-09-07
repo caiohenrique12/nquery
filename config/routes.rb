@@ -50,6 +50,8 @@ Nquery::Engine.routes.draw do
         get :embed
         patch :archive
       end
+    end
+    resources :charts, only: [] do
       concerns :shareable
     end
 

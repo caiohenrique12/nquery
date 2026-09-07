@@ -33,5 +33,17 @@ module Nquery
     def chart_type
       visualization["type"] || "bar"
     end
+
+    def statement
+      query&.statement
+    end
+
+    def statement?
+      query&.statement? || false
+    end
+
+    def data_source
+      query&.data_source
+    end
   end
 end

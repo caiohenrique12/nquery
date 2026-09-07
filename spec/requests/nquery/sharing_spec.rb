@@ -67,6 +67,47 @@ RSpec.describe "Sharing settings", type: :request do
     end
   end
 
+  describe "when sharing a chart from a dashboard" do
+    before do
+      sign_in_as(admin)
+      enable_sharing!
+    end
+
+    it "renders nested public-link actions on the embed page" do
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/embed"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("/dashboards/#{dashboard.id}/charts/#{chart.id}/public_link")
+    end
+
+    it "creates and removes a public link on the nested chart route" do
+      chart.unshare_publicly!
+
+      post "/dashboards/#{dashboard.id}/charts/#{chart.id}/public_link"
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/embed")
+      expect(chart.reload).to be_publicly_shared
+
+      delete "/dashboards/#{dashboard.id}/charts/#{chart.id}/public_link"
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/embed")
+      expect(chart.reload).not_to be_publicly_shared
+    end
+
+    it "generates and revokes an embed token on the nested chart route" do
+      post "/dashboards/#{dashboard.id}/charts/#{chart.id}/embed_tokens", params: { expires_in: "1.hour" }
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/embed")
+      token = chart.reload.active_embed_token
+      expect(token).to be_present
+
+      delete "/dashboards/#{dashboard.id}/charts/#{chart.id}/embed_tokens/#{token.id}"
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/embed")
+      expect(token.reload.active).to be(false)
+    end
+  end
+
   describe "embed token lifecycle" do
     before do
       sign_in_as(admin)

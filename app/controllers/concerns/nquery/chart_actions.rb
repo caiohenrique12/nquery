@@ -94,8 +94,8 @@ module Nquery
 
     def load_chart_builder_assigns
       @data_sources = DataSource.active.order(:name)
-      @schema = schema_for(@chart&.query&.data_source)
-      @result = chart_builder_result(@chart) if @chart&.persisted? && @chart.query&.statement.present?
+      @schema = schema_for(@chart&.data_source)
+      @result = chart_builder_result(@chart) if @chart&.persisted? && @chart.statement?
     end
 
     def schema_for(data_source = nil)

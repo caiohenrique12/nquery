@@ -4,10 +4,12 @@ module Nquery
   module ChartResults
     extend ActiveSupport::Concern
 
+    SHARED_CHART_LOAD_ERROR = "This chart could not be loaded."
+
     private
 
     def chart_result(chart)
-      return demo_result unless chart.query&.statement.present?
+      return demo_result unless chart.statement?
 
       chart_query_result(chart)
     rescue StandardError
@@ -15,7 +17,7 @@ module Nquery
     end
 
     def chart_builder_result(chart)
-      return nil unless chart.query&.statement.present?
+      return nil unless chart.statement?
 
       chart_query_result(chart, audit: false)
     rescue QueryRunner::PermissionError, QueryRunner::Error => e
@@ -25,19 +27,19 @@ module Nquery
     end
 
     def shared_chart_result(chart)
-      return { error: "This chart has no query." } unless chart.query&.statement.present?
-      return { error: "This chart could not be loaded." } unless chart.query.data_source
+      return { error: "This chart has no query." } unless chart.statement?
+      return { error: SHARED_CHART_LOAD_ERROR } unless chart.data_source
 
       chart_query_result(chart, audit: false)
     rescue StandardError => e
       Rails.logger.error("[nquery] shared chart #{chart.id} failed: #{e.class}: #{e.message}")
-      { error: "This chart could not be loaded." }
+      { error: SHARED_CHART_LOAD_ERROR }
     end
 
     def chart_query_result(chart, audit: true)
       QueryRunner.new(
-        data_source: chart.query.data_source || DataSource.first,
-        statement: chart.query.statement,
+        data_source: chart.data_source || DataSource.first,
+        statement: chart.statement,
         user: current_nquery_user,
         query: chart.query
       ).run(audit: audit)

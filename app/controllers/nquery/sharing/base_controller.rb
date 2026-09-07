@@ -60,11 +60,11 @@ module Nquery
       end
 
       def shareable_data_sources
-        shareable_charts.filter_map { |chart| chart.query&.data_source }.uniq
+        shareable_charts.filter_map(&:data_source).uniq
       end
 
       def shareable_missing_data_source?
-        shareable_charts.any? { |chart| chart.query && chart.query.data_source.nil? }
+        shareable_charts.any? { |chart| chart.query && chart.data_source.nil? }
       end
 
       def missing_data_source_message
