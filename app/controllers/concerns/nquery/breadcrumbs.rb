@@ -56,6 +56,8 @@ module Nquery
         when "edit"
           append_resource_breadcrumb(crumbs, breadcrumb_dashboard, path: dashboard_path(breadcrumb_dashboard), link: true)
           append_terminal_breadcrumb(crumbs, "Edit")
+        when "new"
+          append_terminal_breadcrumb(crumbs, "New dashboard")
         end
       when "nquery/collection/dashboards"
         append_section_breadcrumb(crumbs, "Collections", collections_path)

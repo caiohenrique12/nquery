@@ -1,2 +1,6 @@
-<div class="nq-page-header"><h1>Edit data source</h1></div>
-<%= render "form", data_source: @data_source, cancel_path: admin_data_sources_path, submit_label: "Update" %>
+<div class="nq-page-header">
+  <h1>Edit data source</h1>
+  <p class="nq-muted nq-resource-meta">Update connection settings for <%= @data_source.name %>.</p>
+</div>
+
+<%= render "form", data_source: @data_source, cancel_path: admin_data_sources_path, submit_label: "Save changes" %>

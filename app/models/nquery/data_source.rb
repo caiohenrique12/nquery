@@ -2,7 +2,13 @@
 
 module Nquery
   class DataSource < ApplicationRecord
-    ADAPTERS = %w[rails postgresql mysql sqlite].freeze
+    ADAPTER_OPTIONS = [
+      ["Application database", "rails"],
+      ["PostgreSQL", "postgresql"],
+      ["MySQL", "mysql"],
+      ["SQLite", "sqlite"]
+    ].freeze
+    ADAPTERS = ADAPTER_OPTIONS.map(&:last).freeze
     REMOTE_ADAPTERS = %w[postgresql mysql].freeze
     SSL_MODES = %w[disable require verify-ca verify-full].freeze
 
@@ -51,6 +57,22 @@ module Nquery
 
     def connection_config_hash=(hash)
       self.connection_config = hash.presence
+    end
+
+    def default_port
+      DEFAULT_PORTS.fetch(adapter, DEFAULT_PORTS.fetch("postgresql")).to_s
+    end
+
+    def test_connection
+      compose_connection_config
+      validate_connection_fields if connection_fields_submitted?
+      return false if errors.any?
+
+      DataSources::Adapter.for(self).test_connection
+      true
+    rescue StandardError => e
+      errors.add(:base, e.message)
+      false
     end
 
     def assign_connection_fields_from_config
@@ -116,7 +138,7 @@ module Nquery
     end
 
     def resolved_port
-      port.presence&.to_i || DEFAULT_PORTS.fetch(adapter)
+      port.presence&.to_i || default_port.to_i
     end
 
     def resolved_password(previous)

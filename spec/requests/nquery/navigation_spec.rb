@@ -110,6 +110,9 @@ RSpec.describe "Navigation layout", type: :request do
     get "/dashboards/#{dashboard.id}/edit"
     expect(response).to have_http_status(:ok)
 
+    get "/dashboards/new"
+    expect(response).to have_http_status(:ok)
+
     get "/charts/#{chart.id}/edit"
     expect(response).to have_http_status(:ok)
 

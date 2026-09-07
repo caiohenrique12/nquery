@@ -35,7 +35,7 @@ Nquery::Engine.routes.draw do
     end
   end
 
-  resources :dashboards, except: %i[new create] do
+  resources :dashboards do
     resources :charts, module: :dashboard do
       member do
         get :embed
@@ -62,7 +62,9 @@ Nquery::Engine.routes.draw do
       post :add_member, on: :member
       delete :remove_member, on: :member
     end
-    resources :data_sources, only: %i[index new create edit update]
+    resources :data_sources, only: %i[index new create edit update] do
+      post :test_connection, on: :collection
+    end
     resources :logs, only: %i[index]
     resources :permissions, only: %i[index] do
       collection do

@@ -11,6 +11,7 @@ module Nquery
       @recent_charts = filter_viewable_charts(charts).first(6)
       @recent_dashboards = filter_viewable_dashboards(dashboards).first(6)
       @root_collection = Collection.roots.first
+      @collections = assignable_collections
     end
   end
 end

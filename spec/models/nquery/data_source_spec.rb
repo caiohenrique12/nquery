@@ -3,6 +3,18 @@
 require_relative "../../rails_helper"
 
 RSpec.describe Nquery::DataSource do
+  describe "ADAPTER_OPTIONS" do
+    it "lists every adapter with a display label" do
+      expect(described_class::ADAPTER_OPTIONS).to eq([
+        ["Application database", "rails"],
+        ["PostgreSQL", "postgresql"],
+        ["MySQL", "mysql"],
+        ["SQLite", "sqlite"]
+      ])
+      expect(described_class::ADAPTER_OPTIONS.map(&:last)).to match_array(described_class::ADAPTERS)
+    end
+  end
+
   describe "encryption" do
     it "encrypts connection_config at rest" do
       data_source = described_class.create!(
@@ -30,6 +42,22 @@ RSpec.describe Nquery::DataSource do
         "password" => "secret-pass",
         "adapter" => "postgresql"
       )
+    end
+  end
+
+  describe "#default_port" do
+    it "returns 3306 for mysql" do
+      expect(described_class.new(adapter: "mysql").default_port).to eq("3306")
+    end
+
+    it "returns 5432 for postgresql" do
+      expect(described_class.new(adapter: "postgresql").default_port).to eq("5432")
+    end
+
+    context "when the adapter is not remote" do
+      it "falls back to the postgresql default" do
+        expect(described_class.new(adapter: "rails").default_port).to eq("5432")
+      end
     end
   end
 
@@ -210,6 +238,57 @@ RSpec.describe Nquery::DataSource do
       data_source.send(:assign_connection_config_from_fields)
 
       expect(data_source.connection_config).to eq({})
+    end
+  end
+
+  describe "#test_connection" do
+    it "returns true for the rails adapter" do
+      data_source = described_class.new(name: "Main", adapter: "rails")
+
+      expect(data_source.test_connection).to be(true)
+    end
+
+    it "does not persist the record" do
+      data_source = described_class.new(name: "Main", adapter: "rails")
+
+      expect { data_source.test_connection }.not_to change(described_class, :count)
+      expect(data_source).to be_new_record
+    end
+
+    context "when remote credentials are missing" do
+      it "returns false and records field errors" do
+        data_source = described_class.new(
+          name: "Warehouse",
+          adapter: "postgresql",
+          connection_fields_submitted: true
+        )
+
+        expect(data_source.test_connection).to be(false)
+        expect(data_source.errors[:host]).to include("can't be blank")
+        expect(data_source.errors[:database]).to include("can't be blank")
+        expect(data_source.errors[:username]).to include("can't be blank")
+        expect(data_source.errors[:password]).to include("can't be blank")
+      end
+    end
+
+    context "when the adapter cannot connect" do
+      it "returns false and records the failure" do
+        data_source = described_class.new(
+          name: "Warehouse",
+          adapter: "postgresql",
+          connection_fields_submitted: true,
+          host: "localhost",
+          database: "warehouse",
+          username: "reader",
+          password: "secret"
+        )
+        adapter = instance_double(Nquery::DataSources::PostgresqlAdapter)
+        allow(Nquery::DataSources::Adapter).to receive(:for).with(data_source).and_return(adapter)
+        allow(adapter).to receive(:test_connection).and_raise(StandardError, "connection refused")
+
+        expect(data_source.test_connection).to be(false)
+        expect(data_source.errors[:base]).to include("connection refused")
+      end
     end
   end
 end

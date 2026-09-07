@@ -37,6 +37,25 @@ RSpec.describe "Admin data sources", type: :request do
       expect(response.body).to include("Host")
       expect(response.body).not_to include("Connection (JSON)")
     end
+
+    it "seeds the postgresql port placeholder for the form script" do
+      sign_in_as_admin
+      get "/admin/data_sources/new"
+
+      expect(response.body).to include('data-data-source-form-target="port"')
+      expect(response.body).to include('placeholder="5432"')
+    end
+
+    it "renders a test connection action" do
+      sign_in_as_admin
+      get "/admin/data_sources/new"
+
+      expect(response.body).to include("Test Connection")
+      expect(response.body).to include('data-data-source-form-target="testButton"')
+      expect(response.body).to include('data-data-source-form-target="testStatus"')
+      expect(response.body).to include("/admin/data_sources/test_connection")
+      expect(response.body).to match(/nq-form-actions-start[\s\S]*Test Connection[\s\S]*Cancel[\s\S]*Create data source/)
+    end
   end
 
   describe "POST /admin/data_sources" do
@@ -126,6 +145,132 @@ RSpec.describe "Admin data sources", type: :request do
       }
 
       expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe "POST /admin/data_sources/test_connection" do
+    let(:data_source) do
+      Nquery::DataSource.create!(
+        name: "Warehouse",
+        adapter: "postgresql",
+        connection_fields_submitted: true,
+        host: "localhost",
+        database: "warehouse",
+        username: "reader",
+        password: "secret-pass"
+      )
+    end
+
+    it "returns success for the rails adapter" do
+      sign_in_as_admin
+
+      post "/admin/data_sources/test_connection", params: {
+        data_source: { name: "Main", adapter: "rails" }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)).to eq(
+        "ok" => true,
+        "message" => "Connection successful."
+      )
+    end
+
+    it "does not create a data source" do
+      sign_in_as_admin
+
+      expect {
+        post "/admin/data_sources/test_connection", params: {
+          data_source: { name: "Should Not Persist", adapter: "rails" }
+        }
+      }.not_to change(Nquery::DataSource, :count)
+    end
+
+    it "returns field errors when remote credentials are missing" do
+      sign_in_as_admin
+
+      post "/admin/data_sources/test_connection", params: {
+        data_source: { name: "Warehouse", adapter: "postgresql" }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      body = JSON.parse(response.body)
+      expect(body["ok"]).to be(false)
+      expect(body["error"]).to include("Host")
+    end
+
+    it "reuses the stored password when the form password is blank" do
+      sign_in_as_admin
+      adapter = instance_double(Nquery::DataSources::PostgresqlAdapter, test_connection: true)
+      allow(Nquery::DataSources::Adapter).to receive(:for) do |source|
+        expect(source.connection_config_hash["password"]).to eq("secret-pass")
+        adapter
+      end
+
+      post "/admin/data_sources/test_connection", params: {
+        data_source_id: data_source.id,
+        data_source: {
+          name: data_source.name,
+          adapter: "postgresql",
+          host: "localhost",
+          database: "warehouse",
+          username: "reader",
+          password: ""
+        }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["ok"]).to be(true)
+    end
+
+    context "when the data source id does not exist" do
+      it "returns a not found JSON error" do
+        sign_in_as_admin
+
+        post "/admin/data_sources/test_connection", params: {
+          data_source_id: 0,
+          data_source: { name: "Main", adapter: "rails" }
+        }
+
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)).to eq(
+          "ok" => false,
+          "error" => "Data source not found."
+        )
+      end
+    end
+
+    it "returns an error when the adapter cannot connect" do
+      sign_in_as_admin
+      adapter = instance_double(Nquery::DataSources::PostgresqlAdapter)
+      allow(Nquery::DataSources::Adapter).to receive(:for).and_return(adapter)
+      allow(adapter).to receive(:test_connection).and_raise(StandardError, "connection refused")
+
+      post "/admin/data_sources/test_connection", params: {
+        data_source: {
+          name: "Warehouse",
+          adapter: "postgresql",
+          host: "localhost",
+          database: "warehouse",
+          username: "reader",
+          password: "secret"
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)).to include(
+        "ok" => false,
+        "error" => "connection refused"
+      )
+    end
+
+    it "denies non-admin users" do
+      sign_in_with_devise(email: analyst.email)
+
+      post "/admin/data_sources/test_connection", params: {
+        data_source: { name: "Main", adapter: "rails" }
+      }
+
+      expect(response).to redirect_to("/")
     end
   end
 end

@@ -40,10 +40,35 @@ module Nquery
         end
       end
 
+      def test_connection
+        @data_source = data_source_for_connection_test
+        unless @data_source
+          render json: { ok: false, error: "Data source not found." }, status: :not_found
+          return
+        end
+
+        @data_source.assign_attributes(data_source_params)
+        @data_source.connection_fields_submitted = connection_fields_required?(@data_source.adapter)
+
+        if @data_source.test_connection
+          render json: { ok: true, message: "Connection successful." }
+        else
+          render json: { ok: false, error: @data_source.errors.full_messages.to_sentence },
+                 status: :unprocessable_content
+        end
+      end
+
       private
 
       def set_data_source
         @data_source = DataSource.find(params[:id])
+      end
+
+      def data_source_for_connection_test
+        id = params[:data_source_id].presence
+        return DataSource.new if id.blank?
+
+        DataSource.find_by(id: id)
       end
 
       def data_source_params

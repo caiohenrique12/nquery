@@ -13,6 +13,11 @@ module Nquery
         connection.columns(table_name).map { |c| { name: c.name, type: c.type.to_s } }
       end
 
+      def test_connection
+        connection.exec_query("SELECT 1")
+        true
+      end
+
       def execute_readonly(statement, timeout: 15, row_limit: 10_000)
         rows = []
         columns = []

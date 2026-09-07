@@ -1,2 +1,6 @@
-<div class="nq-page-header"><h1>New data source</h1></div>
-<%= render "form", data_source: @data_source, cancel_path: admin_data_sources_path, submit_label: "Create" %>
+<div class="nq-page-header">
+  <h1>New data source</h1>
+  <p class="nq-muted nq-resource-meta">Connect a database so your team can query and chart data.</p>
+</div>
+
+<%= render "form", data_source: @data_source, cancel_path: admin_data_sources_path, submit_label: "Create data source" %>

@@ -6,6 +6,25 @@ RSpec.describe Nquery::Dashboard do
   let(:root_collection) { Nquery::Collection.roots.first }
   let(:admin) { Nquery::User.find_by!(email: "admin@nquery.dev") }
 
+  describe "validations" do
+    it "requires a collection" do
+      dashboard = described_class.new(name: "Ops overview", creator: admin)
+
+      expect(dashboard).not_to be_valid
+      expect(dashboard.errors[:collection]).to include("must exist")
+    end
+
+    it "is valid with a collection" do
+      dashboard = described_class.new(
+        name: "Ops overview",
+        collection: root_collection,
+        creator: admin
+      )
+
+      expect(dashboard).to be_valid
+    end
+  end
+
   describe "archiving" do
     let(:dashboard) do
       described_class.create!(
