@@ -69,6 +69,10 @@ module Nquery
         card.height = 4
       end
 
+      chart.share_publicly!(user: admin)
+      chart.update!(enable_embedding: true) unless chart.enable_embedding?
+      dashboard.update!(enable_embedding: true) unless dashboard.enable_embedding?
+
       EmbedTokenService.sign(
         resource_type: "Nquery::Chart",
         resource_id: chart.id,

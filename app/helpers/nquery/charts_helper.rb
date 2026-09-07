@@ -18,6 +18,10 @@ module Nquery
       dashboard ? embed_dashboard_chart_path(dashboard, chart) : embed_chart_path(chart)
     end
 
+    def dashboard_embed_path(dashboard)
+      embed_dashboard_path(dashboard)
+    end
+
     def chart_archive_path(chart, dashboard: chart_dashboard)
       dashboard ? archive_dashboard_chart_path(dashboard, chart) : archive_chart_path(chart)
     end

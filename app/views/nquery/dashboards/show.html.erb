@@ -10,6 +10,10 @@
       <%= nq_icon(:chart) %>
       <span>New chart</span>
     <% end %>
+    <%= link_to dashboard_embed_path(@dashboard), class: "nq-btn" do %>
+      <%= nq_icon(:share) %>
+      <span>Embed</span>
+    <% end %>
     <%= link_to edit_dashboard_path(@dashboard), class: "nq-btn" do %>
       <%= nq_icon(:edit) %>
       <span>Edit</span>

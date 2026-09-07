@@ -2,23 +2,25 @@
 
 module Nquery
   module Embed
-    class ChartsController < ActionController::Base
-      include Nquery::Engine.routes.url_helpers
-      protect_from_forgery with: :exception
-      layout "nquery/embed"
-
+    class ChartsController < PublicResourcesController
       def show
+        unless Nquery.configuration.static_embedding_enabled
+          return render_forbidden("Embedding is disabled")
+        end
+
         payload = EmbedTokenService.verify(params[:token])
+        unless payload[:resource_type] == "Nquery::Chart"
+          return render_forbidden
+        end
+
         @chart = Chart.find(payload[:resource_id])
-        @result = demo_result
-      rescue EmbedTokenService::Error
-        render plain: "Invalid or expired embed token", status: :forbidden
-      end
+        unless @chart.enable_embedding?
+          return render_forbidden("Embedding is disabled")
+        end
 
-      private
-
-      def demo_result
-        { columns: %w[month revenue], rows: [%w[Jan 1200], %w[Feb 1800], %w[Mar 2400]] }
+        @result = shared_chart_result(@chart)
+      rescue EmbedTokenService::Error, ActiveRecord::RecordNotFound
+        render_forbidden
       end
     end
   end

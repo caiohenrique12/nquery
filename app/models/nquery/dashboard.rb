@@ -2,6 +2,8 @@
 
 module Nquery
   class Dashboard < ApplicationRecord
+    include Shareable
+
     belongs_to :collection, class_name: "Nquery::Collection"
     belongs_to :creator, class_name: "Nquery::User", optional: true
     has_many :dashboard_cards, class_name: "Nquery::DashboardCard", dependent: :destroy

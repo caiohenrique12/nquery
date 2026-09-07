@@ -40,6 +40,8 @@ module Nquery
         nquery/onboarding/confirmations
         nquery/embed/charts
         nquery/embed/dashboards
+        nquery/public/charts
+        nquery/public/dashboards
         nquery/errors
       ])
     end

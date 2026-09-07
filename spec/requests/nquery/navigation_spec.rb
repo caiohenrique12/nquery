@@ -118,6 +118,9 @@ RSpec.describe "Navigation layout", type: :request do
 
     get "/charts/#{chart.id}/embed"
     expect(response).to have_http_status(:ok)
+
+    get "/dashboards/#{dashboard.id}/embed"
+    expect(response).to have_http_status(:ok)
   end
 
   it "renders breadcrumbs on admin group pages" do

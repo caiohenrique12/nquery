@@ -24,6 +24,16 @@ module Nquery
       { error: e.message }
     end
 
+    def shared_chart_result(chart)
+      return { error: "This chart has no query." } unless chart.query&.statement.present?
+
+      chart_query_result(chart)
+    rescue QueryRunner::PermissionError, QueryRunner::Error => e
+      { error: e.message }
+    rescue StandardError => e
+      { error: e.message }
+    end
+
     def chart_query_result(chart, audit: true)
       QueryRunner.new(
         data_source: chart.query.data_source || DataSource.first,

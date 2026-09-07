@@ -28,11 +28,20 @@ Nquery::Engine.routes.draw do
     get :schema, on: :collection
   end
 
+  concern :shareable do
+    scope module: :sharing do
+      resource :public_link, only: %i[create destroy]
+      resource :embedding, only: %i[update]
+      resources :embed_tokens, only: %i[create destroy]
+    end
+  end
+
   resources :charts, only: %i[new create show edit update destroy] do
     member do
       get :embed
       patch :archive
     end
+    concerns :shareable
   end
 
   resources :dashboards do
@@ -41,13 +50,16 @@ Nquery::Engine.routes.draw do
         get :embed
         patch :archive
       end
+      concerns :shareable
     end
 
     member do
+      get :embed
       patch :update_layout
       patch :archive
       patch :unarchive
     end
+    concerns :shareable
   end
 
   resources :imports, only: %i[new create]
@@ -91,6 +103,11 @@ Nquery::Engine.routes.draw do
   namespace :embed do
     get "charts/show", to: "charts#show", as: :public_chart
     get "dashboards/show", to: "dashboards#show", as: :public_dashboard
+  end
+
+  scope module: :public, path: "public", as: :public do
+    get "charts/:uuid", to: "charts#show", as: :chart
+    get "dashboards/:uuid", to: "dashboards#show", as: :dashboard
   end
 
   match "*unmatched", to: "errors#not_found", via: :all

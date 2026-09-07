@@ -53,9 +53,9 @@ module Nquery
         case action_name
         when "show"
           append_resource_breadcrumb(crumbs, breadcrumb_dashboard)
-        when "edit"
+        when "edit", "embed"
           append_resource_breadcrumb(crumbs, breadcrumb_dashboard, path: dashboard_path(breadcrumb_dashboard), link: true)
-          append_terminal_breadcrumb(crumbs, "Edit")
+          append_terminal_breadcrumb(crumbs, action_name.titleize)
         when "new"
           append_terminal_breadcrumb(crumbs, "New dashboard")
         end

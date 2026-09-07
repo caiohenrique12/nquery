@@ -1,5 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
 function columnIndex(columns, name) {
   const index = columns.indexOf(name)
   return index >= 0 ? index : 0
@@ -76,6 +84,13 @@ export default class extends Controller {
       columns: ["month", "revenue"],
       rows: [["Jan", 1200], ["Feb", 1800], ["Mar", 2400]]
     }
+
+    if (demo.error) {
+      this.element.classList.add("is-error")
+      this.element.innerHTML = `<div class="nq-chart-error">${escapeHtml(demo.error)}</div>`
+      return
+    }
+
     const type = this.typeValue || "bar"
     const xCol = this.hasXValue ? this.xValue : ""
     const yCol = this.hasYValue ? this.yValue : ""

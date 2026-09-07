@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Public sharing links and static signed embeds for charts and dashboards (Metabase-style)
+- Sharing UI with expiry picker, revoke/regenerate, and copy-to-clipboard
+- Real query execution on public and embed pages, including dashboard card grids
+
+### Changed
+- Public embed endpoints require `static_embedding_enabled` and per-resource `enable_embedding`
+- Embed layout loads application JS so chart previews initialize, and allows cross-origin iframes via CSP `frame-ancestors`
+
 ## [0.1.2] - 2026-09-07
 
 ### Changed

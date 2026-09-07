@@ -368,6 +368,12 @@ function initChartPreviews() {
       rows: [["Jan", 1200], ["Feb", 1800], ["Mar", 2400], ["Apr", 2100]]
     }
 
+    if (data?.error) {
+      el.classList.add("is-error")
+      el.innerHTML = `<div class="nq-chart-error">${escapeHtml(data.error)}</div>`
+      return
+    }
+
     if (type === "number") {
       const yIndex = columnIndex(demo.columns || [], yCol || demo.columns?.[1] || demo.columns?.[0])
       const value = demo.rows?.[0]?.[yIndex] ?? "—"
@@ -1062,6 +1068,28 @@ function initDataSourceForms() {
   })
 }
 
+function initCopyButtons() {
+  document.querySelectorAll("[data-copy-button]").forEach(button => {
+    if (button.dataset.copyInitialized === "true") return
+    button.dataset.copyInitialized = "true"
+
+    button.addEventListener("click", async () => {
+      const target = button.dataset.copyTarget ? document.querySelector(button.dataset.copyTarget) : null
+      const text = target ? target.textContent : (button.dataset.copyText || "")
+      const original = button.textContent
+
+      try {
+        await navigator.clipboard.writeText(text.trim())
+        button.textContent = "Copied"
+      } catch {
+        button.textContent = "Copy failed"
+      }
+
+      setTimeout(() => { button.textContent = original }, 1500)
+    })
+  })
+}
+
 function initPage() {
   initButtonLoaders()
   initToastEvents()
@@ -1071,6 +1099,7 @@ function initPage() {
   initChartBuilders()
   initChartPreviews()
   initDataSourceForms()
+  initCopyButtons()
 }
 
 function bootPage() {

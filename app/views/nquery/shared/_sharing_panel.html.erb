@@ -1,0 +1,86 @@
+<% shareable = local_assigns.fetch(:shareable)
+   public_url = local_assigns[:public_url]
+   embed_url = local_assigns[:embed_url]
+   embed_token = local_assigns[:embed_token]
+   can_curate = can_curate_shareable?(shareable)
+   iframe_height = share_iframe_height(shareable)
+   public_sharing_enabled = Nquery.configuration.public_sharing_enabled
+   static_embedding_enabled = Nquery.configuration.static_embedding_enabled
+%>
+
+<section class="nq-card nq-sharing-section">
+  <h2>Public link</h2>
+  <% unless public_sharing_enabled %>
+    <p class="nq-muted">Public sharing is disabled. Set <code>config.public_sharing_enabled = true</code> in the host app initializer.</p>
+  <% end %>
+
+  <% if public_url %>
+    <p class="nq-muted">Anyone with this link can view the visualization without signing in.</p>
+    <div class="nq-copy-field">
+      <pre class="nq-code" id="public-share-url"><%= public_url %></pre>
+      <button type="button" class="nq-btn" data-copy-button data-copy-target="#public-share-url">Copy</button>
+    </div>
+    <h3>Iframe snippet</h3>
+    <div class="nq-copy-field">
+      <pre class="nq-code" id="public-share-iframe"><%= share_iframe_snippet(public_url, height: iframe_height) %></pre>
+      <button type="button" class="nq-btn" data-copy-button data-copy-target="#public-share-iframe">Copy</button>
+    </div>
+    <% if can_curate %>
+      <%= button_to "Remove public link", shareable_public_link_path(shareable), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Remove the public link? Existing embeds will stop working." } } %>
+    <% end %>
+  <% elsif can_curate && public_sharing_enabled %>
+    <p class="nq-muted">Create an unguessable public URL. Anyone with the link can view this visualization.</p>
+    <%= button_to "Enable public link", shareable_public_link_path(shareable), method: :post, class: "nq-btn nq-btn-primary" %>
+  <% elsif can_curate %>
+    <p class="nq-muted">Enable public sharing in configuration, then return here to create a link.</p>
+  <% else %>
+    <p class="nq-muted">No public link yet.</p>
+  <% end %>
+</section>
+
+<section class="nq-card nq-sharing-section">
+  <h2>Static embed</h2>
+  <% unless static_embedding_enabled %>
+    <p class="nq-muted">Static embedding is disabled. Set <code>config.static_embedding_enabled = true</code> in the host app initializer.</p>
+  <% end %>
+
+  <% if shareable.enable_embedding? %>
+    <p class="nq-muted">Embedding is enabled for this visualization.</p>
+    <% if can_curate && static_embedding_enabled %>
+      <%= button_to "Disable embedding", shareable_embedding_path(shareable), method: :patch, params: { enable_embedding: false }, class: "nq-btn" %>
+    <% end %>
+  <% elsif can_curate && static_embedding_enabled %>
+    <p class="nq-muted">Enable embedding to publish a signed iframe URL.</p>
+    <%= button_to "Enable embedding", shareable_embedding_path(shareable), method: :patch, params: { enable_embedding: true }, class: "nq-btn nq-btn-primary" %>
+  <% end %>
+
+  <% if embed_token && embed_url %>
+    <p class="nq-muted">Signed embed token (expires <%= embed_token.expires_at&.to_fs(:long) || "never" %>)</p>
+    <div class="nq-copy-field">
+      <pre class="nq-code" id="static-embed-url"><%= embed_url %></pre>
+      <button type="button" class="nq-btn" data-copy-button data-copy-target="#static-embed-url">Copy</button>
+    </div>
+    <h3>Iframe snippet</h3>
+    <div class="nq-copy-field">
+      <pre class="nq-code" id="static-embed-iframe"><%= share_iframe_snippet(embed_url, height: iframe_height) %></pre>
+      <button type="button" class="nq-btn" data-copy-button data-copy-target="#static-embed-iframe">Copy</button>
+    </div>
+    <% if can_curate && static_embedding_enabled %>
+      <%= button_to "Revoke token", shareable_embed_token_path(shareable, embed_token), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Revoke this embed token?" } } %>
+    <% end %>
+  <% elsif can_curate && !static_embedding_enabled %>
+    <p class="nq-muted">Enable static embedding in configuration, then return here to generate a token.</p>
+  <% elsif !can_curate %>
+    <p class="nq-muted">No embed token yet.</p>
+  <% end %>
+
+  <% if can_curate && static_embedding_enabled %>
+    <%= form_with url: shareable_embed_tokens_path(shareable), method: :post, class: "nq-sharing-token-form" do %>
+      <label class="nq-form-row">
+        <span>Expires</span>
+        <%= select_tag :expires_in, options_for_select(Nquery::SharingHelper::EMBED_EXPIRY_OPTIONS, "1.hour"), class: "nq-input" %>
+      </label>
+      <%= submit_tag embed_token ? "Regenerate" : "Generate token", class: "nq-btn nq-btn-primary" %>
+    <% end %>
+  <% end %>
+</section>

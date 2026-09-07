@@ -6,6 +6,7 @@ module Nquery
 
     included do
       include ChartResults
+      include SharingPage
       before_action :set_chart, only: %i[show edit update embed destroy archive]
       before_action :authorize_chart_view!, only: %i[show embed]
       before_action :authorize_chart_curate!, only: %i[edit update destroy archive]
@@ -47,8 +48,7 @@ module Nquery
     end
 
     def embed
-      @embed_token = EmbedToken.active.find_by(resource_type: "Nquery::Chart", resource_id: @chart.id)
-      @embed_url = @embed_token ? embed_public_chart_url(token: EmbedTokenService.signed_token_for(@embed_token)) : nil
+      assign_sharing_page(@chart)
       render "nquery/charts/embed"
     end
 

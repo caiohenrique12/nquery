@@ -1,0 +1,20 @@
+<% width = local_assigns.fetch(:width, 12)
+   height = local_assigns.fetch(:height, 4)
+   show_title = local_assigns.fetch(:show_title, true)
+   titled = !respond_to?(:embed_titled?) || embed_titled?
+%>
+<div class="nq-dashboard-card"
+     style="grid-column: span <%= width %>; grid-row: span <%= height %>;">
+  <% if show_title && titled %>
+    <header class="nq-dashboard-card-header">
+      <h3 class="nq-dashboard-card-title"><%= chart.name %></h3>
+    </header>
+  <% end %>
+  <div class="nq-chart-preview" data-controller="chart-preview"
+       data-chart-preview-type-value="<%= chart.chart_type %>"
+       data-chart-preview-x-value="<%= chart.visualization.to_h["x"] %>"
+       data-chart-preview-y-value="<%= chart.visualization.to_h["y"] %>"
+       data-chart-preview-data-value="<%= result.to_json %>">
+    <canvas data-chart-preview-target="canvas" height="80"></canvas>
+  </div>
+</div>

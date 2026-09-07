@@ -1,7 +1,13 @@
-<h1><%= @dashboard.name %></h1>
-
-<% @dashboard.dashboard_cards.each do |card| %>
-  <section>
-    <h2><%= card.chart.name %></h2>
-  </section>
+<% if embed_titled? %>
+  <h1><%= @dashboard.name %></h1>
 <% end %>
+
+<div class="nq-dashboard-grid nq-embed-grid">
+  <% @dashboard_cards.each do |card| %>
+    <%= render "nquery/shared/shared_chart_card",
+               chart: card.chart,
+               result: @card_results[card],
+               width: card.width,
+               height: card.height %>
+  <% end %>
+</div>

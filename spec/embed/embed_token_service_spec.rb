@@ -33,4 +33,38 @@ RSpec.describe Nquery::EmbedTokenService do
 
     expect(described_class.verify(signed)[:resource_id]).to eq(42)
   end
+
+  it "honors an explicit expiry" do
+    result = described_class.sign(
+      resource_type: "Nquery::Chart",
+      resource_id: 1,
+      creator: user,
+      expires_at: 2.days.from_now
+    )
+    record = Nquery::EmbedToken.find_by!(token: result[:token])
+
+    expect(record.expires_at).to be_within(2.seconds).of(2.days.from_now)
+    expect(described_class.verify(result[:signed_token])[:resource_id]).to eq(1)
+  end
+
+  it "accepts never-expiring tokens" do
+    result = described_class.sign(
+      resource_type: "Nquery::Chart",
+      resource_id: 1,
+      creator: user,
+      expires_at: nil
+    )
+
+    travel 2.hours do
+      expect(described_class.verify(result[:signed_token])[:resource_id]).to eq(1)
+    end
+  end
+
+  it "rejects revoked tokens" do
+    result = described_class.sign(resource_type: "Nquery::Chart", resource_id: 1, creator: user)
+    record = Nquery::EmbedToken.find_by!(token: result[:token])
+    described_class.revoke!(record)
+
+    expect { described_class.verify(result[:signed_token]) }.to raise_error(Nquery::EmbedTokenService::Error, /not found/)
+  end
 end
