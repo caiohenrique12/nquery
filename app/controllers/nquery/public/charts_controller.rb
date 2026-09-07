@@ -8,7 +8,7 @@ module Nquery
           return render_unavailable(status: :not_found)
         end
 
-        @chart = Chart.find_by!(public_uuid: params[:uuid])
+        @chart = Chart.active.find_by!(public_uuid: params[:uuid])
         @result = shared_chart_result(@chart)
         render template: "nquery/embed/charts/show"
       rescue ActiveRecord::RecordNotFound

@@ -251,7 +251,9 @@ Nquery.configure do |config|
 end
 ```
 
-Users with **view** access can open **Embed** on a chart or dashboard. Creating, revoking, or regenerating links and tokens requires **curate** access on the collection.
+Users with **view** access can open **Embed** on a chart or dashboard. Creating, revoking, or regenerating links and tokens requires **curate** access on the collection and `view_data` on the underlying data sources.
+
+Public and embed endpoints rate-limit to 60 requests per minute per IP when the host uses Rails 7.2+ `rate_limit`. Older Rails versions log a warning and skip rate limiting.
 
 ### Public links
 

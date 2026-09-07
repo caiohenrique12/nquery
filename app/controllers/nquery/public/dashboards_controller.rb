@@ -8,7 +8,7 @@ module Nquery
           return render_unavailable(status: :not_found)
         end
 
-        @dashboard = Dashboard.find_by!(public_uuid: params[:uuid])
+        @dashboard = Dashboard.active.find_by!(public_uuid: params[:uuid])
         @dashboard_cards = load_dashboard_cards(@dashboard)
         @card_results = @dashboard_cards.index_with { |card| shared_chart_result(card.chart) }
         render template: "nquery/embed/dashboards/show"

@@ -24,4 +24,12 @@ RSpec.describe "Chart builder styles" do
     expect(css).to include(".nq-sql-save-status")
     expect(css).to include('.nq-btn:disabled')
   end
+
+  it "uses the same font stack on app and embed bodies" do
+    css = File.read(css_path)
+
+    expect(css).to include('--nq-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif')
+    expect(css).to include("body.nq-body { margin: 0; font-family: var(--nq-font);")
+    expect(css).to include(".nq-embed-body { margin: 0; padding: 1rem; background: #fff; font-family: var(--nq-font);")
+  end
 end

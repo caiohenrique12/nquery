@@ -13,7 +13,7 @@ module Nquery
           return render_forbidden
         end
 
-        @chart = Chart.find(payload[:resource_id])
+        @chart = Chart.active.find(payload[:resource_id])
         unless @chart.enable_embedding?
           return render_forbidden("Embedding is disabled")
         end

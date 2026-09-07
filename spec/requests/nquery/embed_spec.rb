@@ -33,6 +33,31 @@ RSpec.describe "Embed pages", type: :request do
       expect(response.body).not_to include("Jan")
     end
 
+    it "does not execute a chart with no data source against another source" do
+      enable_static_embedding!
+      query = Nquery::Query.create!(
+        name: "Unsourced embed query",
+        statement: chart.query.statement,
+        data_source: nil,
+        creator: admin,
+        collection: chart.collection
+      )
+      unsourced = Nquery::Chart.create!(
+        name: "Unsourced embed chart",
+        query: query,
+        collection: chart.collection,
+        creator: admin,
+        visualization: { "type" => "table" }
+      )
+      result = sign_chart_token(unsourced)
+
+      get "/embed/charts/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("This chart could not be loaded.")
+      expect(response.body).not_to include("2026-01")
+    end
+
     it "rejects invalid tokens" do
       enable_static_embedding!
 
@@ -72,6 +97,16 @@ RSpec.describe "Embed pages", type: :request do
 
       expect(response).to have_http_status(:forbidden)
       expect(response.body).to include("Embedding is disabled")
+    end
+
+    it "rejects tokens when the chart is archived" do
+      enable_static_embedding!
+      result = sign_chart_token
+      chart.archive!
+
+      get "/embed/charts/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "allows cross-origin framing" do
@@ -137,6 +172,16 @@ RSpec.describe "Embed pages", type: :request do
 
       expect(response).to have_http_status(:forbidden)
       expect(response.body).to include("Invalid or expired embed token")
+    end
+
+    it "rejects tokens when the dashboard is archived" do
+      enable_static_embedding!
+      result = sign_chart_token(dashboard)
+      dashboard.archive!
+
+      get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:forbidden)
     end
   end
 end

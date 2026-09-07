@@ -263,7 +263,7 @@ function initButtonLoaders() {
 
   document.addEventListener("click", (event) => {
     const button = event.target.closest("a.nq-btn, button.nq-btn[type=button], input.nq-btn[type=button]")
-    if (!button || button.classList.contains("is-loading") || button.dataset.managesLoading === "true") return
+    if (!button || button.classList.contains("is-loading") || button.dataset.managesLoading === "true" || button.hasAttribute("data-copy-button")) return
     setButtonLoading(button, true)
   })
 
@@ -343,11 +343,22 @@ function buildPreviewChartConfig(type, data, xCol, yCol) {
   }
 }
 
+const NQ_CHART_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+
+function applyChartFontDefaults() {
+  if (typeof Chart === "undefined") return
+
+  Chart.defaults.font.family = NQ_CHART_FONT
+  Chart.defaults.color = document.body.classList.contains("nq-embed-theme-night") ? "#e2e8f0" : "#1e293b"
+}
+
 function initChartPreviews() {
   if (typeof Chart === "undefined") {
     requestAnimationFrame(initChartPreviews)
     return
   }
+
+  applyChartFontDefaults()
 
   document.querySelectorAll("[data-controller='chart-preview']").forEach(el => {
     if (el.dataset.chartPreviewInitialized === "true") return
@@ -378,7 +389,7 @@ function initChartPreviews() {
       const yIndex = columnIndex(demo.columns || [], yCol || demo.columns?.[1] || demo.columns?.[0])
       const value = demo.rows?.[0]?.[yIndex] ?? "—"
       el.classList.add("is-number")
-      el.innerHTML = `<div class="nq-number-display">${value}</div>`
+      el.innerHTML = `<div class="nq-number-display">${escapeHtml(value)}</div>`
       return
     }
 
@@ -686,7 +697,7 @@ function initChartBuilders() {
       const yCol = yAxis?.value || result.columns[1] || result.columns[0]
       const yIndex = columnIndex(result.columns, yCol)
       const value = result.rows[0]?.[yIndex] ?? "—"
-      numberWrap.innerHTML = `<div class="nq-number-display">${value}</div>`
+      numberWrap.innerHTML = `<div class="nq-number-display">${escapeHtml(value)}</div>`
       chartWrap?.setAttribute("hidden", "")
       numberWrap?.removeAttribute("hidden")
     }
@@ -1091,6 +1102,7 @@ function initCopyButtons() {
 }
 
 function initPage() {
+  applyChartFontDefaults()
   initButtonLoaders()
   initToastEvents()
   observeToastStack()

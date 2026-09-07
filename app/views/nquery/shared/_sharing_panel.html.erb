@@ -26,11 +26,15 @@
       <button type="button" class="nq-btn" data-copy-button data-copy-target="#public-share-iframe">Copy</button>
     </div>
     <% if can_curate %>
-      <%= button_to "Remove public link", shareable_public_link_path(shareable), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Remove the public link? Existing embeds will stop working." } } %>
+      <div class="nq-actions">
+        <%= button_to "Remove public link", shareable_public_link_path(shareable), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Remove the public link? The public URL will stop working. Embed tokens are revoked separately." } } %>
+      </div>
     <% end %>
   <% elsif can_curate && public_sharing_enabled %>
     <p class="nq-muted">Create an unguessable public URL. Anyone with the link can view this visualization.</p>
-    <%= button_to "Enable public link", shareable_public_link_path(shareable), method: :post, class: "nq-btn nq-btn-primary" %>
+    <div class="nq-actions">
+      <%= button_to "Enable public link", shareable_public_link_path(shareable), method: :post, class: "nq-btn nq-btn-primary" %>
+    </div>
   <% elsif can_curate %>
     <p class="nq-muted">Enable public sharing in configuration, then return here to create a link.</p>
   <% else %>
@@ -66,7 +70,9 @@
       <button type="button" class="nq-btn" data-copy-button data-copy-target="#static-embed-iframe">Copy</button>
     </div>
     <% if can_curate && static_embedding_enabled %>
-      <%= button_to "Revoke token", shareable_embed_token_path(shareable, embed_token), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Revoke this embed token?" } } %>
+      <div class="nq-actions">
+        <%= button_to "Revoke token", shareable_embed_token_path(shareable, embed_token), method: :delete, class: "nq-btn nq-btn-danger", form: { data: { turbo_confirm: "Revoke this embed token?" } } %>
+      </div>
     <% end %>
   <% elsif can_curate && !static_embedding_enabled %>
     <p class="nq-muted">Enable static embedding in configuration, then return here to generate a token.</p>
@@ -80,7 +86,9 @@
         <span>Expires</span>
         <%= select_tag :expires_in, options_for_select(Nquery::SharingHelper::EMBED_EXPIRY_OPTIONS, "1.hour"), class: "nq-input" %>
       </label>
-      <%= submit_tag embed_token ? "Regenerate" : "Generate token", class: "nq-btn nq-btn-primary" %>
+      <div class="nq-actions">
+        <%= submit_tag embed_token ? "Regenerate" : "Generate token", class: "nq-btn nq-btn-primary" %>
+      </div>
     <% end %>
   <% end %>
 </section>

@@ -13,7 +13,7 @@ module Nquery
           return render_forbidden
         end
 
-        @dashboard = Dashboard.find(payload[:resource_id])
+        @dashboard = Dashboard.active.find(payload[:resource_id])
         unless @dashboard.enable_embedding?
           return render_forbidden("Embedding is disabled")
         end

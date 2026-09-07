@@ -80,6 +80,9 @@ export default class extends Controller {
   connect() {
     if (typeof Chart === "undefined") return
 
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    Chart.defaults.color = document.body.classList.contains("nq-embed-theme-night") ? "#e2e8f0" : "#1e293b"
+
     const demo = this.hasDataValue ? this.dataValue : {
       columns: ["month", "revenue"],
       rows: [["Jan", 1200], ["Feb", 1800], ["Mar", 2400]]
@@ -99,7 +102,7 @@ export default class extends Controller {
       const yIndex = columnIndex(demo.columns || [], yCol || demo.columns?.[1] || demo.columns?.[0])
       const value = demo.rows?.[0]?.[yIndex] ?? "—"
       this.element.classList.add("is-number")
-      this.element.innerHTML = `<div class="nq-number-display">${value}</div>`
+      this.element.innerHTML = `<div class="nq-number-display">${escapeHtml(value)}</div>`
       return
     }
 

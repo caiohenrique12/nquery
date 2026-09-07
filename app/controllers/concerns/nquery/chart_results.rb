@@ -26,12 +26,12 @@ module Nquery
 
     def shared_chart_result(chart)
       return { error: "This chart has no query." } unless chart.query&.statement.present?
+      return { error: "This chart could not be loaded." } unless chart.query.data_source
 
-      chart_query_result(chart)
-    rescue QueryRunner::PermissionError, QueryRunner::Error => e
-      { error: e.message }
+      chart_query_result(chart, audit: false)
     rescue StandardError => e
-      { error: e.message }
+      Rails.logger.error("[nquery] shared chart #{chart.id} failed: #{e.class}: #{e.message}")
+      { error: "This chart could not be loaded." }
     end
 
     def chart_query_result(chart, audit: true)

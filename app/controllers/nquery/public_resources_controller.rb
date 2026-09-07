@@ -13,7 +13,11 @@ module Nquery
 
     after_action :set_embed_headers
 
-    rate_limit to: 60, within: 1.minute if respond_to?(:rate_limit)
+    if respond_to?(:rate_limit)
+      rate_limit to: 60, within: 1.minute, by: -> { request.remote_ip }
+    else
+      Rails.logger.warn("[nquery] public/embed endpoints are not rate limited; Rails 7.2+ rate_limit is unavailable")
+    end
 
     private
 
@@ -66,7 +70,7 @@ module Nquery
       dashboard.dashboard_cards
         .joins(:chart)
         .merge(Chart.active)
-        .includes(chart: :query)
+        .includes(chart: { query: :data_source })
     end
   end
 end
