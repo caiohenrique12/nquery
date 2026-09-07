@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Nquery
-  VERSION = "0.1.0" unless defined?(Nquery::VERSION)
+  VERSION = "0.2.0" unless defined?(Nquery::VERSION)
 end

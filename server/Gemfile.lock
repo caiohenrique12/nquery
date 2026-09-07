@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    nquery (0.1.0)
+    nquery (0.2.0)
       bcrypt (~> 3.1)
       csv
       devise (>= 5.0.4, < 6)
