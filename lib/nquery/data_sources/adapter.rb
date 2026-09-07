@@ -29,6 +29,10 @@ module Nquery
       def execute_readonly(statement, timeout: 15, row_limit: 10_000)
         raise NotImplementedError
       end
+
+      def test_connection
+        raise NotImplementedError
+      end
     end
   end
 end

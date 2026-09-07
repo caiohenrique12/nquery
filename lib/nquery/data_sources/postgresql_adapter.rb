@@ -13,6 +13,11 @@ module Nquery
         end
       end
 
+      def test_connection
+        with_connection { |conn| conn.exec_query("SELECT 1") }
+        true
+      end
+
       def execute_readonly(statement, timeout: 15, row_limit: 10_000)
         with_connection do |conn|
           rows = []

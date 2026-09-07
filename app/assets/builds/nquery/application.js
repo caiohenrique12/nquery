@@ -989,10 +989,16 @@ function initQueryEditors() {
 
 function initDataSourceForms() {
   document.querySelectorAll("[data-controller='data-source-form']").forEach(root => {
+    if (root.dataset.dataSourceFormInitialized === "true") return
+    root.dataset.dataSourceFormInitialized = "true"
+
     const adapterField = root.querySelector("[data-data-source-form-target='adapter']")
     const remoteFields = root.querySelector("[data-data-source-form-target='remoteFields']")
     const sqliteFields = root.querySelector("[data-data-source-form-target='sqliteFields']")
     const railsHint = root.querySelector("[data-data-source-form-target='railsHint']")
+    const portField = root.querySelector("[data-data-source-form-target='port']")
+    const testButton = root.querySelector("[data-data-source-form-target='testButton']")
+    const testStatus = root.querySelector("[data-data-source-form-target='testStatus']")
 
     const toggle = () => {
       const adapter = adapterField?.value || root.dataset.dataSourceFormAdapterValue || "postgresql"
@@ -1003,10 +1009,54 @@ function initDataSourceForms() {
       remoteFields?.toggleAttribute("hidden", !isRemote)
       sqliteFields?.toggleAttribute("hidden", !isSqlite)
       railsHint?.toggleAttribute("hidden", !isRails)
+
+      if (portField) {
+        portField.placeholder = adapter === "mysql" ? "3306" : "5432"
+      }
     }
 
     adapterField?.addEventListener("change", toggle)
     toggle()
+
+    testButton?.addEventListener("click", async (event) => {
+      event.preventDefault()
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+      const formData = new FormData(root)
+      formData.delete("_method")
+      const dataSourceId = root.dataset.dataSourceFormIdValue
+      if (dataSourceId) formData.append("data_source_id", dataSourceId)
+
+      setButtonLoading(testButton, true)
+      if (testStatus) {
+        testStatus.hidden = true
+        testStatus.textContent = ""
+        testStatus.classList.remove("is-success", "is-error")
+      }
+
+      try {
+        const response = await fetch(root.dataset.dataSourceFormTestUrlValue, {
+          method: "POST",
+          headers: { Accept: "application/json", "X-CSRF-Token": csrf },
+          body: formData
+        })
+        const data = await response.json()
+        const success = response.ok && data.ok
+        if (testStatus) {
+          testStatus.textContent = success ? (data.message || "Connection successful.") : (data.error || "Connection failed.")
+          testStatus.classList.toggle("is-success", success)
+          testStatus.classList.toggle("is-error", !success)
+          testStatus.hidden = false
+        }
+      } catch (error) {
+        if (testStatus) {
+          testStatus.textContent = error.message || "Connection failed."
+          testStatus.classList.add("is-error")
+          testStatus.hidden = false
+        }
+      } finally {
+        setButtonLoading(testButton, false)
+      }
+    })
   })
 }
 

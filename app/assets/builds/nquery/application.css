@@ -140,6 +140,10 @@ button.nq-menu-item-button.is-loading::before { content: ""; width: 1em; height:
 .nq-form-section { margin-bottom: 0.5rem; }
 .nq-form-section-title { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nq-muted); }
 .nq-form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; align-items: center; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--nq-border); }
+.nq-form-actions-start { margin-right: auto; }
+.nq-connection-status { margin: 0.75rem 0 0; font-size: 0.875rem; line-height: 1.4; }
+.nq-connection-status.is-success { color: #166534; }
+.nq-connection-status.is-error { color: #991b1b; }
 .nq-form-errors { margin-bottom: 1.25rem; padding: 0.875rem 1rem; border-radius: 8px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 0.875rem; }
 .nq-form-errors p { margin: 0 0 0.5rem; }
 .nq-form-errors ul { margin: 0; padding-left: 1.25rem; }

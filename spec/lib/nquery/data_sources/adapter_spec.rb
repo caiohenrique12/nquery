@@ -27,6 +27,7 @@ RSpec.describe Nquery::DataSources::Adapter do
     expect { adapter.tables }.to raise_error(NotImplementedError)
     expect { adapter.columns("users") }.to raise_error(NotImplementedError)
     expect { adapter.execute_readonly("SELECT 1") }.to raise_error(NotImplementedError)
+    expect { adapter.test_connection }.to raise_error(NotImplementedError)
   end
 end
 
@@ -79,6 +80,23 @@ RSpec.describe Nquery::DataSources::PostgresqlAdapter do
 
     expect(described_class.new(data_source).tables).not_to be_empty
   end
+
+  describe "#test_connection" do
+    it "returns true when a query succeeds" do
+      sqlite_config = ActiveRecord::Base.connection_db_config.configuration_hash.merge(adapter: "sqlite3")
+      data_source = Nquery::DataSource.new(name: "Probe", adapter: "postgresql")
+      data_source.connection_config_hash = sqlite_config.stringify_keys
+      data_source.save!(validate: false)
+
+      expect(described_class.new(data_source).test_connection).to be(true)
+    end
+
+    it "raises when the database cannot be reached" do
+      allow(adapter).to receive(:with_connection).and_raise(StandardError, "connection refused")
+
+      expect { adapter.test_connection }.to raise_error(StandardError, "connection refused")
+    end
+  end
 end
 
 RSpec.describe Nquery::DataSources::MysqlAdapter do
@@ -110,5 +128,15 @@ RSpec.describe Nquery::DataSources::MysqlAdapter do
 
     expect(result[:columns]).to eq(%w[value])
     expect(result[:rows]).to eq([[1]])
+  end
+end
+
+RSpec.describe Nquery::DataSources::RailsAdapter do
+  describe "#test_connection" do
+    it "returns true against the host application database" do
+      data_source = Nquery::DataSource.new(name: "Main", adapter: "rails")
+
+      expect(described_class.new(data_source).test_connection).to be(true)
+    end
   end
 end

@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["adapter", "remoteFields", "sqliteFields", "railsHint", "port"]
+  static targets = ["adapter", "remoteFields", "sqliteFields", "railsHint", "port", "testButton", "testStatus"]
+  static values = { adapter: String, testUrl: String, id: String }
 
   connect() {
     this.toggle()

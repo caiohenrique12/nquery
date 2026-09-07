@@ -59,6 +59,22 @@ module Nquery
       self.connection_config = hash.presence
     end
 
+    def default_port
+      DEFAULT_PORTS.fetch(adapter, DEFAULT_PORTS.fetch("postgresql")).to_s
+    end
+
+    def test_connection
+      compose_connection_config
+      validate_connection_fields if connection_fields_submitted?
+      return false if errors.any?
+
+      DataSources::Adapter.for(self).test_connection
+      true
+    rescue StandardError => e
+      errors.add(:base, e.message)
+      false
+    end
+
     def assign_connection_fields_from_config
       hash = connection_config_hash
       self.host = hash["host"]
@@ -122,7 +138,7 @@ module Nquery
     end
 
     def resolved_port
-      port.presence&.to_i || DEFAULT_PORTS.fetch(adapter)
+      port.presence&.to_i || default_port.to_i
     end
 
     def resolved_password(previous)

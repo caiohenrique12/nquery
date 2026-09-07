@@ -1,11 +1,13 @@
 <% cancel_path = local_assigns.fetch(:cancel_path) %>
 <% submit_label = local_assigns.fetch(:submit_label) %>
-<% form_url = data_source.persisted? ? admin_data_source_path(data_source) : admin_data_sources_path %>
-<% form_method = data_source.persisted? ? :patch : :post %>
-<% default_port = data_source.adapter == "mysql" ? "3306" : "5432" %>
 
-<%= form_with model: data_source, url: form_url, method: form_method, class: "nq-form nq-card",
-              data: { controller: "data-source-form", data_source_form_adapter_value: data_source.adapter } do |f| %>
+<%= form_with model: data_source, url: data_source_form_url(data_source), method: data_source_form_method(data_source), class: "nq-form nq-card",
+              data: {
+                controller: "data-source-form",
+                data_source_form_adapter_value: data_source.adapter,
+                data_source_form_test_url_value: test_connection_admin_data_sources_path,
+                data_source_form_id_value: data_source.persisted? ? data_source.id : nil
+              } do |f| %>
   <% if data_source.errors.any? %>
     <div class="nq-form-errors" role="alert">
       <p><strong>Please fix the following:</strong></p>
@@ -54,7 +56,7 @@
 
       <div class="nq-form-row">
         <%= f.label :port %>
-        <%= f.number_field :port, class: "nq-input", placeholder: default_port, min: 1, max: 65_535,
+        <%= f.number_field :port, class: "nq-input", placeholder: data_source.default_port, min: 1, max: 65_535,
                            data: { data_source_form_target: "port" } %>
         <p class="nq-field-hint">Leave blank to use the default port.</p>
       </div>
@@ -109,7 +111,11 @@
   <% end %>
 
   <div class="nq-form-actions">
+    <button type="button" class="nq-btn nq-form-actions-start" data-data-source-form-target="testButton" data-manages-loading="true">
+      Test Connection
+    </button>
     <%= link_to "Cancel", cancel_path, class: "nq-btn" %>
     <%= f.submit submit_label, class: "nq-btn nq-btn-primary" %>
   </div>
+  <p class="nq-connection-status" data-data-source-form-target="testStatus" role="status" hidden></p>
 <% end %>
