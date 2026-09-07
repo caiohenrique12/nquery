@@ -222,6 +222,23 @@ RSpec.describe "Admin data sources", type: :request do
       expect(JSON.parse(response.body)["ok"]).to be(true)
     end
 
+    context "when the data source id does not exist" do
+      it "returns a not found JSON error" do
+        sign_in_as_admin
+
+        post "/admin/data_sources/test_connection", params: {
+          data_source_id: 0,
+          data_source: { name: "Main", adapter: "rails" }
+        }
+
+        expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)).to eq(
+          "ok" => false,
+          "error" => "Data source not found."
+        )
+      end
+    end
+
     it "returns an error when the adapter cannot connect" do
       sign_in_as_admin
       adapter = instance_double(Nquery::DataSources::PostgresqlAdapter)
