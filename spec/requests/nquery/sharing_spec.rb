@@ -27,6 +27,15 @@ RSpec.describe "Sharing settings", type: :request do
       expect(response.body).to include("Public link")
       expect(response.body).to include("Static embed")
     end
+
+    it "shows the seeded public URL and embed token URL" do
+      enable_sharing!
+      get "/charts/#{chart.id}/embed"
+
+      expect(response.body).to include("/public/charts/#{chart.public_uuid}")
+      expect(response.body).to include("/embed/charts/show?token=")
+      expect(response.body).to include("Disable embedding")
+    end
   end
 
   describe "GET /dashboards/:id/embed" do
@@ -38,6 +47,14 @@ RSpec.describe "Sharing settings", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("Embed: #{dashboard.name}")
       expect(response.body).to include("Public link")
+    end
+
+    it "does not show a public dashboard URL until one is created" do
+      enable_sharing!
+      get "/dashboards/#{dashboard.id}/embed"
+
+      expect(response.body).to include("Enable public link")
+      expect(response.body).not_to include("/public/dashboards/")
     end
   end
 
@@ -105,6 +122,37 @@ RSpec.describe "Sharing settings", type: :request do
 
       expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/embed")
       expect(token.reload.active).to be(false)
+    end
+  end
+
+  describe "embedding toggle" do
+    before do
+      sign_in_as(admin)
+      enable_sharing!
+    end
+
+    it "disables embedding from a form param" do
+      chart.update!(enable_embedding: true)
+
+      patch "/charts/#{chart.id}/embedding", params: { enable_embedding: "false" }
+
+      expect(response).to redirect_to("/charts/#{chart.id}/embed")
+      expect(flash[:notice]).to eq("Embedding disabled.")
+      expect(chart.reload.enable_embedding?).to be(false)
+
+      follow_redirect!
+      expect(response.body).to include("Enable embedding")
+      expect(response.body).not_to include("Disable embedding")
+    end
+
+    it "enables embedding from a form param" do
+      chart.update!(enable_embedding: false)
+
+      patch "/charts/#{chart.id}/embedding", params: { enable_embedding: "true" }
+
+      expect(response).to redirect_to("/charts/#{chart.id}/embed")
+      expect(flash[:notice]).to eq("Embedding enabled.")
+      expect(chart.reload.enable_embedding?).to be(true)
     end
   end
 

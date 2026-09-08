@@ -4,8 +4,6 @@ module Nquery
   module ChartResults
     extend ActiveSupport::Concern
 
-    SHARED_CHART_LOAD_ERROR = "This chart could not be loaded."
-
     private
 
     def chart_result(chart)
@@ -28,12 +26,12 @@ module Nquery
 
     def shared_chart_result(chart)
       return { error: "This chart has no query." } unless chart.statement?
-      return { error: SHARED_CHART_LOAD_ERROR } unless chart.data_source
+      return { error: shared_chart_load_error } unless chart.data_source
 
       chart_query_result(chart, audit: false)
     rescue StandardError => e
       Rails.logger.error("[nquery] shared chart #{chart.id} failed: #{e.class}: #{e.message}")
-      { error: SHARED_CHART_LOAD_ERROR }
+      { error: shared_chart_load_error }
     end
 
     def chart_query_result(chart, audit: true)
@@ -51,6 +49,10 @@ module Nquery
         rows: [%w[Jan 1200], %w[Feb 1800], %w[Mar 2400], %w[Apr 2100]],
         row_count: 4
       }
+    end
+
+    def shared_chart_load_error
+      "This chart could not be loaded."
     end
   end
 end

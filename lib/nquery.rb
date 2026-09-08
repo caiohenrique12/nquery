@@ -6,6 +6,7 @@ require "devise/orm/active_record"
 
 require "nquery/version"
 require "nquery/configuration"
+require "nquery/boolean"
 require "nquery/encryption"
 require "nquery/permissions/resolver"
 require "nquery/authorizes_collection"

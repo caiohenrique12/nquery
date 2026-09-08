@@ -42,7 +42,7 @@ module Nquery
     scope :active, -> { all }
 
     def connection_fields_submitted?
-      ActiveModel::Type::Boolean.new.cast(connection_fields_submitted)
+      Nquery::Boolean.cast(connection_fields_submitted)
     end
 
     def connection_config_hash

@@ -8,7 +8,7 @@ module Nquery
           return redirect_to sharing_page_path, alert: "Static embedding is disabled."
         end
 
-        enabled = ActiveModel::Type::Boolean.new.cast(params[:enable_embedding])
+        enabled = Nquery::Boolean.cast(params[:enable_embedding])
         @shareable.update!(enable_embedding: enabled)
         redirect_to sharing_page_path, notice: enabled ? "Embedding enabled." : "Embedding disabled."
       end
