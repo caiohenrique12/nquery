@@ -21,6 +21,7 @@ nquery lets a host Rails app expose a self-contained analytics UI. It:
 - [First admin onboarding](#first-admin-onboarding)
 - [Mail and SMTP](#mail-and-smtp)
 - [Data sources](#data-sources)
+- [Sharing and embedding](#sharing-and-embedding)
 - [Active Storage](#active-storage)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -135,6 +136,9 @@ end
 | `query_timeout` | `15` | Query timeout (seconds) |
 | `query_row_limit` | `10_000` | Max rows returned by a query |
 | `embed_secret` | `nil` | Override for embed token signing (falls back to `secret_key_base`) |
+| `public_sharing_enabled` | `false` | Allow public UUID links for charts and dashboards |
+| `static_embedding_enabled` | `false` | Allow signed iframe embeds for charts and dashboards |
+| `embed_frame_ancestors` | `nil` | CSP `frame-ancestors` origins (`nil` allows any origin) |
 
 **Not supported in config:** storing database credentials for data sources, SSO/hybrid auth hooks, or public self-registration.
 
@@ -232,6 +236,56 @@ config.default_data_source = :main
 * `Nquery::DataSources::Syncer` ignores credential-like keys if they appear in the hash
 
 After setup, review sources under **Admin → Data sources**.
+
+## Sharing and embedding
+
+nquery mirrors Metabase’s two sharing mechanisms for **charts** and **dashboards** (not collections). Both are **off by default** and must be enabled in the host initializer:
+
+```ruby
+Nquery.configure do |config|
+  config.public_sharing_enabled = true
+  config.static_embedding_enabled = true
+  config.embed_secret = Rails.application.secret_key_base
+  # Optional: restrict which sites may iframe embeds
+  # config.embed_frame_ancestors = ["https://app.example.com"]
+end
+```
+
+Users with **view** access can open **Embed** on a chart or dashboard. Creating, revoking, or regenerating links and tokens requires **curate** access on the collection and `view_data` on the underlying data sources.
+
+Public and embed endpoints rate-limit to 60 requests per minute per IP when the host uses Rails 7.2+ `rate_limit`. Older Rails versions log a warning and skip rate limiting.
+
+### Public links
+
+An unguessable UUID stored on the resource. No expiry and no signature. Removing the link clears the UUID.
+
+| Resource | Path |
+|----------|------|
+| Chart | `/public/charts/:uuid` |
+| Dashboard | `/public/dashboards/:uuid` |
+
+### Static embeds
+
+HMAC-signed tokens (`Nquery::EmbedToken` + `EmbedTokenService`) with optional expiry. The resource must also have **Enable embedding** turned on. Revoked or expired tokens return 403.
+
+| Resource | Path |
+|----------|------|
+| Chart | `/embed/charts/show?token=…` |
+| Dashboard | `/embed/dashboards/show?token=…` |
+
+Tokens stay in the query string because the signed value contains a `.` that would collide with Rails format parsing in a path segment.
+
+### Hosting embeds (CSP / framing)
+
+Public and embed responses:
+
+* Delete Rails’ default `X-Frame-Options: SAMEORIGIN` so cross-origin iframes work
+* Set `Content-Security-Policy: frame-ancestors *` (or the origins in `embed_frame_ancestors`)
+* Send `X-Robots-Tag: noindex`
+
+Host apps that set a global CSP should allow the nquery origin in `frame-src` (or `child-src`) on the page that contains the iframe.
+
+Suggested iframe defaults from the Embed page: `width="800"` `height="600"` (charts) or `800` (dashboards), `loading="lazy"`. Optional query params: `titled=false`, `bordered=false`, `theme=night` or `theme=transparent`.
 
 ## Active Storage
 

@@ -13,9 +13,9 @@ module Nquery
         token: token,
         resource_type: resource_type,
         resource_id: resource_id,
-        params: params,
-        exp: expires_at.to_i
+        params: params
       }
+      payload[:exp] = expires_at.to_i if expires_at
       data = Base64.urlsafe_encode64(payload.to_json)
 
       signature = OpenSSL::HMAC.hexdigest("SHA256", signing_key, data)
@@ -44,7 +44,8 @@ module Nquery
       end
 
       payload = JSON.parse(Base64.urlsafe_decode64(data))
-      raise Error, "Token expired" if payload["exp"].to_i <= Time.current.to_i
+      exp = payload["exp"]
+      raise Error, "Token expired" if exp.present? && exp.to_i <= Time.current.to_i
 
       record = EmbedToken.active.find_by(token: payload["token"])
       raise Error, "Token not found" unless record
@@ -64,12 +65,16 @@ module Nquery
         token: record.token,
         resource_type: record.resource_type,
         resource_id: record.resource_id,
-        params: record.params || {},
-        exp: record.expires_at.to_i
+        params: record.params || {}
       }
+      payload[:exp] = record.expires_at.to_i if record.expires_at
       data = Base64.urlsafe_encode64(payload.to_json)
       signature = OpenSSL::HMAC.hexdigest("SHA256", signing_key, data)
       "#{data}.#{signature}"
+    end
+
+    def self.revoke!(record)
+      record.update!(active: false)
     end
 
     def self.generate_token

@@ -2,53 +2,18 @@
 
 module Nquery
   class QueriesController < ApplicationController
-    before_action :set_query, only: %i[show edit update]
-    before_action :authorize_query_collection!, only: %i[show edit update]
+    before_action :set_query, only: :update
+    before_action :authorize_query_collection!, only: :update
     before_action :set_data_source_for_run, only: %i[run schema]
     before_action :authorize_run_data_source!, only: %i[run schema]
 
-    def new
-      @query = Query.new(statement: "SELECT 1 AS example")
-      @data_sources = DataSource.active.order(:name)
-      @schema_tables = schema_tables
-    end
-
-    def create
-      @query = Query.new(query_params.merge(creator: current_nquery_user))
-      if @query.save
-        redirect_to edit_query_path(@query), notice: "Query created."
-      else
-        @data_sources = DataSource.active.order(:name)
-        @schema_tables = schema_tables
-        render :new, status: :unprocessable_content
-      end
-    end
-
-    def edit
-      @data_sources = DataSource.active.order(:name)
-      @schema_tables = schema_tables
-    end
-
     def update
       if @query.update(query_params)
-        respond_to do |format|
-          format.html { redirect_to edit_query_path(@query), notice: "Query saved." }
-          format.json { render json: { ok: true, notice: "Query saved." } }
-        end
+        render json: { ok: true, notice: "Query saved." }
       else
-        @data_sources = DataSource.active.order(:name)
-        @schema_tables = schema_tables
-        respond_to do |format|
-          format.html { render :edit, status: :unprocessable_content }
-          format.json {
-            render json: { error: @query.errors.full_messages.to_sentence.presence || "Query could not be saved." },
-                   status: :unprocessable_content
-          }
-        end
+        render json: { error: @query.errors.full_messages.to_sentence.presence || "Query could not be saved." },
+               status: :unprocessable_content
       end
-    end
-
-    def show
     end
 
     def run
@@ -90,15 +55,6 @@ module Nquery
 
     def query_params
       params.require(:query).permit(:name, :statement, :data_source_id, :collection_id)
-    end
-
-    def schema_tables
-      data_source = DataSource.first
-      return [] unless data_source
-
-      DataSources::Adapter.for(data_source).tables
-    rescue StandardError
-      []
     end
   end
 end

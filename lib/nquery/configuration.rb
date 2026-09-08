@@ -10,6 +10,9 @@ module Nquery
     attr_accessor :query_timeout
     attr_accessor :query_row_limit
     attr_accessor :embed_secret
+    attr_accessor :public_sharing_enabled
+    attr_accessor :static_embedding_enabled
+    attr_accessor :embed_frame_ancestors
 
     def initialize
       @data_sources = { main: { adapter: :rails, name: "Application database" } }
@@ -19,6 +22,9 @@ module Nquery
       @query_timeout = 15
       @query_row_limit = 10_000
       @embed_secret = nil
+      @public_sharing_enabled = false
+      @static_embedding_enabled = false
+      @embed_frame_ancestors = nil
     end
 
     def embed_signing_key

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_000005) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_07_130000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.integer "blob_id", null: false
     t.datetime "created_at", null: false
@@ -68,13 +68,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000005) do
     t.bigint "collection_id"
     t.datetime "created_at", null: false
     t.bigint "creator_id"
+    t.boolean "enable_embedding", default: false, null: false
+    t.integer "made_public_by_id"
     t.string "name", null: false
+    t.datetime "public_shared_at"
+    t.string "public_uuid"
     t.bigint "query_id"
     t.datetime "updated_at", null: false
     t.json "visualization", default: {}, null: false
     t.index ["archived_at"], name: "index_nquery_charts_on_archived_at"
     t.index ["collection_id"], name: "index_nquery_charts_on_collection_id"
     t.index ["creator_id"], name: "index_nquery_charts_on_creator_id"
+    t.index ["made_public_by_id"], name: "index_nquery_charts_on_made_public_by_id"
+    t.index ["public_uuid"], name: "index_nquery_charts_on_public_uuid", unique: true
     t.index ["query_id"], name: "index_nquery_charts_on_query_id"
   end
 
@@ -131,12 +137,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000005) do
     t.datetime "created_at", null: false
     t.bigint "creator_id"
     t.text "description"
+    t.boolean "enable_embedding", default: false, null: false
+    t.integer "made_public_by_id"
     t.string "name", null: false
+    t.datetime "public_shared_at"
+    t.string "public_uuid"
     t.json "settings", default: {}, null: false
     t.datetime "updated_at", null: false
     t.index ["archived_at"], name: "index_nquery_dashboards_on_archived_at"
     t.index ["collection_id"], name: "index_nquery_dashboards_on_collection_id"
     t.index ["creator_id"], name: "index_nquery_dashboards_on_creator_id"
+    t.index ["made_public_by_id"], name: "index_nquery_dashboards_on_made_public_by_id"
+    t.index ["public_uuid"], name: "index_nquery_dashboards_on_public_uuid", unique: true
   end
 
   create_table "nquery_data_permissions", force: :cascade do |t|
@@ -247,6 +259,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000005) do
   add_foreign_key "nquery_charts", "nquery_collections", column: "collection_id"
   add_foreign_key "nquery_charts", "nquery_queries", column: "query_id"
   add_foreign_key "nquery_charts", "nquery_users", column: "creator_id"
+  add_foreign_key "nquery_charts", "nquery_users", column: "made_public_by_id"
   add_foreign_key "nquery_collection_permissions", "nquery_collections", column: "collection_id"
   add_foreign_key "nquery_collection_permissions", "nquery_groups", column: "group_id"
   add_foreign_key "nquery_collections", "nquery_collections", column: "parent_id"
@@ -256,6 +269,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000005) do
   add_foreign_key "nquery_dashboard_cards", "nquery_dashboards", column: "dashboard_id"
   add_foreign_key "nquery_dashboards", "nquery_collections", column: "collection_id"
   add_foreign_key "nquery_dashboards", "nquery_users", column: "creator_id"
+  add_foreign_key "nquery_dashboards", "nquery_users", column: "made_public_by_id"
   add_foreign_key "nquery_data_permissions", "nquery_data_sources", column: "data_source_id"
   add_foreign_key "nquery_data_permissions", "nquery_groups", column: "group_id"
   add_foreign_key "nquery_embed_tokens", "nquery_users", column: "creator_id"

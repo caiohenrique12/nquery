@@ -17,6 +17,10 @@ module Nquery
       self.name ||= "Untitled query"
     end
 
+    def statement?
+      statement.present?
+    end
+
     private
 
     def statement_must_be_readonly

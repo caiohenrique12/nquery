@@ -28,7 +28,7 @@ module Nquery
 
     def support_unencrypted_data
       if ENV.key?("NQUERY_SUPPORT_UNENCRYPTED_DATA")
-        return ActiveModel::Type::Boolean.new.cast(ENV.fetch("NQUERY_SUPPORT_UNENCRYPTED_DATA"))
+        return Nquery::Boolean.cast(ENV.fetch("NQUERY_SUPPORT_UNENCRYPTED_DATA"))
       end
 
       true

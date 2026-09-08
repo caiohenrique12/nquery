@@ -69,12 +69,11 @@ module Nquery
         card.height = 4
       end
 
-      EmbedTokenService.sign(
-        resource_type: "Nquery::Chart",
-        resource_id: chart.id,
-        creator: admin,
-        expires_at: 1.year.from_now
-      ) unless EmbedToken.exists?(resource_type: "Nquery::Chart", resource_id: chart.id)
+      chart.share_publicly!(user: admin)
+      ensure_embedding_enabled!(chart)
+      ensure_embedding_enabled!(dashboard)
+      dashboard.unshare_publicly!
+      ensure_active_embed_token!(chart, creator: admin)
 
       organization.update!(onboarding_completed_at: Time.current) if organization.onboarding_completed_at.blank?
     end
@@ -117,6 +116,21 @@ module Nquery
       DataPermission.find_or_create_by!(group: engineering, data_source: data_source, permission_type: "create_queries", resource_path: nil) do |p|
         p.access_level = "no"
       end
+    end
+
+    def ensure_embedding_enabled!(resource)
+      resource.update!(enable_embedding: true) unless resource.enable_embedding?
+    end
+
+    def ensure_active_embed_token!(resource, creator:)
+      return if resource.active_embed_token
+
+      EmbedTokenService.sign(
+        resource_type: resource.class.name,
+        resource_id: resource.id,
+        creator: creator,
+        expires_at: 1.year.from_now
+      )
     end
   end
 end

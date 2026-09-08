@@ -117,6 +117,8 @@ RSpec.describe "Nquery::Dashboards", type: :request do
 
       expect(response.body).to include("Archive")
       expect(response.body).to include("Remove")
+      expect(response.body).to include("Embed")
+      expect(response.body).to include("/dashboards/#{dashboard.id}/embed")
       expect(response.body).to include('class="nq-icon"')
       expect(response.body).to include("/dashboards/#{dashboard.id}/archive")
       expect(response.body).to include('data-turbo-confirm="Remove this dashboard?"')

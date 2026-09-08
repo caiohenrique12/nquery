@@ -1,0 +1,9 @@
+<div class="nq-page-header">
+  <h1>Embed: <%= @dashboard.name %></h1>
+</div>
+
+<%= render "nquery/shared/sharing_panel",
+           shareable: @shareable,
+           public_url: @public_url,
+           embed_url: @embed_url,
+           embed_token: @embed_token %>

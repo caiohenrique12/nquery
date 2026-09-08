@@ -4,9 +4,10 @@ module Nquery
   class DashboardsController < ApplicationController
     include ChartResults
     include Browsable
+    include SharingPage
 
-    before_action :set_dashboard, only: %i[show edit update destroy archive unarchive update_layout]
-    before_action :authorize_dashboard_view!, only: %i[show]
+    before_action :set_dashboard, only: %i[show edit update destroy archive unarchive update_layout embed]
+    before_action :authorize_dashboard_view!, only: %i[show embed]
     before_action :authorize_dashboard_curate!, only: %i[edit update destroy archive unarchive update_layout]
 
     def index
@@ -42,6 +43,10 @@ module Nquery
         .merge(Chart.active)
         .includes(:chart)
       @card_results = @dashboard_cards.index_with { |card| chart_result(card.chart) }
+    end
+
+    def embed
+      assign_sharing_page(@dashboard)
     end
 
     def edit
@@ -85,7 +90,7 @@ module Nquery
     private
 
     def set_dashboard
-      @dashboard = if action_name.in?(%w[show edit])
+      @dashboard = if action_name.in?(%w[show edit embed])
                      Dashboard.includes(:creator, dashboard_cards: :chart).find(params[:id])
                    else
                      Dashboard.find(params[:id])

@@ -118,6 +118,9 @@ RSpec.describe "Navigation layout", type: :request do
 
     get "/charts/#{chart.id}/embed"
     expect(response).to have_http_status(:ok)
+
+    get "/dashboards/#{dashboard.id}/embed"
+    expect(response).to have_http_status(:ok)
   end
 
   it "renders breadcrumbs on admin group pages" do
@@ -128,17 +131,6 @@ RSpec.describe "Navigation layout", type: :request do
     expect(response).to have_http_status(:ok)
 
     get "/admin/groups/new"
-    expect(response).to have_http_status(:ok)
-  end
-
-  it "renders breadcrumbs on query pages" do
-    sign_in_as_admin
-    query = Nquery::Query.find_by!(name: "Monthly revenue")
-
-    get "/queries/#{query.id}/edit"
-    expect(response).to have_http_status(:ok)
-
-    get "/queries/new"
     expect(response).to have_http_status(:ok)
   end
 

@@ -263,7 +263,7 @@ function initButtonLoaders() {
 
   document.addEventListener("click", (event) => {
     const button = event.target.closest("a.nq-btn, button.nq-btn[type=button], input.nq-btn[type=button]")
-    if (!button || button.classList.contains("is-loading") || button.dataset.managesLoading === "true") return
+    if (!button || button.classList.contains("is-loading") || button.dataset.managesLoading === "true" || button.hasAttribute("data-copy-button")) return
     setButtonLoading(button, true)
   })
 
@@ -343,11 +343,22 @@ function buildPreviewChartConfig(type, data, xCol, yCol) {
   }
 }
 
+const NQ_CHART_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+
+function applyChartFontDefaults() {
+  if (typeof Chart === "undefined") return
+
+  Chart.defaults.font.family = NQ_CHART_FONT
+  Chart.defaults.color = document.body.classList.contains("nq-embed-theme-night") ? "#e2e8f0" : "#1e293b"
+}
+
 function initChartPreviews() {
   if (typeof Chart === "undefined") {
     requestAnimationFrame(initChartPreviews)
     return
   }
+
+  applyChartFontDefaults()
 
   document.querySelectorAll("[data-controller='chart-preview']").forEach(el => {
     if (el.dataset.chartPreviewInitialized === "true") return
@@ -368,11 +379,17 @@ function initChartPreviews() {
       rows: [["Jan", 1200], ["Feb", 1800], ["Mar", 2400], ["Apr", 2100]]
     }
 
+    if (data?.error) {
+      el.classList.add("is-error")
+      el.innerHTML = `<div class="nq-chart-error">${escapeHtml(data.error)}</div>`
+      return
+    }
+
     if (type === "number") {
       const yIndex = columnIndex(demo.columns || [], yCol || demo.columns?.[1] || demo.columns?.[0])
       const value = demo.rows?.[0]?.[yIndex] ?? "—"
       el.classList.add("is-number")
-      el.innerHTML = `<div class="nq-number-display">${value}</div>`
+      el.innerHTML = `<div class="nq-number-display">${escapeHtml(value)}</div>`
       return
     }
 
@@ -680,7 +697,7 @@ function initChartBuilders() {
       const yCol = yAxis?.value || result.columns[1] || result.columns[0]
       const yIndex = columnIndex(result.columns, yCol)
       const value = result.rows[0]?.[yIndex] ?? "—"
-      numberWrap.innerHTML = `<div class="nq-number-display">${value}</div>`
+      numberWrap.innerHTML = `<div class="nq-number-display">${escapeHtml(value)}</div>`
       chartWrap?.setAttribute("hidden", "")
       numberWrap?.removeAttribute("hidden")
     }
@@ -961,34 +978,6 @@ function initChartBuilders() {
   })
 }
 
-function initQueryEditors() {
-  document.querySelectorAll("[data-controller='query-editor']").forEach(el => {
-    const statement = el.querySelector("[data-query-editor-target='statement']")
-    const results = el.querySelector("[data-query-editor-target='results']")
-    const dataSource = el.querySelector("[data-query-editor-target='dataSource']")
-    el.querySelector("[data-action*='query-editor#run']")?.addEventListener("click", async (event) => {
-      const button = event.currentTarget
-      setButtonLoading(button, true)
-      try {
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-        const res = await fetch(el.dataset.queryRunUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-          body: JSON.stringify({ statement: statement?.value, data_source_id: dataSource?.value })
-        })
-        results.textContent = JSON.stringify(await res.json(), null, 2)
-      } finally {
-        setButtonLoading(button, false)
-      }
-    })
-    el.querySelectorAll("[data-action*='insertTable']").forEach(item => {
-      item.addEventListener("click", () => {
-        if (statement) statement.value = `SELECT * FROM ${item.dataset.table} LIMIT 100`
-      })
-    })
-  })
-}
-
 function initDataSourceForms() {
   document.querySelectorAll("[data-controller='data-source-form']").forEach(root => {
     if (root.dataset.dataSourceFormInitialized === "true") return
@@ -1062,15 +1051,38 @@ function initDataSourceForms() {
   })
 }
 
+function initCopyButtons() {
+  document.querySelectorAll("[data-copy-button]").forEach(button => {
+    if (button.dataset.copyInitialized === "true") return
+    button.dataset.copyInitialized = "true"
+
+    button.addEventListener("click", async () => {
+      const target = button.dataset.copyTarget ? document.querySelector(button.dataset.copyTarget) : null
+      const text = target ? target.textContent : (button.dataset.copyText || "")
+      const original = button.textContent
+
+      try {
+        await navigator.clipboard.writeText(text.trim())
+        button.textContent = "Copied"
+      } catch {
+        button.textContent = "Copy failed"
+      }
+
+      setTimeout(() => { button.textContent = original }, 1500)
+    })
+  })
+}
+
 function initPage() {
+  applyChartFontDefaults()
   initButtonLoaders()
   initToastEvents()
   observeToastStack()
   initFlashCards()
-  initQueryEditors()
   initChartBuilders()
   initChartPreviews()
   initDataSourceForms()
+  initCopyButtons()
 }
 
 function bootPage() {

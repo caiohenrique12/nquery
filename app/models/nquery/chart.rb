@@ -4,12 +4,12 @@ module Nquery
   class Chart < ApplicationRecord
     CHART_TYPES = %w[table number bar line area pie scatter].freeze
 
+    include Shareable
+
     belongs_to :query, class_name: "Nquery::Query", optional: true
     belongs_to :collection, class_name: "Nquery::Collection", optional: true
     belongs_to :creator, class_name: "Nquery::User", optional: true
     has_many :dashboard_cards, class_name: "Nquery::DashboardCard", dependent: :destroy
-    has_many :embed_tokens, -> { where(resource_type: "Nquery::Chart") },
-             class_name: "Nquery::EmbedToken", foreign_key: :resource_id, dependent: :destroy
 
     accepts_nested_attributes_for :query
 
@@ -32,6 +32,18 @@ module Nquery
 
     def chart_type
       visualization["type"] || "bar"
+    end
+
+    def statement
+      query&.statement
+    end
+
+    def statement?
+      query&.statement? || false
+    end
+
+    def data_source
+      query&.data_source
     end
   end
 end

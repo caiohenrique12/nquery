@@ -19,6 +19,13 @@ RSpec.configure do |config|
     host! "www.example.com"
   end
 
+  config.before(:each) do
+    Nquery.reset_configuration!
+    Nquery.configure do |config|
+      config.mailer_sender = "noreply@nquery.dev"
+    end
+  end
+
   config.after(:each) do
     Nquery.reset_configuration!
     Nquery.configure do |config|

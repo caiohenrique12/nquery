@@ -31,6 +31,29 @@ RSpec.describe Nquery::Configuration do
       expect(config.mailer_sender).to be_nil
       expect(config.smtp).to eq({})
     end
+
+    it "disables public sharing and static embedding" do
+      expect(config.public_sharing_enabled).to be(false)
+      expect(config.static_embedding_enabled).to be(false)
+      expect(config.embed_frame_ancestors).to be_nil
+    end
+  end
+
+  describe "sharing overrides" do
+    it "enables public sharing when configured" do
+      config.public_sharing_enabled = true
+      expect(config.public_sharing_enabled).to be(true)
+    end
+
+    it "enables static embedding when configured" do
+      config.static_embedding_enabled = true
+      expect(config.static_embedding_enabled).to be(true)
+    end
+
+    it "stores frame ancestor origins" do
+      config.embed_frame_ancestors = ["https://app.example.com"]
+      expect(config.embed_frame_ancestors).to eq(["https://app.example.com"])
+    end
   end
 
   describe "authentication API" do

@@ -1,5 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
 function columnIndex(columns, name) {
   const index = columns.indexOf(name)
   return index >= 0 ? index : 0
@@ -72,10 +80,20 @@ export default class extends Controller {
   connect() {
     if (typeof Chart === "undefined") return
 
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    Chart.defaults.color = document.body.classList.contains("nq-embed-theme-night") ? "#e2e8f0" : "#1e293b"
+
     const demo = this.hasDataValue ? this.dataValue : {
       columns: ["month", "revenue"],
       rows: [["Jan", 1200], ["Feb", 1800], ["Mar", 2400]]
     }
+
+    if (demo.error) {
+      this.element.classList.add("is-error")
+      this.element.innerHTML = `<div class="nq-chart-error">${escapeHtml(demo.error)}</div>`
+      return
+    }
+
     const type = this.typeValue || "bar"
     const xCol = this.hasXValue ? this.xValue : ""
     const yCol = this.hasYValue ? this.yValue : ""
@@ -84,7 +102,7 @@ export default class extends Controller {
       const yIndex = columnIndex(demo.columns || [], yCol || demo.columns?.[1] || demo.columns?.[0])
       const value = demo.rows?.[0]?.[yIndex] ?? "—"
       this.element.classList.add("is-number")
-      this.element.innerHTML = `<div class="nq-number-display">${value}</div>`
+      this.element.innerHTML = `<div class="nq-number-display">${escapeHtml(value)}</div>`
       return
     }
 

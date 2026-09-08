@@ -25,4 +25,10 @@ Nquery.configure do |config|
     main: { adapter: :rails, name: "Application database" }
   }
   config.default_data_source = :main
+
+  # Public links and static embeds are off by default.
+  # config.public_sharing_enabled = false
+  # config.static_embedding_enabled = false
+  # config.embed_secret = Rails.application.secret_key_base
+  # config.embed_frame_ancestors = ["https://app.example.com"]
 end
