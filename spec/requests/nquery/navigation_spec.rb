@@ -134,17 +134,6 @@ RSpec.describe "Navigation layout", type: :request do
     expect(response).to have_http_status(:ok)
   end
 
-  it "renders breadcrumbs on query pages" do
-    sign_in_as_admin
-    query = Nquery::Query.find_by!(name: "Monthly revenue")
-
-    get "/queries/#{query.id}/edit"
-    expect(response).to have_http_status(:ok)
-
-    get "/queries/new"
-    expect(response).to have_http_status(:ok)
-  end
-
   it "renders breadcrumbs on import and permissions pages" do
     sign_in_as_admin
 

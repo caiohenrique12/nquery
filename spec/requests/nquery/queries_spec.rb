@@ -53,30 +53,41 @@ RSpec.describe "Nquery queries", type: :request do
     follow_redirect! if response.redirect?
   end
 
-  it "allows collection members to edit a query" do
-    sign_in_as(owner)
+  describe "standalone query pages" do
+    before { sign_in_as(owner) }
 
-    get "/queries/#{query.id}/edit"
+    it "does not expose a new query page" do
+      get "/queries/new"
 
-    expect(response).to have_http_status(:ok)
-  end
+      expect(response).to have_http_status(:not_found)
+    end
 
-  it "denies outsiders access to another user's collection query" do
-    sign_in_as(outsider)
+    it "does not expose a query show page" do
+      get "/queries/#{query.id}"
 
-    get "/queries/#{query.id}"
+      expect(response).to have_http_status(:not_found)
+    end
 
-    expect(response).to redirect_to("/")
-    expect(flash[:alert]).to include("permission")
-  end
+    it "does not expose a query edit page" do
+      get "/queries/#{query.id}/edit"
 
-  it "denies outsiders access to edit a restricted query" do
-    sign_in_as(outsider)
+      expect(response).to have_http_status(:not_found)
+    end
 
-    get "/queries/#{query.id}/edit"
+    it "does not create a standalone query" do
+      expect {
+        post "/queries", params: {
+          query: {
+            name: "New query",
+            statement: "SELECT 10 AS value",
+            data_source_id: data_source.id,
+            collection_id: restricted_collection.id
+          }
+        }
+      }.not_to change(Nquery::Query, :count)
 
-    expect(response).to redirect_to("/")
-    expect(flash[:alert]).to include("permission")
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   it "returns schema tables with columns for authenticated users" do
@@ -92,7 +103,7 @@ RSpec.describe "Nquery queries", type: :request do
     expect(payload["tables"].first["columns"].first).to include("name", "type")
   end
 
-  it "updates a query statement via JSON for autosave and format" do
+  it "updates a query statement via JSON for chart builder autosave" do
     sign_in_as(owner)
 
     patch "/queries/#{query.id}",
@@ -116,58 +127,15 @@ RSpec.describe "Nquery queries", type: :request do
     expect(query.reload.statement).to eq("SELECT 1 AS value")
   end
 
-  it "renders the new query form" do
-    sign_in_as(owner)
+  it "denies outsiders from updating a restricted query" do
+    sign_in_as(outsider)
 
-    get "/queries/new"
+    patch "/queries/#{query.id}",
+          params: { query: { statement: "SELECT 2 AS value" } },
+          as: :json
 
-    expect(response).to have_http_status(:ok)
-    expect(response.body).to include('data-query-run-url="/queries/run"')
-    expect(response.body).not_to include("data-query-schema-url=")
-  end
-
-  it "renders engine query URLs on the edit form" do
-    sign_in_as(owner)
-
-    get "/queries/#{query.id}/edit"
-
-    expect(response).to have_http_status(:ok)
-    expect(response.body).to include('data-query-run-url="/queries/run"')
-    expect(response.body).not_to include("data-query-schema-url=")
-  end
-
-  it "creates a query" do
-    sign_in_as(owner)
-
-    expect {
-      post "/queries", params: {
-        query: {
-          name: "New query",
-          statement: "SELECT 10 AS value",
-          data_source_id: data_source.id,
-          collection_id: restricted_collection.id
-        }
-      }
-    }.to change(Nquery::Query, :count).by(1)
-
-    expect(response).to be_redirect
-  end
-
-  it "does not create a query with mutating SQL" do
-    sign_in_as(owner)
-
-    expect {
-      post "/queries", params: {
-        query: {
-          name: "Evil query",
-          statement: "DELETE FROM users",
-          data_source_id: data_source.id,
-          collection_id: restricted_collection.id
-        }
-      }
-    }.not_to change(Nquery::Query, :count)
-
-    expect(response).to have_http_status(:unprocessable_content)
+    expect(response).to have_http_status(:forbidden)
+    expect(query.reload.statement).to eq("SELECT 1 AS value")
   end
 
   it "does not update a query with mutating SQL" do
@@ -180,22 +148,6 @@ RSpec.describe "Nquery queries", type: :request do
     expect(response).to have_http_status(:unprocessable_content)
     expect(JSON.parse(response.body)["error"]).to match(/SELECT|read-only|not allowed/i)
     expect(query.reload.statement).to eq("SELECT 1 AS value")
-  end
-
-  it "renders the new template when query creation fails" do
-    sign_in_as(owner)
-    allow_any_instance_of(Nquery::Query).to receive(:save).and_return(false)
-
-    post "/queries", params: {
-      query: {
-        name: "Broken query",
-        statement: "SELECT 1",
-        data_source_id: data_source.id,
-        collection_id: restricted_collection.id
-      }
-    }
-
-    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it "runs a query and returns JSON results" do
@@ -225,9 +177,6 @@ RSpec.describe "Nquery queries", type: :request do
 
   it "returns forbidden when the query runner raises a permission error" do
     sign_in_as(owner)
-    allow(Nquery::QueryRunner).to receive(:new).and_return(
-      instance_double(Nquery::QueryRunner, run: -> { raise Nquery::QueryRunner::PermissionError, "denied" })
-    )
     runner = instance_double(Nquery::QueryRunner)
     allow(Nquery::QueryRunner).to receive(:new).and_return(runner)
     allow(runner).to receive(:run).and_raise(Nquery::QueryRunner::PermissionError, "denied")
@@ -235,22 +184,5 @@ RSpec.describe "Nquery queries", type: :request do
     post "/queries/run", params: { data_source_id: data_source.id, statement: "SELECT 1" }, as: :json
 
     expect(response).to have_http_status(:forbidden)
-  end
-
-  it "returns forbidden JSON when collection access is denied" do
-    sign_in_as(outsider)
-
-    get "/queries/#{query.id}", as: :json
-
-    expect(response).to have_http_status(:forbidden)
-  end
-
-  it "returns an empty schema when introspection fails" do
-    sign_in_as(owner)
-    allow(Nquery::DataSources::Adapter).to receive(:for).and_raise(StandardError, "boom")
-
-    get "/queries/new"
-
-    expect(response).to have_http_status(:ok)
   end
 end

@@ -524,14 +524,12 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include('data-query-schema-url="/nquery/queries/schema"')
     end
 
-    it "renders a mount-prefixed query run URL on the query editor" do
+    it "does not expose a standalone query editor" do
       sign_in_with_devise(email: "admin@nquery.dev", path_prefix: "/nquery")
 
       get "/nquery/queries/new"
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('data-query-run-url="/nquery/queries/run"')
-      expect(response.body).not_to include("data-query-schema-url=")
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

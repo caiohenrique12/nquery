@@ -86,9 +86,6 @@ module Nquery
         when "new"
           append_terminal_breadcrumb(crumbs, "New chart")
         end
-      when "nquery/queries"
-        append_section_breadcrumb(crumbs, "Queries", nil)
-        append_terminal_breadcrumb(crumbs, query_breadcrumb_label)
       when "nquery/charts"
         append_section_breadcrumb(crumbs, "Collections", collections_path)
         if breadcrumb_chart&.collection
@@ -206,14 +203,6 @@ module Nquery
 
     def breadcrumb_data_source
       @breadcrumb_data_source ||= @data_source || DataSource.find_by(id: params[:id])
-    end
-
-    def query_breadcrumb_label
-      case action_name
-      when "new" then "New SQL query"
-      when "edit" then "Edit query: #{@query&.name.presence || 'Untitled'}"
-      else @query&.name.presence || "Query"
-      end
     end
 
     def append_section_breadcrumb(crumbs, label, path)

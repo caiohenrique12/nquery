@@ -23,7 +23,7 @@ Nquery::Engine.routes.draw do
     resources :dashboards, only: %i[new create], module: :collection
   end
 
-  resources :queries, only: %i[new create edit update show] do
+  resources :queries, only: %i[update] do
     post :run, on: :collection
     get :schema, on: :collection
   end

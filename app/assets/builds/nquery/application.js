@@ -978,34 +978,6 @@ function initChartBuilders() {
   })
 }
 
-function initQueryEditors() {
-  document.querySelectorAll("[data-controller='query-editor']").forEach(el => {
-    const statement = el.querySelector("[data-query-editor-target='statement']")
-    const results = el.querySelector("[data-query-editor-target='results']")
-    const dataSource = el.querySelector("[data-query-editor-target='dataSource']")
-    el.querySelector("[data-action*='query-editor#run']")?.addEventListener("click", async (event) => {
-      const button = event.currentTarget
-      setButtonLoading(button, true)
-      try {
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-        const res = await fetch(el.dataset.queryRunUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-          body: JSON.stringify({ statement: statement?.value, data_source_id: dataSource?.value })
-        })
-        results.textContent = JSON.stringify(await res.json(), null, 2)
-      } finally {
-        setButtonLoading(button, false)
-      }
-    })
-    el.querySelectorAll("[data-action*='insertTable']").forEach(item => {
-      item.addEventListener("click", () => {
-        if (statement) statement.value = `SELECT * FROM ${item.dataset.table} LIMIT 100`
-      })
-    })
-  })
-}
-
 function initDataSourceForms() {
   document.querySelectorAll("[data-controller='data-source-form']").forEach(root => {
     if (root.dataset.dataSourceFormInitialized === "true") return
@@ -1107,7 +1079,6 @@ function initPage() {
   initToastEvents()
   observeToastStack()
   initFlashCards()
-  initQueryEditors()
   initChartBuilders()
   initChartPreviews()
   initDataSourceForms()
