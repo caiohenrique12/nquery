@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-08
+
+Host apps should `bundle update nquery` and run `rails db:migrate`. Re-run `rails generate nquery:install` (or add the sharing/embed keys to `config/initializers/nquery.rb`) if you want public links or static embeds.
+
 ### Added
 - Public sharing links and static signed embeds for charts and dashboards (Metabase-style)
 - Sharing UI with expiry picker, revoke/regenerate, and copy-to-clipboard
@@ -10,6 +14,10 @@
 ### Changed
 - Public embed endpoints require `static_embedding_enabled` and per-resource `enable_embedding`
 - Embed layout loads application JS so chart previews initialize, and allows cross-origin iframes via CSP `frame-ancestors`
+- Remove standalone query pages so SQL lives only on charts
+
+### Fixed
+- Query runner and schema endpoints honor the engine mount path (#25)
 
 ## [0.1.2] - 2026-09-07
 
