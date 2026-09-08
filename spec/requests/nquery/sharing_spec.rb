@@ -56,6 +56,31 @@ RSpec.describe "Sharing settings", type: :request do
       expect(response.body).to include("Enable public link")
       expect(response.body).not_to include("/public/dashboards/")
     end
+
+    it "shows the public dashboard URL after a link is created" do
+      enable_sharing!
+      dashboard.share_publicly!(user: admin)
+
+      get "/dashboards/#{dashboard.id}/embed"
+
+      expect(response.body).to include("/public/dashboards/#{dashboard.public_uuid}")
+    end
+
+    it "shows the signed dashboard embed URL after a token is generated" do
+      enable_sharing!
+      Nquery::EmbedTokenService.sign(
+        resource_type: dashboard.class.name,
+        resource_id: dashboard.id,
+        creator: admin,
+        expires_at: 1.hour.from_now
+      )
+      dashboard.update!(enable_embedding: true)
+
+      get "/dashboards/#{dashboard.id}/embed"
+
+      expect(response.body).to include("/embed/dashboards/show?token=")
+      expect(response.body).to include("Revoke token")
+    end
   end
 
   describe "public link lifecycle" do
@@ -189,6 +214,42 @@ RSpec.describe "Sharing settings", type: :request do
       token = dashboard.reload.active_embed_token
       expect(token).to be_present
       expect(token.expires_at).to be_nil
+    end
+
+    it "generates a token that expires in 30 days" do
+      post "/charts/#{chart.id}/embed_tokens", params: { expires_in: "30.days" }
+
+      expect(response).to redirect_to("/charts/#{chart.id}/embed")
+      token = chart.reload.active_embed_token
+      expect(token.expires_at).to be_within(2.seconds).of(30.days.from_now)
+    end
+  end
+
+  describe "when sharing is disabled in configuration" do
+    before { sign_in_as(admin) }
+
+    it "does not create a public link" do
+      chart.unshare_publicly!
+
+      post "/charts/#{chart.id}/public_link"
+
+      expect(response).to redirect_to("/charts/#{chart.id}/embed")
+      expect(flash[:alert]).to eq("Public sharing is disabled.")
+      expect(chart.reload).not_to be_publicly_shared
+    end
+
+    it "does not toggle embedding" do
+      patch "/charts/#{chart.id}/embedding", params: { enable_embedding: "true" }
+
+      expect(response).to redirect_to("/charts/#{chart.id}/embed")
+      expect(flash[:alert]).to eq("Static embedding is disabled.")
+    end
+
+    it "does not generate an embed token" do
+      post "/charts/#{chart.id}/embed_tokens", params: { expires_in: "1.hour" }
+
+      expect(response).to redirect_to("/charts/#{chart.id}/embed")
+      expect(flash[:alert]).to eq("Static embedding is disabled.")
     end
   end
 

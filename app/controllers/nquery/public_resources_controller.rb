@@ -13,11 +13,14 @@ module Nquery
 
     after_action :set_embed_headers
 
-    if respond_to?(:rate_limit)
-      rate_limit to: 60, within: 1.minute, by: -> { request.remote_ip }
-    else
-      Rails.logger.warn("[nquery] public/embed endpoints are not rate limited; Rails 7.2+ rate_limit is unavailable")
+    def self.apply_embed_rate_limit(to: self)
+      if to.respond_to?(:rate_limit)
+        to.rate_limit to: 60, within: 1.minute, by: -> { request.remote_ip }
+      else
+        Rails.logger.warn("[nquery] public/embed endpoints are not rate limited; Rails 7.2+ rate_limit is unavailable")
+      end
     end
+    apply_embed_rate_limit
 
     private
 

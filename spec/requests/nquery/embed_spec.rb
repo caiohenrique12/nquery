@@ -99,6 +99,16 @@ RSpec.describe "Embed pages", type: :request do
       expect(response.body).to include("Embedding is disabled")
     end
 
+    it "rejects a dashboard token on the chart embed endpoint" do
+      enable_static_embedding!
+      result = sign_chart_token(dashboard)
+
+      get "/embed/charts/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:forbidden)
+      expect(response.body).to include("Invalid or expired embed token")
+    end
+
     it "rejects tokens when the chart is archived" do
       enable_static_embedding!
       result = sign_chart_token
@@ -182,6 +192,36 @@ RSpec.describe "Embed pages", type: :request do
       get "/embed/dashboards/show", params: { token: result[:signed_token] }
 
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "rejects tokens when embedding is disabled on the dashboard" do
+      enable_static_embedding!
+      result = sign_chart_token(dashboard)
+      dashboard.update!(enable_embedding: false)
+
+      get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:forbidden)
+      expect(response.body).to include("Embedding is disabled")
+    end
+
+    it "rejects tokens when static embedding is disabled" do
+      result = sign_chart_token(dashboard)
+
+      get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:forbidden)
+      expect(response.body).to include("Embedding is disabled")
+    end
+
+    it "rejects a chart token on the dashboard embed endpoint" do
+      enable_static_embedding!
+      result = sign_chart_token(chart)
+
+      get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+      expect(response).to have_http_status(:forbidden)
+      expect(response.body).to include("Invalid or expired embed token")
     end
   end
 end
