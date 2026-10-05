@@ -70,6 +70,19 @@ RSpec.describe Nquery::QueryRunner do
     expect(result[:row_count]).to eq(1)
   end
 
+  context "when the statement already has a limit" do
+    it "caps rows at the configured query row limit" do
+      previous_limit = Nquery.configuration.query_row_limit
+      Nquery.configuration.query_row_limit = 2
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100"
+      runner = described_class.new(data_source: data_source, statement: statement, user: user)
+
+      expect(runner.run[:row_count]).to eq(2)
+    ensure
+      Nquery.configuration.query_row_limit = previous_limit
+    end
+  end
+
   it "skips audit records when audit is disabled" do
     runner = described_class.new(data_source: data_source, statement: "SELECT 1 AS value", user: user)
 

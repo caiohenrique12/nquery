@@ -52,7 +52,23 @@ module Nquery
 
       def sanitize_limit(statement, limit)
         stripped = statement.strip.sub(/;\s*\z/, "")
-        "#{stripped} LIMIT #{limit.to_i}"
+        cap = limit.to_i
+        trailing_limit = %r{
+          \sLIMIT\s+
+          (?:
+            \d+\s*,\s*\d+
+            |
+            \d+(?:\s+OFFSET\s+\d+)?
+          )
+          (?:\s+--[^\n]*)?
+          \s*\z
+        }ix
+
+        if stripped.match?(trailing_limit)
+          "SELECT * FROM ( #{stripped}\n) AS nquery_limited LIMIT #{cap}"
+        else
+          "#{stripped} LIMIT #{cap}"
+        end
       end
     end
   end
