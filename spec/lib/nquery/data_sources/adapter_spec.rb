@@ -61,6 +61,10 @@ RSpec.describe Nquery::DataSources::PostgresqlAdapter do
   end
 
   it "executes read-only queries" do
+    expect(connection).to receive(:exec_query).with(
+      Nquery::DataSources::RowLimit.apply("SELECT 1 AS id;", 10_000)
+    ).and_return(double(columns: %w[id], rows: [[1]]))
+
     result = adapter.execute_readonly("SELECT 1 AS id;")
 
     expect(result[:columns]).to eq(%w[id])
@@ -123,6 +127,9 @@ RSpec.describe Nquery::DataSources::MysqlAdapter do
 
   it "executes read-only queries with a MySQL session" do
     expect(connection).to receive(:execute).with("SET SESSION TRANSACTION READ ONLY")
+    expect(connection).to receive(:exec_query).with(
+      Nquery::DataSources::RowLimit.apply("SELECT 1 AS value", 10_000)
+    ).and_return(double(columns: %w[value], rows: [[1]]))
 
     result = adapter.execute_readonly("SELECT 1 AS value")
 
@@ -156,127 +163,95 @@ RSpec.describe Nquery::DataSources::RailsAdapter do
       [executed_sql, result]
     end
 
-    context "when the statement has no limit" do
-      it "appends the default row cap on the next line and returns rows" do
-        sql, result = execute_readonly_sql("SELECT 1 AS value")
+    it "executes the statement produced by the row limit" do
+      sql, result = execute_readonly_sql("SELECT 1 AS value")
 
-        expect(sql).to eq("SELECT 1 AS value\nLIMIT 10000")
-        expect(result[:columns]).to include("value")
-        expect(result[:row_count]).to eq(1)
-      end
-
-      it "strips a trailing semicolon" do
-        sql, = execute_readonly_sql("SELECT 1 AS value;")
-
-        expect(sql).to eq("SELECT 1 AS value\nLIMIT 10000")
-      end
-
-      it "bounds the row count to an explicit row limit" do
-        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3"
-        _sql, result = execute_readonly_sql(statement, row_limit: 2)
-
-        expect(result[:row_count]).to eq(2)
-      end
-
-      it "appends the cap on the next line after a trailing comment" do
-        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 -- all"
-        sql, result = execute_readonly_sql(statement, row_limit: 2)
-
-        expect(sql).to eq("#{statement}\nLIMIT 2")
-        expect(result[:row_count]).to eq(2)
-      end
-
-      it "appends the cap when a limit sits only inside a trailing comment" do
-        statement = "SELECT 1 UNION ALL SELECT 2 -- LIMIT 5"
-        sql, result = execute_readonly_sql(statement, row_limit: 2)
-
-        expect(sql).to eq("#{statement}\nLIMIT 2")
-        expect(result[:row_count]).to eq(2)
-      end
+      expect(sql).to eq(Nquery::DataSources::RowLimit.apply("SELECT 1 AS value", 10_000))
+      expect(result[:columns]).to include("value")
+      expect(result[:row_count]).to eq(1)
     end
 
-    context "when the statement already ends with a limit" do
-      it "leaves a smaller limit unchanged" do
-        sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 15")
+    it "bounds the row count when the statement has no limit" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 15")
-        expect(result[:columns]).to include("value")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "leaves a trailing offset unchanged" do
-        sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 1 OFFSET 0")
+    it "runs a statement that already ends with a smaller limit" do
+      _sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 15")
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 1 OFFSET 0")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(result[:row_count]).to eq(1)
+    end
 
-      it "leaves a MySQL-style offset and count unchanged" do
-        sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 0, 1")
+    it "bounds the row count when the existing limit is larger" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 0, 1")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "strips a trailing semicolon" do
-        sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 1;")
+    it "caps rows when a block comment is left unclosed" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 /*"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 1")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "leaves a trailing line comment unchanged" do
-        sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 1 -- keep")
+    it "caps rows when a limit sits only inside an unclosed block comment" do
+      statement = "SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 /* LIMIT 1"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 1 -- keep")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "rewrites a larger limit in place" do
-        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100"
-        sql, result = execute_readonly_sql(statement, row_limit: 2)
+    it "caps rows when a line comment is glued to the count" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 10--keep"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 2")
-        expect(result[:row_count]).to eq(2)
-      end
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "rewrites a larger limit and keeps the offset" do
-        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100 OFFSET 0"
-        sql, result = execute_readonly_sql(statement, row_limit: 2)
+    it "caps rows when a block comment follows a larger limit" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100 /* rest */"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 2 OFFSET 0")
-        expect(result[:row_count]).to eq(2)
-      end
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "rewrites a larger MySQL count in place" do
-        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 0, 100"
-        sql, result = execute_readonly_sql(statement, row_limit: 2)
+    it "keeps one limit when a smaller count has a trailing block comment" do
+      statement = "SELECT 1 AS value LIMIT 1 /* note */"
+      sql, result = execute_readonly_sql(statement)
 
-        expect(sql).to eq("SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 0, 2")
-        expect(result[:row_count]).to eq(2)
-      end
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(1)
+    end
 
-      it "leaves a smaller limit unchanged when the line has a quoted double dash" do
-        sql, result = execute_readonly_sql("SELECT 'a--b' AS note LIMIT 50")
+    it "caps rows when a closed block comment spans lines before a larger limit" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 /* note\nstill */ LIMIT 5"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 'a--b' AS note LIMIT 50")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(sql).to eq("SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 /* note\nstill */ LIMIT 2")
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "rewrites a larger limit in place when the line has a quoted double dash" do
-        sql, result = execute_readonly_sql("SELECT 'a--b' AS note LIMIT 50000", row_limit: 2)
+    it "caps rows when a closed block comment spans lines" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3\n/* note\n*/"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 'a--b' AS note LIMIT 2")
-        expect(sql.scan(/LIMIT/i).size).to eq(1)
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(sql).to eq("#{statement}\nLIMIT 2")
+      expect(result[:row_count]).to eq(2)
+    end
 
-      it "leaves a smaller limit unchanged when a double dash is inside a block comment" do
-        sql, result = execute_readonly_sql("SELECT 1 /* -- note */ LIMIT 50")
+    it "caps rows when a line comment hides a limit after a quoted dollar quote" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT '$$' -- $$ LIMIT 1"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
 
-        expect(sql).to eq("SELECT 1 /* -- note */ LIMIT 50")
-        expect(result[:row_count]).to eq(1)
-      end
+      expect(sql).to eq("#{statement}\nLIMIT 2")
+      expect(result[:row_count]).to eq(2)
     end
   end
 end

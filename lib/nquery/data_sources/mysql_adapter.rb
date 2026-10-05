@@ -10,7 +10,7 @@ module Nquery
           duration = Benchmark.realtime do
             conn.transaction do
               conn.execute("SET SESSION TRANSACTION READ ONLY")
-              result = conn.exec_query("#{statement.strip.sub(/;\s*\z/, '')} LIMIT #{row_limit.to_i}")
+              result = conn.exec_query(RowLimit.apply(statement, row_limit))
               columns = result.columns
               rows = result.rows
               raise ActiveRecord::Rollback
