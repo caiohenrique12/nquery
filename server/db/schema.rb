@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_07_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_05_145000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.integer "blob_id", null: false
     t.datetime "created_at", null: false
@@ -140,6 +140,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_07_130000) do
     t.boolean "enable_embedding", default: false, null: false
     t.integer "made_public_by_id"
     t.string "name", null: false
+    t.json "parameters", default: [], null: false
     t.datetime "public_shared_at"
     t.string "public_uuid"
     t.json "settings", default: {}, null: false

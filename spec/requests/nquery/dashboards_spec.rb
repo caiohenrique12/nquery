@@ -138,6 +138,56 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       expect(response.body).not_to include("href=\"/charts/#{chart.id}\"")
     end
 
+    context "when a card statement references a parameter" do
+      let(:data_source) { Nquery::DataSource.find_by!(key: "main") }
+      let!(:filtered_card) do
+        query = Nquery::Query.create!(
+          name: "Needs a date",
+          statement: "SELECT 'hidden' AS label WHERE created_at >= {{start_date}}",
+          data_source: data_source,
+          creator: admin,
+          collection: root_collection
+        )
+        chart = Nquery::Chart.create!(
+          name: "Needs a date",
+          query: query,
+          collection: root_collection,
+          creator: admin,
+          visualization: { "type" => "table" }
+        )
+        dashboard.dashboard_cards.create!(chart: chart, pos_x: 0, pos_y: 0, width: 6, height: 4)
+      end
+      let!(:plain_card) do
+        query = Nquery::Query.create!(
+          name: "Plain value",
+          statement: "SELECT 'plain-value' AS label",
+          data_source: data_source,
+          creator: admin,
+          collection: root_collection
+        )
+        chart = Nquery::Chart.create!(
+          name: "Plain value",
+          query: query,
+          collection: root_collection,
+          creator: admin,
+          visualization: { "type" => "table" }
+        )
+        dashboard.dashboard_cards.create!(chart: chart, pos_x: 6, pos_y: 0, width: 6, height: 4)
+      end
+
+      it "does not render demo rows for an unresolved placeholder" do
+        filtered_card
+        plain_card
+
+        get "/dashboards/#{dashboard.id}"
+
+        expect(response.body).not_to include("Jan")
+        expect(response.body).not_to include("1200")
+        expect(response.body).to include("This chart could not be loaded.")
+        expect(response.body).to include("plain-value")
+      end
+    end
+
     context "when the dashboard is archived" do
       before { dashboard.archive! }
 
@@ -339,6 +389,17 @@ RSpec.describe "Nquery::Dashboards", type: :request do
 
       expect(response).to have_http_status(:ok)
     end
+
+    it "shows saved parameter names and defaults" do
+      dashboard.update!(
+        parameters: [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+      )
+
+      get "/dashboards/#{dashboard.id}/edit"
+
+      expect(response.body).to include("start_date")
+      expect(response.body).to include("2026-08-01")
+    end
   end
 
   describe "PATCH /dashboards/:id" do
@@ -367,6 +428,97 @@ RSpec.describe "Nquery::Dashboards", type: :request do
       }
 
       expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "persists declared parameters" do
+      patch "/dashboards/#{dashboard.id}", params: {
+        dashboard: {
+          name: dashboard.name,
+          collection_id: root_collection.id,
+          parameters: [
+            { name: "start_date", type: "date", default: "2026-08-01" },
+            { name: "end_date", type: "date", default: "" },
+            { name: "", type: "date", default: "" }
+          ]
+        }
+      }
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}")
+      expect(dashboard.reload.parameter_names).to eq(%w[start_date end_date])
+      expect(dashboard.parameters.first["default"]).to eq("2026-08-01")
+    end
+
+    it "does not save a parameter with a bad type" do
+      patch "/dashboards/#{dashboard.id}", params: {
+        dashboard: {
+          name: dashboard.name,
+          collection_id: root_collection.id,
+          parameters: [{ name: "start_date", type: "string", default: "" }]
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(dashboard.reload.parameters).to eq([])
+    end
+
+    it "does not save a parameter with a bad default" do
+      patch "/dashboards/#{dashboard.id}", params: {
+        dashboard: {
+          name: dashboard.name,
+          collection_id: root_collection.id,
+          parameters: [{ name: "start_date", type: "date", default: "2026-02-31" }]
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(dashboard.reload.parameters).to eq([])
+    end
+
+    context "when the user lacks curate access" do
+      let(:finance_group) { Nquery::Group.create!(name: "Finance", system_group: "custom") }
+      let(:member) do
+        Nquery::User.create!(email: "finance-edit@example.com", password: "password123", confirmed_at: Time.current).tap do |user|
+          Nquery::GroupMembership.create!(user: user, group: finance_group)
+          user.ensure_all_users_membership!
+        end
+      end
+      let(:restricted_collection) do
+        Nquery::Collection.create!(
+          name: "Finance edit",
+          kind: "standard",
+          parent: root_collection
+        )
+      end
+      let!(:restricted_dashboard) do
+        Nquery::CollectionPermission.create!(
+          group: finance_group,
+          collection: restricted_collection,
+          access_level: "view"
+        )
+
+        Nquery::Dashboard.create!(
+          name: "Finance dashboard",
+          collection: restricted_collection,
+          creator: member
+        )
+      end
+
+      before { sign_in_as(member) }
+
+      it "does not update the dashboard" do
+        patch "/dashboards/#{restricted_dashboard.id}", params: {
+          dashboard: {
+            name: "Renamed",
+            collection_id: restricted_collection.id,
+            parameters: [{ name: "start_date", type: "date", default: "2026-08-01" }]
+          }
+        }
+
+        expect(response).to redirect_to("/")
+        expect(flash[:alert]).to include("permission")
+        expect(restricted_dashboard.reload.name).to eq("Finance dashboard")
+        expect(restricted_dashboard.parameters).to eq([])
+      end
     end
   end
 

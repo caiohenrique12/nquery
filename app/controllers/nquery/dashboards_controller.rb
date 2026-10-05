@@ -112,7 +112,9 @@ module Nquery
     end
 
     def dashboard_params
-      params.require(:dashboard).permit(:name, :description, :collection_id, settings: {})
+      params.require(:dashboard).permit(
+        :name, :description, :collection_id, settings: {}, parameters: [:name, :type, :default]
+      )
     end
 
     def default_dashboard_collection

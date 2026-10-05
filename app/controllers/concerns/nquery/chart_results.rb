@@ -10,6 +10,8 @@ module Nquery
       return demo_result unless chart.statement?
 
       chart_query_result(chart)
+    rescue QueryRunner::ParameterError
+      { error: "This chart could not be loaded." }
     rescue StandardError
       demo_result
     end
@@ -24,22 +26,23 @@ module Nquery
       { error: e.message }
     end
 
-    def shared_chart_result(chart)
+    def shared_chart_result(chart, parameters: nil)
       return { error: "This chart has no query." } unless chart.statement?
       return { error: shared_chart_load_error } unless chart.data_source
 
-      chart_query_result(chart, audit: false)
+      chart_query_result(chart, audit: false, parameters: parameters)
     rescue StandardError => e
       Rails.logger.error("[nquery] shared chart #{chart.id} failed: #{e.class}: #{e.message}")
       { error: shared_chart_load_error }
     end
 
-    def chart_query_result(chart, audit: true)
+    def chart_query_result(chart, audit: true, parameters: nil)
       QueryRunner.new(
         data_source: chart.data_source || DataSource.first,
         statement: chart.statement,
         user: current_nquery_user,
-        query: chart.query
+        query: chart.query,
+        parameters: parameters
       ).run(audit: audit)
     end
 

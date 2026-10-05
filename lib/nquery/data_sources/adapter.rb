@@ -26,12 +26,21 @@ module Nquery
         raise NotImplementedError
       end
 
-      def execute_readonly(statement, timeout: 15, row_limit: 10_000)
+      def execute_readonly(statement, timeout: 15, row_limit: 10_000, binds: [])
         raise NotImplementedError
       end
 
       def test_connection
         raise NotImplementedError
+      end
+
+      private
+
+      def exec_limited_query(connection, statement, row_limit, binds)
+        sql = RowLimit.apply(statement, row_limit)
+        return connection.exec_query(sql) if binds.blank?
+
+        connection.exec_query(sql, "SQL", binds)
       end
     end
   end
