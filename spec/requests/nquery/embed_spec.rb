@@ -33,6 +33,20 @@ RSpec.describe "Embed pages", type: :request do
       expect(response.body).not_to include("Jan")
     end
 
+    context "when the statement already has a limit" do
+      it "renders the query rows" do
+        enable_static_embedding!
+        chart.query.update!(statement: "SELECT 1 AS value LIMIT 1")
+        result = sign_chart_token
+
+        get "/embed/charts/show", params: { token: result[:signed_token] }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("[[1]]")
+        expect(response.body).not_to include("This chart could not be loaded.")
+      end
+    end
+
     it "does not execute a chart with no data source against another source" do
       enable_static_embedding!
       query = Nquery::Query.create!(

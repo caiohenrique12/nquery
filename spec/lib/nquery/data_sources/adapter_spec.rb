@@ -61,6 +61,10 @@ RSpec.describe Nquery::DataSources::PostgresqlAdapter do
   end
 
   it "executes read-only queries" do
+    expect(connection).to receive(:exec_query).with(
+      Nquery::DataSources::RowLimit.apply("SELECT 1 AS id;", 10_000)
+    ).and_return(double(columns: %w[id], rows: [[1]]))
+
     result = adapter.execute_readonly("SELECT 1 AS id;")
 
     expect(result[:columns]).to eq(%w[id])
@@ -123,6 +127,9 @@ RSpec.describe Nquery::DataSources::MysqlAdapter do
 
   it "executes read-only queries with a MySQL session" do
     expect(connection).to receive(:execute).with("SET SESSION TRANSACTION READ ONLY")
+    expect(connection).to receive(:exec_query).with(
+      Nquery::DataSources::RowLimit.apply("SELECT 1 AS value", 10_000)
+    ).and_return(double(columns: %w[value], rows: [[1]]))
 
     result = adapter.execute_readonly("SELECT 1 AS value")
 
@@ -137,6 +144,114 @@ RSpec.describe Nquery::DataSources::RailsAdapter do
       data_source = Nquery::DataSource.new(name: "Main", adapter: "rails")
 
       expect(described_class.new(data_source).test_connection).to be(true)
+    end
+  end
+
+  describe "#execute_readonly" do
+    let(:data_source) { Nquery::DataSource.new(name: "Main", adapter: "rails") }
+    let(:adapter) { described_class.new(data_source) }
+
+    def execute_readonly_sql(statement, **)
+      executed_sql = nil
+      connection = ActiveRecord::Base.connection
+      allow(connection).to receive(:exec_query).and_wrap_original do |method, sql, *args, **kwargs|
+        executed_sql = sql
+        method.call(sql, *args, **kwargs)
+      end
+
+      result = adapter.execute_readonly(statement, **)
+      [executed_sql, result]
+    end
+
+    it "executes the statement produced by the row limit" do
+      sql, result = execute_readonly_sql("SELECT 1 AS value")
+
+      expect(sql).to eq(Nquery::DataSources::RowLimit.apply("SELECT 1 AS value", 10_000))
+      expect(result[:columns]).to include("value")
+      expect(result[:row_count]).to eq(1)
+    end
+
+    it "bounds the row count when the statement has no limit" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "runs a statement that already ends with a smaller limit" do
+      _sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 15")
+
+      expect(result[:row_count]).to eq(1)
+    end
+
+    it "bounds the row count when the existing limit is larger" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "caps rows when a block comment is left unclosed" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 /*"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "caps rows when a limit sits only inside an unclosed block comment" do
+      statement = "SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 /* LIMIT 1"
+      _sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "caps rows when a line comment is glued to the count" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 10--keep"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "caps rows when a block comment follows a larger limit" do
+      statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100 /* rest */"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "keeps one limit when a smaller count has a trailing block comment" do
+      statement = "SELECT 1 AS value LIMIT 1 /* note */"
+      sql, result = execute_readonly_sql(statement)
+
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(1)
+    end
+
+    it "caps rows when a closed block comment spans lines before a larger limit" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 /* note\nstill */ LIMIT 5"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(sql).to eq("SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 /* note\nstill */ LIMIT 2")
+      expect(sql.scan(/LIMIT/i).size).to eq(1)
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "caps rows when a closed block comment spans lines" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3\n/* note\n*/"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(sql).to eq("#{statement}\nLIMIT 2")
+      expect(result[:row_count]).to eq(2)
+    end
+
+    it "caps rows when a line comment hides a limit after a quoted dollar quote" do
+      statement = "SELECT 1 AS id UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT '$$' -- $$ LIMIT 1"
+      sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+      expect(sql).to eq("#{statement}\nLIMIT 2")
+      expect(result[:row_count]).to eq(2)
     end
   end
 end

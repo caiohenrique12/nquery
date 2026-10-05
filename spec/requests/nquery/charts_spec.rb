@@ -417,6 +417,18 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include("Standalone chart")
     end
 
+    context "when the statement already has a limit" do
+      it "renders the query rows" do
+        chart.query.update!(statement: "SELECT 1 AS value LIMIT 1")
+
+        get "/charts/#{chart.id}"
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("[[1]]")
+        expect(response.body).not_to include("Jan")
+      end
+    end
+
     it "shows demo data when the query has no statement" do
       chart.query.update!(statement: "")
 

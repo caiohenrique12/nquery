@@ -26,7 +26,7 @@ module Nquery
             conn.transaction do
               conn.execute("SET TRANSACTION READ ONLY")
               conn.execute("SET statement_timeout = '#{timeout.to_i}s'")
-              result = conn.exec_query("#{statement.strip.sub(/;\s*\z/, '')} LIMIT #{row_limit.to_i}")
+              result = conn.exec_query(RowLimit.apply(statement, row_limit))
               columns = result.columns
               rows = result.rows
               raise ActiveRecord::Rollback

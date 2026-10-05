@@ -24,7 +24,7 @@ module Nquery
         duration = Benchmark.realtime do
           connection.transaction do
             connection.execute("SET TRANSACTION READ ONLY") if postgresql?
-            result = connection.exec_query(sanitize_limit(statement, row_limit))
+            result = connection.exec_query(RowLimit.apply(statement, row_limit))
             columns = result.columns
             rows = result.rows
             raise ActiveRecord::Rollback
@@ -48,11 +48,6 @@ module Nquery
 
       def postgresql?
         connection.adapter_name.downcase.include?("postgres")
-      end
-
-      def sanitize_limit(statement, limit)
-        stripped = statement.strip.sub(/;\s*\z/, "")
-        "#{stripped} LIMIT #{limit.to_i}"
       end
     end
   end
