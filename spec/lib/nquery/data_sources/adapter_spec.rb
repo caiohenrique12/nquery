@@ -157,10 +157,10 @@ RSpec.describe Nquery::DataSources::RailsAdapter do
     end
 
     context "when the statement has no limit" do
-      it "appends the default row cap and returns rows" do
+      it "appends the default row cap on the next line and returns rows" do
         sql, result = execute_readonly_sql("SELECT 1 AS value")
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 10000")
+        expect(sql).to eq("SELECT 1 AS value\nLIMIT 10000")
         expect(result[:columns]).to include("value")
         expect(result[:row_count]).to eq(1)
       end
@@ -168,7 +168,7 @@ RSpec.describe Nquery::DataSources::RailsAdapter do
       it "strips a trailing semicolon" do
         sql, = execute_readonly_sql("SELECT 1 AS value;")
 
-        expect(sql).to eq("SELECT 1 AS value LIMIT 10000")
+        expect(sql).to eq("SELECT 1 AS value\nLIMIT 10000")
       end
 
       it "bounds the row count to an explicit row limit" do
@@ -177,51 +177,105 @@ RSpec.describe Nquery::DataSources::RailsAdapter do
 
         expect(result[:row_count]).to eq(2)
       end
+
+      it "appends the cap on the next line after a trailing comment" do
+        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 -- all"
+        sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+        expect(sql).to eq("#{statement}\nLIMIT 2")
+        expect(result[:row_count]).to eq(2)
+      end
+
+      it "appends the cap when a limit sits only inside a trailing comment" do
+        statement = "SELECT 1 UNION ALL SELECT 2 -- LIMIT 5"
+        sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+        expect(sql).to eq("#{statement}\nLIMIT 2")
+        expect(result[:row_count]).to eq(2)
+      end
     end
 
     context "when the statement already ends with a limit" do
-      it "wraps the statement in one row-capped query" do
+      it "leaves a smaller limit unchanged" do
         sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 15")
 
-        expect(sql).to eq("SELECT * FROM ( SELECT 1 AS value LIMIT 15\n) AS nquery_limited LIMIT 10000")
-        expect(sql).not_to match(/LIMIT\s+\d+\s+LIMIT/i)
+        expect(sql).to eq("SELECT 1 AS value LIMIT 15")
         expect(result[:columns]).to include("value")
         expect(result[:row_count]).to eq(1)
       end
 
-      it "wraps a trailing offset" do
+      it "leaves a trailing offset unchanged" do
         sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 1 OFFSET 0")
 
-        expect(sql).to eq("SELECT * FROM ( SELECT 1 AS value LIMIT 1 OFFSET 0\n) AS nquery_limited LIMIT 10000")
+        expect(sql).to eq("SELECT 1 AS value LIMIT 1 OFFSET 0")
         expect(result[:row_count]).to eq(1)
       end
 
-      it "wraps a MySQL-style offset and count" do
+      it "leaves a MySQL-style offset and count unchanged" do
         sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 0, 1")
 
-        expect(sql).to eq("SELECT * FROM ( SELECT 1 AS value LIMIT 0, 1\n) AS nquery_limited LIMIT 10000")
+        expect(sql).to eq("SELECT 1 AS value LIMIT 0, 1")
         expect(result[:row_count]).to eq(1)
       end
 
       it "strips a trailing semicolon" do
         sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 1;")
 
-        expect(sql).to eq("SELECT * FROM ( SELECT 1 AS value LIMIT 1\n) AS nquery_limited LIMIT 10000")
+        expect(sql).to eq("SELECT 1 AS value LIMIT 1")
         expect(result[:row_count]).to eq(1)
       end
 
-      it "keeps a trailing line comment from swallowing the row cap" do
+      it "leaves a trailing line comment unchanged" do
         sql, result = execute_readonly_sql("SELECT 1 AS value LIMIT 1 -- keep")
 
-        expect(sql).to eq("SELECT * FROM ( SELECT 1 AS value LIMIT 1 -- keep\n) AS nquery_limited LIMIT 10000")
+        expect(sql).to eq("SELECT 1 AS value LIMIT 1 -- keep")
         expect(result[:row_count]).to eq(1)
       end
 
-      it "bounds the row count when the existing limit is larger" do
+      it "rewrites a larger limit in place" do
         statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100"
-        _sql, result = execute_readonly_sql(statement, row_limit: 2)
+        sql, result = execute_readonly_sql(statement, row_limit: 2)
 
+        expect(sql).to eq("SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 2")
         expect(result[:row_count]).to eq(2)
+      end
+
+      it "rewrites a larger limit and keeps the offset" do
+        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 100 OFFSET 0"
+        sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+        expect(sql).to eq("SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 2 OFFSET 0")
+        expect(result[:row_count]).to eq(2)
+      end
+
+      it "rewrites a larger MySQL count in place" do
+        statement = "SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 0, 100"
+        sql, result = execute_readonly_sql(statement, row_limit: 2)
+
+        expect(sql).to eq("SELECT 1 AS value UNION ALL SELECT 2 UNION ALL SELECT 3 LIMIT 0, 2")
+        expect(result[:row_count]).to eq(2)
+      end
+
+      it "leaves a smaller limit unchanged when the line has a quoted double dash" do
+        sql, result = execute_readonly_sql("SELECT 'a--b' AS note LIMIT 50")
+
+        expect(sql).to eq("SELECT 'a--b' AS note LIMIT 50")
+        expect(result[:row_count]).to eq(1)
+      end
+
+      it "rewrites a larger limit in place when the line has a quoted double dash" do
+        sql, result = execute_readonly_sql("SELECT 'a--b' AS note LIMIT 50000", row_limit: 2)
+
+        expect(sql).to eq("SELECT 'a--b' AS note LIMIT 2")
+        expect(sql.scan(/LIMIT/i).size).to eq(1)
+        expect(result[:row_count]).to eq(1)
+      end
+
+      it "leaves a smaller limit unchanged when a double dash is inside a block comment" do
+        sql, result = execute_readonly_sql("SELECT 1 /* -- note */ LIMIT 50")
+
+        expect(sql).to eq("SELECT 1 /* -- note */ LIMIT 50")
+        expect(result[:row_count]).to eq(1)
       end
     end
   end

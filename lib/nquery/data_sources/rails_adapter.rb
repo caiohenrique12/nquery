@@ -5,6 +5,18 @@ require "benchmark"
 module Nquery
   module DataSources
     class RailsAdapter < Adapter
+      TRAILING_ROW_LIMIT = %r{
+        \sLIMIT\s+
+        (?:
+          \d+\s*,\s*(?<mysql_count>\d+)
+          |
+          (?<count>\d+)(?:\s+OFFSET\s+\d+)?
+        )
+        (?:\s+--[^\n]*)?
+        \s*\z
+      }ix
+      private_constant :TRAILING_ROW_LIMIT
+
       def tables
         connection.tables.reject { |t| hidden_table?(t) }
       end
@@ -53,22 +65,44 @@ module Nquery
       def sanitize_limit(statement, limit)
         stripped = statement.strip.sub(/;\s*\z/, "")
         cap = limit.to_i
-        trailing_limit = %r{
-          \sLIMIT\s+
-          (?:
-            \d+\s*,\s*\d+
-            |
-            \d+(?:\s+OFFSET\s+\d+)?
-          )
-          (?:\s+--[^\n]*)?
-          \s*\z
-        }ix
+        match = trailing_row_limit(stripped)
+        return "#{stripped}\nLIMIT #{cap}" unless match
 
-        if stripped.match?(trailing_limit)
-          "SELECT * FROM ( #{stripped}\n) AS nquery_limited LIMIT #{cap}"
-        else
-          "#{stripped} LIMIT #{cap}"
-        end
+        count_name, count = trailing_count(match)
+        return stripped if count <= cap
+
+        replace_trailing_count(stripped, match, count_name, cap)
+      end
+
+      def trailing_row_limit(statement)
+        match = statement.match(TRAILING_ROW_LIMIT)
+        return nil unless match
+        return nil if limit_inside_line_comment?(statement, match)
+
+        match
+      end
+
+      def trailing_count(match)
+        name = match[:mysql_count] ? :mysql_count : :count
+        [name, match[name].to_i]
+      end
+
+      def replace_trailing_count(statement, match, count_name, cap)
+        start_at = match.begin(count_name)
+        "#{statement[0...start_at]}#{cap}#{statement[match.end(count_name)..]}"
+      end
+
+      def limit_inside_line_comment?(statement, match)
+        limit_at = match.begin(0)
+        return false if statement[limit_at] == "\n"
+
+        line_break = statement.rindex("\n", limit_at)
+        prefix_start = line_break ? line_break + 1 : 0
+        prefix = statement[prefix_start...limit_at]
+        prefix = prefix.gsub(/'(?:''|[^'])*'/, "")
+        prefix = prefix.gsub(/"(?:\\"|[^"])*"/, "")
+        prefix = prefix.gsub(%r{/\*.*?\*/}, "")
+        prefix.include?("--")
       end
     end
   end
