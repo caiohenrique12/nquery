@@ -144,19 +144,35 @@ RSpec.describe Nquery::QueryRunner do
     expect { runner.run }.to raise_error(described_class::ParameterError, "Missing value for start_date")
   end
 
-  it "does not execute when a value is not a date" do
-    raw = "2026-08-01'; DROP TABLE nquery_users"
+  it "binds a string without interpolating it" do
+    raw = "north'; DROP TABLE nquery_users"
+    executed = capture_exec_query do
+      runner = described_class.new(
+        data_source: data_source,
+        statement: "SELECT 1 AS value WHERE {{region}} = 'kept'",
+        user: user,
+        parameters: { "region" => raw }
+      )
+      runner.run(audit: false)
+    end
+
+    expect(executed[:sql]).to include("?")
+    expect(executed[:sql]).not_to include(raw)
+    expect(executed[:sql]).not_to include("DROP")
+  end
+
+  it "does not execute when a value is not a supported parameter type" do
     expect(Nquery::DataSources::Adapter).not_to receive(:for)
 
     runner = described_class.new(
       data_source: data_source,
       statement: "SELECT 1 WHERE {{start_date}} = 1",
       user: user,
-      parameters: { "start_date" => raw }
+      parameters: { "start_date" => { "bad" => true } }
     )
 
     expect { runner.run }.to raise_error(described_class::ParameterError, "Invalid value for start_date") { |error|
-      expect(error.message).not_to include(raw)
+      expect(error.message).not_to include("bad")
     }
   end
 

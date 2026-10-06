@@ -10,10 +10,23 @@ module Nquery
 
         @dashboard = Dashboard.active.find_by!(public_uuid: params[:uuid])
         @dashboard_cards = load_dashboard_cards(@dashboard)
-        @card_results = @dashboard_cards.index_with { |card| shared_chart_result(card.chart) }
+        resolved = declared_dashboard_parameters
+        @card_results = @dashboard_cards.index_with do |card|
+          shared_chart_result(card.chart, parameters: @dashboard.parameters_for_chart(card.chart, resolved))
+        end
         render template: "nquery/embed/dashboards/show"
       rescue ActiveRecord::RecordNotFound
         render_unavailable(status: :not_found)
+      end
+
+      private
+
+      def declared_dashboard_parameters
+        DashboardParameters.call(
+          dashboard: @dashboard.with_agreed_chart_variables,
+          token_params: {},
+          request_params: {}
+        )
       end
     end
   end

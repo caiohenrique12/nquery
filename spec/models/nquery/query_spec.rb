@@ -86,6 +86,85 @@ RSpec.describe Nquery::Query, type: :model do
     expect(query.errors[:statement].join).to match(/SELECT|read-only|not allowed/i)
   end
 
+  it "keeps a declared type for a variable in the statement" do
+    query = build_query(statement: "SELECT {{start_date}} AS start_date")
+    query.parameters = [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+
+    expect(query).to be_valid
+    query.save!
+
+    expect(query.parameter_definitions).to eq(
+      [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+    )
+  end
+
+  it "adds a string variable found in the statement" do
+    query = build_query(statement: "SELECT {{region}} AS region")
+
+    expect(query).to be_valid
+    query.save!
+
+    expect(query.parameter_definitions).to eq(
+      [{ "name" => "region", "type" => "string", "default" => "" }]
+    )
+  end
+
+  it "does not store a string row inferred from the statement" do
+    query = build_query(statement: "SELECT {{region}} AS region")
+    query.save!
+
+    expect(query.parameters).to eq([])
+    expect(query.stored_parameter_definitions).to eq([])
+    expect(query.parameter_definitions).to eq(
+      [{ "name" => "region", "type" => "string", "default" => "" }]
+    )
+  end
+
+  it "accepts a boolean parameter" do
+    query = build_query(statement: "SELECT {{active}} AS active")
+    query.parameters = [{ "name" => "active", "type" => "boolean", "default" => "no" }]
+
+    expect(query).to be_valid
+  end
+
+  it "rejects a boolean default that is not true or false" do
+    query = build_query(statement: "SELECT {{active}} AS active")
+    query.parameters = [{ "name" => "active", "type" => "boolean", "default" => "maybe" }]
+
+    expect(query).not_to be_valid
+    expect(query.errors[:parameters]).to include("include an invalid default")
+  end
+
+  it "returns a string parameter saved on the query" do
+    query = build_query(statement: "SELECT {{region}} AS region")
+    query.parameters = [{ "name" => "region", "type" => "string", "default" => "" }]
+    query.save!
+
+    expect(query.stored_parameter_definitions).to eq(
+      [{ "name" => "region", "type" => "string", "default" => "" }]
+    )
+  end
+
+  %w[id wire action controller format].each do |reserved|
+    it "rejects the reserved name #{reserved}" do
+      query = build_query(statement: "SELECT {{#{reserved}}} AS value")
+      query.parameters = [{ "name" => reserved, "type" => "string", "default" => "" }]
+
+      expect(query).not_to be_valid
+      expect(query.errors[:parameters]).to include("cannot use #{reserved}")
+    end
+  end
+
+  it "drops a variable that the statement no longer uses" do
+    query = build_query(statement: "SELECT 1 AS value")
+    query.parameters = [{ "name" => "start_date", "type" => "date", "default" => "" }]
+
+    expect(query).to be_valid
+    query.save!
+
+    expect(query.parameter_definitions).to eq([])
+  end
+
   it "rejects mutating statements on update" do
     query = build_query(statement: "SELECT 1 AS value")
     query.save!

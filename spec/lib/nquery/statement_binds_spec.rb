@@ -75,6 +75,60 @@ RSpec.describe Nquery::StatementBinds do
       }.to raise_error(Nquery::QueryRunner::ParameterError, "Invalid parameter placeholder")
     end
 
+    it "drops an optional clause when its value is missing" do
+      result = described_class.call(
+        statement: "SELECT 1 WHERE 1 = 1 [[AND created_at >= {{start_date}}]]",
+        parameters: {},
+        adapter: "sqlite"
+      )
+
+      expect(result.sql).to eq("SELECT 1 WHERE 1 = 1 ")
+      expect(result.binds).to eq([])
+    end
+
+    it "keeps an optional clause when its value is present" do
+      result = described_class.call(
+        statement: "SELECT 1 WHERE 1 = 1 [[AND created_at >= {{start_date}}]]",
+        parameters: { "start_date" => start_date },
+        adapter: "sqlite"
+      )
+
+      expect(result.sql).to eq("SELECT 1 WHERE 1 = 1 AND created_at >= ?")
+      expect(result.binds.map(&:value)).to eq([start_date])
+    end
+
+    it "raises when an optional clause has an invalid value" do
+      expect {
+        described_class.call(
+          statement: "SELECT 1 [[WHERE {{start_date}} = 1]]",
+          parameters: {},
+          invalid_names: ["start_date"],
+          adapter: "sqlite"
+        )
+      }.to raise_error(Nquery::QueryRunner::ParameterError, "Invalid value for start_date")
+    end
+
+    it "keeps an optional clause when the boolean value is false" do
+      result = described_class.call(
+        statement: "SELECT 1 WHERE 1 = 1 [[AND active = {{active}}]]",
+        parameters: { "active" => false },
+        adapter: "sqlite"
+      )
+
+      expect(result.sql).to eq("SELECT 1 WHERE 1 = 1 AND active = ?")
+      expect(result.binds.map(&:value)).to eq([false])
+      expect(result.binds.first.type).to be_a(ActiveRecord::Type::Boolean)
+    end
+
+    it "lists required placeholders that have no value" do
+      names = described_class.missing_names(
+        statement: "SELECT {{label}} AS label, {{qty}} AS qty [[AND created_at >= {{start_date}}]]",
+        parameters: { "label" => "" }
+      )
+
+      expect(names).to eq(%w[label qty])
+    end
+
     it "raises when a value is missing" do
       expect {
         described_class.call(
@@ -85,17 +139,53 @@ RSpec.describe Nquery::StatementBinds do
       }.to raise_error(Nquery::QueryRunner::ParameterError, "Missing value for start_date")
     end
 
-    it "raises when a value is not a date and keeps it out of the message" do
-      raw = "2026-08-01' OR '1'='1"
+    it "binds a string without writing it into the sql" do
+      raw = "north' OR '1'='1"
+      result = described_class.call(
+        statement: "SELECT 1 WHERE {{region}} = 'kept'",
+        parameters: { "region" => raw },
+        adapter: "sqlite"
+      )
 
+      expect(result.sql).to eq("SELECT 1 WHERE ? = 'kept'")
+      expect(result.sql).not_to include(raw)
+      expect(result.binds.map(&:value)).to eq([raw])
+    end
+
+    it "binds a time without writing it into the sql" do
+      value = Time.zone.parse("2026-08-01T15:30")
+      result = described_class.call(
+        statement: "SELECT 1 WHERE {{as_of}} = 1",
+        parameters: { "as_of" => value },
+        adapter: "sqlite"
+      )
+
+      expect(result.sql).to eq("SELECT 1 WHERE ? = 1")
+      expect(result.sql).not_to include("2026-08-01")
+      expect(result.binds.map(&:value)).to eq([value])
+    end
+
+    it "binds an integer without writing it into the sql" do
+      result = described_class.call(
+        statement: "SELECT 1 WHERE {{minimum}} = 1",
+        parameters: { "minimum" => 42 },
+        adapter: "sqlite"
+      )
+
+      expect(result.sql).to eq("SELECT 1 WHERE ? = 1")
+      expect(result.sql).not_to include("42")
+      expect(result.binds.map(&:value)).to eq([42])
+    end
+
+    it "raises when a value is not a supported parameter type and keeps it out of the message" do
       expect {
         described_class.call(
           statement: "SELECT 1 WHERE {{start_date}} = 1",
-          parameters: { "start_date" => raw },
+          parameters: { "start_date" => { "bad" => true } },
           adapter: "sqlite"
         )
       }.to raise_error(Nquery::QueryRunner::ParameterError, "Invalid value for start_date") { |error|
-        expect(error.message).not_to include(raw)
+        expect(error.message).not_to include("bad")
       }
     end
   end

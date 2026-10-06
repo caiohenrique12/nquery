@@ -19,13 +19,13 @@ module Nquery
         end
 
         resolved = DashboardParameters.call(
-          dashboard: @dashboard,
+          dashboard: @dashboard.with_agreed_chart_variables,
           token_params: embed_parameter_params(payload[:params]),
           request_params: embed_parameter_params(params)
         )
         @dashboard_cards = load_dashboard_cards(@dashboard)
         @card_results = @dashboard_cards.index_with do |card|
-          shared_chart_result(card.chart, parameters: resolved)
+          shared_chart_result(card.chart, parameters: @dashboard.parameters_for_chart(card.chart, resolved))
         end
       rescue EmbedTokenService::Error, ActiveRecord::RecordNotFound
         render_forbidden

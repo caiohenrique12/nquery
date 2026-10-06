@@ -430,6 +430,166 @@ function initChartPreviews() {
   })
 }
 
+function chartVariableNames(sql) {
+  const names = []
+  const seen = new Set()
+  const pattern = /\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g
+  let match
+  while ((match = pattern.exec(sql))) {
+    if (seen.has(match[1])) continue
+    seen.add(match[1])
+    names.push(match[1])
+  }
+  return names
+}
+
+let focusVariableName = null
+let chartVariableMarks = []
+
+function chartVariableParameters() {
+  return Array.from(document.querySelectorAll("#chart_variables [data-variable-name]")).map(row => ({
+    name: row.dataset.variableName,
+    type: row.querySelector("[data-variable-type]")?.value || "string",
+    default: row.querySelector("[data-variable-default]")?.value || ""
+  })).filter(row => row.name)
+}
+
+function nextParameterName(sql) {
+  const names = new Set(chartVariableNames(sql))
+  if (!names.has("parameter")) return "parameter"
+  let index = 2
+  while (names.has(`parameter_${index}`)) index += 1
+  return `parameter_${index}`
+}
+
+function selectedVariableField(selector) {
+  const name = document.getElementById("chart_variable_options")?.dataset.variableName
+  if (!name) return null
+  const row = document.querySelector(`#chart_variables [data-variable-name="${CSS.escape(name)}"]`)
+  return row?.querySelector(selector) || null
+}
+
+function clearChartVariableMarks() {
+  chartVariableMarks.forEach(mark => mark.clear())
+  chartVariableMarks = []
+}
+
+function highlightChartVariable(name, { scroll = false } = {}) {
+  clearChartVariableMarks()
+  const editor = document.querySelector("[data-chart-builder-target='statement']")?._sqlEditor
+  if (!editor || !name) return
+
+  const pattern = new RegExp(`\\{\\{\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\}\\}`, "g")
+  const text = editor.getValue()
+  let match
+  let first = null
+  while ((match = pattern.exec(text))) {
+    const from = editor.posFromIndex(match.index)
+    const to = editor.posFromIndex(match.index + match[0].length)
+    if (!first) first = from
+    chartVariableMarks.push(editor.markText(from, to, { className: "nq-sql-parameter" }))
+  }
+  if (scroll && first) editor.scrollIntoView(first, 80)
+}
+
+function clearChartVariableSelection() {
+  clearChartVariableMarks()
+  const options = document.getElementById("chart_variable_options")
+  if (options) {
+    options.hidden = true
+    delete options.dataset.variableName
+  }
+  document.querySelectorAll("#chart_variables [data-variable-select]").forEach(button => {
+    button.classList.remove("is-selected")
+    button.setAttribute("aria-pressed", "false")
+  })
+}
+
+function selectChartVariable(name, { focus = true } = {}) {
+  const row = document.querySelector(`#chart_variables [data-variable-name="${CSS.escape(name)}"]`)
+  const options = document.getElementById("chart_variable_options")
+  if (!row || !options) return
+
+  document.querySelectorAll("#chart_variables [data-variable-select]").forEach(button => {
+    const selected = button.closest("[data-variable-name]")?.dataset.variableName === name
+    button.classList.toggle("is-selected", selected)
+    button.setAttribute("aria-pressed", selected ? "true" : "false")
+  })
+
+  options.hidden = false
+  options.dataset.variableName = name
+  const label = options.querySelector("[data-chart-variable-options-name]")
+  if (label) label.textContent = `{{${name}}}`
+  const typeMirror = options.querySelector("[data-chart-variable-options-type]")
+  const defaultMirror = options.querySelector("[data-chart-variable-options-default]")
+  const type = row.querySelector("[data-variable-type]")
+  const fallback = row.querySelector("[data-variable-default]")
+  if (typeMirror && type) typeMirror.value = type.value
+  if (defaultMirror && fallback) defaultMirror.value = fallback.value
+  highlightChartVariable(name, { scroll: true })
+  if (focus) typeMirror?.focus()
+}
+
+function syncChartVariables(sql, { selectAdded = false } = {}) {
+  const panel = document.getElementById("chart_variables")
+  const rows = panel?.querySelector("[data-chart-variables-target='rows']")
+  const template = panel?.querySelector("[data-chart-variables-target='template']")
+  if (!rows || !template) return
+
+  const names = chartVariableNames(sql)
+  const previous = new Set()
+  const kept = new Map()
+  rows.querySelectorAll("[data-variable-name]").forEach(row => {
+    if (!row.dataset.variableName) return
+    previous.add(row.dataset.variableName)
+    kept.set(row.dataset.variableName, row)
+  })
+
+  rows.replaceChildren()
+  names.forEach(name => {
+    const existing = kept.get(name)
+    if (existing) {
+      rows.appendChild(existing)
+      return
+    }
+
+    const fragment = template.content.cloneNode(true)
+    const row = fragment.querySelector("[data-variable-name]")
+    row.dataset.variableName = name
+    const label = row.querySelector("[data-variable-label]")
+    if (label) label.textContent = `{{${name}}}`
+    const nameInput = row.querySelector("[data-variable-name-input]")
+    const typeInput = row.querySelector("[data-variable-type]")
+    const defaultInput = row.querySelector("[data-variable-default]")
+    if (nameInput) {
+      nameInput.value = name
+      nameInput.id = `chart_variable_${name}_name`
+    }
+    if (typeInput) typeInput.id = `chart_variable_${name}_type`
+    if (defaultInput) defaultInput.id = `chart_variable_${name}_default`
+    rows.appendChild(fragment)
+  })
+
+  const present = names.length > 0
+  panel.querySelector("[data-chart-variables-target='empty']")?.toggleAttribute("hidden", present)
+
+  const selected = document.getElementById("chart_variable_options")?.dataset.variableName
+  if (selected && !names.includes(selected)) clearChartVariableSelection()
+
+  if (selectAdded) {
+    const added = names.filter(name => !previous.has(name))
+    if (added.length) {
+      const name = added[added.length - 1]
+      const focus = focusVariableName === name
+      focusVariableName = null
+      selectChartVariable(name, { focus })
+    }
+  }
+
+  const current = document.getElementById("chart_variable_options")?.dataset.variableName
+  if (current && names.includes(current)) highlightChartVariable(current)
+}
+
 function initChartBuilders() {
   document.querySelectorAll("[data-controller='chart-builder']:not([data-chart-builder-initialized])").forEach(root => {
     root.dataset.chartBuilderInitialized = "true"
@@ -476,6 +636,7 @@ function initChartBuilders() {
     let statementEditor = null
     let lastFormattedSql = null
     let lastSavedSql = statement?.value ?? ""
+    let lastSavedParameters = JSON.stringify(chartVariableParameters())
     let ignoreEditorChanges = false
     let autosaveTimer = null
     let saveChain = Promise.resolve()
@@ -517,9 +678,11 @@ function initChartBuilders() {
 
       const run = async () => {
         const statementText = getStatement()
+        const parameters = chartVariableParameters()
+        const parametersJson = JSON.stringify(parameters)
         syncStatementField()
 
-        if (statementText === lastSavedSql) {
+        if (statementText === lastSavedSql && parametersJson === lastSavedParameters) {
           if (notice) showClientFlash(notice)
           return { saved: true, skipped: true }
         }
@@ -532,12 +695,13 @@ function initChartBuilders() {
             Accept: "application/json",
             "X-CSRF-Token": csrf
           },
-          body: JSON.stringify({ query: { statement: statementText } })
+          body: JSON.stringify({ query: { statement: statementText, parameters } })
         })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data.error || "Failed to save query.")
 
         lastSavedSql = statementText
+        lastSavedParameters = parametersJson
         if (notice) showClientFlash(notice)
         return { saved: true }
       }
@@ -566,6 +730,7 @@ function initChartBuilders() {
       if (ignoreEditorChanges) return
 
       const current = getStatement()
+      syncChartVariables(current, { selectAdded: true })
       if (lastFormattedSql === null || current !== lastFormattedSql) setFormatEnabled(true)
       scheduleAutosave()
     }
@@ -852,7 +1017,11 @@ function initChartBuilders() {
         const res = await fetch(queryRunUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-          body: JSON.stringify({ statement: getStatement(), data_source_id: dataSource?.value })
+          body: JSON.stringify({
+          statement: getStatement(),
+          data_source_id: dataSource?.value,
+          parameters: chartVariableParameters()
+        })
         })
         const data = await res.json()
         if (!res.ok || data.error) {
@@ -919,6 +1088,63 @@ function initChartBuilders() {
     })
 
     lastSavedSql = getStatement()
+    syncChartVariables(lastSavedSql)
+    lastSavedParameters = JSON.stringify(chartVariableParameters())
+
+    const variableOptions = document.getElementById("chart_variable_options")
+    variableOptions?.querySelector("[data-chart-variable-options-type]")?.addEventListener("change", (event) => {
+      const input = selectedVariableField("[data-variable-type]")
+      if (!input || input.value === event.target.value) return
+      input.value = event.target.value
+      input.dispatchEvent(new Event("change", { bubbles: true }))
+    })
+    variableOptions?.querySelector("[data-chart-variable-options-default]")?.addEventListener("input", (event) => {
+      const input = selectedVariableField("[data-variable-default]")
+      if (!input || input.value === event.target.value) return
+      input.value = event.target.value
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+
+    const insertChartParameter = () => {
+      const name = nextParameterName(getStatement())
+      const token = `{{${name}}}`
+      focusVariableName = name
+      if (statementEditor) {
+        if (!statementEditor.hasFocus()) {
+          const line = statementEditor.lastLine()
+          statementEditor.setCursor({ line, ch: statementEditor.getLine(line).length })
+        }
+        const cursor = statementEditor.getCursor()
+        const before = statementEditor.getLine(cursor.line).slice(0, cursor.ch)
+        statementEditor.replaceSelection(`${before.length > 0 && !/\s$/.test(before) ? " " : ""}${token}`)
+        return
+      }
+
+      if (!statement) return
+      const start = statement.selectionStart ?? statement.value.length
+      const end = statement.selectionEnd ?? start
+      statement.value = `${statement.value.slice(0, start)}${token}${statement.value.slice(end)}`
+      handleStatementChange()
+    }
+
+    root.addEventListener("click", (event) => {
+      if (event.target.closest("[data-chart-variables-target='add']")) {
+        event.preventDefault()
+        insertChartParameter()
+        return
+      }
+
+      const chip = event.target.closest("[data-variable-select]")
+      if (!chip || !root.contains(chip)) return
+      const name = chip.closest("[data-variable-name]")?.dataset.variableName
+      if (name) selectChartVariable(name)
+    })
+    root.addEventListener("input", (event) => {
+      if (event.target.closest("#chart_variables")) scheduleAutosave()
+    })
+    root.addEventListener("change", (event) => {
+      if (event.target.closest("#chart_variables")) scheduleAutosave()
+    })
     if (statementEditor) statementEditor.on("change", handleStatementChange)
     else statement?.addEventListener("input", handleStatementChange)
 
@@ -1073,6 +1299,128 @@ function initCopyButtons() {
   })
 }
 
+const SIDEBAR_STORAGE_KEY = "nq-sidebar-collapsed"
+
+function sidebarIsMobile() {
+  return window.matchMedia("(max-width: 768px)").matches
+}
+
+function sidebarCollapsedPreference() {
+  try {
+    return localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true"
+  } catch {
+    return false
+  }
+}
+
+function rememberSidebarCollapsed(collapsed) {
+  try {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "true" : "false")
+  } catch {
+    // Private browsing can block storage.
+  }
+}
+
+function sidebarElements() {
+  return {
+    layout: document.querySelector(".nq-layout"),
+    sidebar: document.getElementById("nq-sidebar"),
+    toggle: document.querySelector(".nq-sidebar-toggle"),
+    backdrop: document.querySelector(".nq-sidebar-backdrop")
+  }
+}
+
+function syncSidebar(layout, sidebar, toggle, backdrop) {
+  if (!layout || !sidebar || !toggle) return
+
+  const showing = sidebarIsMobile()
+    ? layout.classList.contains("is-sidebar-open")
+    : !layout.classList.contains("is-sidebar-collapsed")
+
+  sidebar.toggleAttribute("inert", !showing)
+  sidebar.setAttribute("aria-hidden", showing ? "false" : "true")
+  toggle.setAttribute("aria-expanded", showing ? "true" : "false")
+  toggle.setAttribute("aria-label", showing ? "Hide navigation" : "Show navigation")
+  if (backdrop) backdrop.hidden = !(sidebarIsMobile() && showing)
+}
+
+function applySidebarPreference() {
+  const { layout, sidebar, toggle, backdrop } = sidebarElements()
+  if (!layout || !sidebar || !toggle) return
+
+  const collapsed = !sidebarIsMobile() && (
+    document.documentElement.classList.contains("nq-sidebar-collapsed") || sidebarCollapsedPreference()
+  )
+
+  layout.classList.toggle("is-sidebar-collapsed", collapsed)
+  document.documentElement.classList.remove("nq-sidebar-collapsed")
+  syncSidebar(layout, sidebar, toggle, backdrop)
+}
+
+function initSidebarToggle() {
+  const { sidebar, toggle, backdrop } = sidebarElements()
+  if (!sidebar || !toggle) return
+
+  applySidebarPreference()
+  if (toggle.dataset.sidebarToggleInitialized === "true") return
+  toggle.dataset.sidebarToggleInitialized = "true"
+
+  toggle.addEventListener("click", () => {
+    const current = sidebarElements()
+    if (!current.layout) return
+
+    if (sidebarIsMobile()) {
+      current.layout.classList.toggle("is-sidebar-open")
+    } else {
+      const collapsed = !current.layout.classList.contains("is-sidebar-collapsed")
+      current.layout.classList.toggle("is-sidebar-collapsed", collapsed)
+      rememberSidebarCollapsed(collapsed)
+    }
+
+    syncSidebar(current.layout, current.sidebar, current.toggle, current.backdrop)
+  })
+
+  backdrop?.addEventListener("click", () => {
+    const current = sidebarElements()
+    current.layout?.classList.remove("is-sidebar-open")
+    syncSidebar(current.layout, current.sidebar, current.toggle, current.backdrop)
+  })
+
+  sidebar.addEventListener("click", (event) => {
+    if (!sidebarIsMobile() || !event.target.closest("a")) return
+
+    const current = sidebarElements()
+    current.layout?.classList.remove("is-sidebar-open")
+    syncSidebar(current.layout, current.sidebar, current.toggle, current.backdrop)
+  })
+}
+
+function bindSidebarToggleOnce() {
+  if (window.nqSidebarToggleBound) return
+  window.nqSidebarToggleBound = true
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return
+
+    const { layout, sidebar, toggle, backdrop } = sidebarElements()
+    if (!layout?.classList.contains("is-sidebar-open")) return
+
+    layout.classList.remove("is-sidebar-open")
+    syncSidebar(layout, sidebar, toggle, backdrop)
+    toggle?.focus()
+  })
+
+  window.matchMedia("(max-width: 768px)").addEventListener("change", () => {
+    sidebarElements().layout?.classList.remove("is-sidebar-open")
+    applySidebarPreference()
+  })
+
+  document.addEventListener("turbo:before-render", (event) => {
+    if (sidebarIsMobile() || !sidebarCollapsedPreference()) return
+    event.detail.newBody.querySelector(".nq-layout")?.classList.add("is-sidebar-collapsed")
+  })
+}
+
 function initPage() {
   applyChartFontDefaults()
   initButtonLoaders()
@@ -1083,6 +1431,8 @@ function initPage() {
   initChartPreviews()
   initDataSourceForms()
   initCopyButtons()
+  bindSidebarToggleOnce()
+  initSidebarToggle()
 }
 
 function bootPage() {

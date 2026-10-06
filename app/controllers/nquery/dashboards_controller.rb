@@ -6,9 +6,9 @@ module Nquery
     include Browsable
     include SharingPage
 
-    before_action :set_dashboard, only: %i[show edit update destroy archive unarchive update_layout embed]
+    before_action :set_dashboard, only: %i[show edit update destroy archive unarchive update_layout embed connect_parameter]
     before_action :authorize_dashboard_view!, only: %i[show embed]
-    before_action :authorize_dashboard_curate!, only: %i[edit update destroy archive unarchive update_layout]
+    before_action :authorize_dashboard_curate!, only: %i[edit update destroy archive unarchive update_layout connect_parameter]
 
     def index
       @dashboards = filter_viewable_dashboards(Dashboard.active.includes(:collection).order(:name))
@@ -38,11 +38,7 @@ module Nquery
     end
 
     def show
-      @dashboard_cards = @dashboard.dashboard_cards
-        .joins(:chart)
-        .merge(Chart.active)
-        .includes(:chart)
-      @card_results = @dashboard_cards.index_with { |card| chart_result(card.chart) }
+      assign_dashboard_filters
     end
 
     def embed
@@ -57,8 +53,19 @@ module Nquery
       @collections = assignable_collections
       authorize_collection_access!(Collection.find(dashboard_params[:collection_id]), required: :curate) if dashboard_params[:collection_id].present?
 
+      previous_names = @dashboard.parameter_names
       if @dashboard.update(dashboard_params)
-        redirect_to dashboard_path(@dashboard), notice: "Dashboard updated."
+        added = @dashboard.parameter_names - previous_names
+        if parameter_submission? && added.one?
+          redirect_to dashboard_path(@dashboard, edit: "parameters", wire: added.first), notice: "Filter added."
+        elsif parameter_submission? && params[:edit] == "parameters"
+          redirect_to dashboard_path(@dashboard, **wire_query), notice: "Dashboard updated."
+        else
+          redirect_to dashboard_path(@dashboard), notice: "Dashboard updated."
+        end
+      elsif parameter_submission?
+        assign_dashboard_filters
+        render :show, status: :unprocessable_content
       else
         render :edit, status: :unprocessable_content
       end
@@ -77,6 +84,15 @@ module Nquery
     def unarchive
       @dashboard.unarchive!
       redirect_to dashboard_path(@dashboard), notice: "Dashboard unarchived."
+    end
+
+    def connect_parameter
+      Dashboards::ParameterCharts.call(
+        dashboard: @dashboard,
+        name: params[:name],
+        chart_ids: params.permit(chart_ids: []).fetch(:chart_ids, [])
+      )
+      redirect_to dashboard_path(@dashboard, **wire_query), notice: "Filter connected."
     end
 
     def update_layout
@@ -111,10 +127,32 @@ module Nquery
       end
     end
 
+    def assign_dashboard_filters
+      filters = ::Nquery::Dashboards::Filters.call(dashboard: @dashboard, request_params: params)
+      @filter_dashboard = filters.filter_dashboard
+      @invalid_parameter_names = filters.parameters.invalid_names
+      @dashboard_cards = @dashboard.dashboard_cards
+        .joins(:chart)
+        .merge(Chart.active)
+        .includes(chart: { query: :data_source })
+      @card_results = @dashboard_cards.index_with do |card|
+        chart_result(card.chart, parameters: @dashboard.parameters_for_chart(card.chart, filters.parameters))
+      end
+    end
+
+    def parameter_submission?
+      params[:dashboard]&.key?(:parameters)
+    end
+
+    def wire_query
+      { edit: params[:edit].presence, wire: params[:wire].presence }.compact
+    end
+
     def dashboard_params
-      params.require(:dashboard).permit(
-        :name, :description, :collection_id, settings: {}, parameters: [:name, :type, :default]
+      permitted = params.require(:dashboard).permit(
+        :name, :description, :collection_id, settings: {}, parameters: [:name, :type, :default, { chart_ids: [] }]
       )
+      Dashboards::ParameterRows.call(dashboard: @dashboard, attributes: permitted)
     end
 
     def default_dashboard_collection

@@ -26,18 +26,6 @@
       <%= f.label :collection_id, "Collection" %>
       <%= f.collection_select :collection_id, @collections, :id, :name, { prompt: "Select a collection" }, class: "nq-input" %>
     </div>
-    <fieldset class="nq-form-row">
-      <legend>Parameters</legend>
-      <% (@dashboard.parameter_definitions + [{ "name" => "", "type" => "date", "default" => "" }]).each_with_index do |definition, index| %>
-        <div class="nq-form-row">
-          <%= label_tag "dashboard_parameter_#{index}_name", "Name" %>
-          <%= text_field_tag "dashboard[parameters][][name]", definition["name"], id: "dashboard_parameter_#{index}_name", class: "nq-input", autocomplete: "off" %>
-          <%= hidden_field_tag "dashboard[parameters][][type]", "date", id: "dashboard_parameter_#{index}_type" %>
-          <%= label_tag "dashboard_parameter_#{index}_default", "Default" %>
-          <%= date_field_tag "dashboard[parameters][][default]", definition["default"].presence, id: "dashboard_parameter_#{index}_default", class: "nq-input" %>
-        </div>
-      <% end %>
-    </fieldset>
     <%= f.submit "Save", class: "nq-btn nq-btn-primary" %>
   </div>
 <% end %>

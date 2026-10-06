@@ -40,11 +40,47 @@
   <%= nq_flash_card "This dashboard is archived.", type: :warning, toast: false %>
 <% end %>
 
+<% can_edit = can_curate_shareable?(@dashboard) %>
+<% wiring_name = params[:wire].to_s.presence if can_edit %>
+<% editing_parameters = can_edit && (params[:edit] == "parameters" || wiring_name.present?) %>
+<% wiring_parameter = @filter_dashboard.parameter_definitions.find { |row| row["name"] == wiring_name } %>
+<% if @filter_dashboard.parameter_definitions.any? || can_edit %>
+  <div class="nq-dashboard-filters">
+    <%= render "parameters",
+               dashboard: @dashboard,
+               filter_dashboard: @filter_dashboard,
+               cards: @dashboard_cards,
+               invalid_parameter_names: @invalid_parameter_names,
+               wiring_name: wiring_name,
+               editing_parameters: editing_parameters,
+               can_edit: can_edit %>
+  </div>
+<% end %>
+
+<% if wiring_parameter %>
+  <% eligible_cards = @dashboard_cards.select { |card| card.chart.uses_parameter?(wiring_parameter["name"]) } %>
+  <% unlinked_cards = eligible_cards.reject { |card| @filter_dashboard.parameter_linked_to_chart?(wiring_parameter, card.chart) } %>
+  <div class="nq-dashboard-wire">
+    <p>Choose <code>{{<%= wiring_parameter["name"] %>}}</code> on each chart.</p>
+    <% if unlinked_cards.any? %>
+      <%= form_with url: parameter_charts_dashboard_path(@dashboard, name: wiring_parameter["name"], edit: "parameters", wire: wiring_parameter["name"]), method: :patch do %>
+        <%= hidden_field_tag "chart_ids[]", "" %>
+        <% eligible_cards.each do |card| %>
+          <%= hidden_field_tag "chart_ids[]", card.chart.id %>
+        <% end %>
+        <%= submit_tag "Connect every chart that uses {{#{wiring_parameter["name"]}}}", class: "nq-btn" %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
+
 <div class="nq-dashboard-grid" data-controller="dashboard-grid">
   <% @dashboard_cards.each do |card| %>
     <%= render "nquery/dashboards/chart_card",
                card: card,
                dashboard: @dashboard,
-               card_result: @card_results[card] %>
+               card_result: @card_results[card],
+               can_edit: can_edit,
+               wiring_parameter: wiring_parameter %>
   <% end %>
 </div>
