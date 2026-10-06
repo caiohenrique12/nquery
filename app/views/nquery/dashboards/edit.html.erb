@@ -4,6 +4,16 @@
 
 <%= form_with model: @dashboard, url: dashboard_path(@dashboard), method: :patch do |f| %>
   <div class="nq-card nq-mb">
+    <% if @dashboard.errors.any? %>
+      <div class="nq-form-errors" role="alert">
+        <p><strong>Please fix the following:</strong></p>
+        <ul>
+          <% @dashboard.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
     <div class="nq-form-row">
       <%= f.label :name %>
       <%= f.text_field :name, class: "nq-input" %>

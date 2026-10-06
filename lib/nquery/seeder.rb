@@ -40,12 +40,19 @@ module Nquery
                  ROUND(SUM(#{sample_tables[:order_items]}.quantity * #{sample_tables[:order_items]}.unit_price), 2) AS revenue
           FROM #{sample_tables[:orders]}
           INNER JOIN #{sample_tables[:order_items]} ON #{sample_tables[:order_items]}.order_id = #{sample_tables[:orders]}.id
+          WHERE 1 = 1
+          [[AND date(#{sample_tables[:orders]}.ordered_at) >= {{start_date}}]]
+          [[AND date(#{sample_tables[:orders]}.ordered_at) <= {{end_date}}]]
           GROUP BY strftime('%Y-%m', #{sample_tables[:orders]}.ordered_at)
           ORDER BY month
         SQL
         data_source: data_source,
         creator: admin,
-        collection: root_collection
+        collection: root_collection,
+        parameters: [
+          { "name" => "start_date", "type" => "date", "default" => "" },
+          { "name" => "end_date", "type" => "date", "default" => "" }
+        ]
       )
       query.save!
 
@@ -55,6 +62,7 @@ module Nquery
         c.creator = admin
         c.visualization = { "type" => "bar", "x" => "month", "y" => "revenue" }
       end
+      chart.update!(query: query) if chart.query_id != query.id
 
       dashboard = Dashboard.find_or_create_by!(name: "Executive overview") do |d|
         d.description = "Key metrics at a glance"

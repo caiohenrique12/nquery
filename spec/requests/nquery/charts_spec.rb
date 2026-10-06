@@ -171,6 +171,19 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include("href=\"/dashboards/#{dashboard.id}/charts/#{chart.id}/edit\"")
       expect(response.body).to include("href=\"/dashboards/#{dashboard.id}/charts/#{chart.id}/embed\"")
     end
+
+    it "binds a saved variable default" do
+      chart.query.update!(
+        statement: "SELECT CASE WHEN {{start_date}} = '2026-08-01' THEN 'default-bound' ELSE 'query-string-bound' END AS label",
+        parameters: [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+      )
+
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}"
+
+      expect(response.body).to include("&quot;default-bound&quot;")
+      expect(response.body).not_to include("&quot;query-string-bound&quot;")
+      expect(response.body).not_to include("This chart could not be loaded.")
+    end
   end
 
   describe "GET /dashboards/:dashboard_id/charts/:id/edit" do
@@ -227,6 +240,10 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(response.body).to include("Output")
       expect(response.body).to include("Save chart")
       expect(response.body).to include("SELECT 1 AS value")
+      expect(response.body).to include("Add a variable to the query")
+      expect(response.body).to include("Add parameter")
+      expect(response.body.index('id="chart_variables"')).to be < response.body.index("nq-sql-editor-shell")
+      expect(response.body).to include('id="chart_variable_options"')
       expect(response.body).to include('value="bar"')
       expect(response.body).to include("data-initial-result=")
       expect(response.body).to include("columns")
@@ -259,6 +276,52 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect {
         get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
       }.not_to change(Nquery::Audit, :count)
+    end
+
+    it "keeps parameter options in the schema sidebar" do
+      chart.query.update!(
+        statement: "SELECT {{start_date}} AS start_date",
+        parameters: [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+      )
+
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      document = Nokogiri::HTML(response.body)
+      sidebar = document.at_css("aside.nq-chart-builder-schema")
+      options = sidebar.at_css("#chart_variable_options")
+
+      expect(options).to be_present
+      expect(options.attribute("hidden")).to be_present
+      expect(options.at_css("[data-chart-variable-options-type]")).to be_present
+      expect(options.at_css("[data-chart-variable-options-default]")).to be_present
+      expect(document.at_css("#chart_variables [data-variable-name='start_date'] [data-variable-type] option[selected]")["value"]).to eq("date")
+    end
+
+    it "binds a saved variable default in the preview" do
+      chart.query.update!(
+        statement: "SELECT CASE WHEN {{start_date}} = '2026-08-01' THEN 'default-bound' ELSE 'query-string-bound' END AS label",
+        parameters: [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+      )
+
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response.body).to include("&quot;default-bound&quot;")
+      expect(response.body).not_to include("&quot;query-string-bound&quot;")
+      expect(response.body).not_to include("Missing value for start_date")
+    end
+
+    it "drops an optional clause when the variable default is blank" do
+      chart.query.update!(
+        statement: "SELECT 'kept' AS label [[WHERE 1 = 0 AND {{start_date}} = '2026-08-01']]",
+        parameters: [{ "name" => "start_date", "type" => "date", "default" => "" }]
+      )
+
+      get "/dashboards/#{dashboard.id}/charts/#{chart.id}/edit"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("&quot;kept&quot;")
+      expect(response.body).not_to include("Missing value for start_date")
+      expect(response.body).not_to include("Unknown parameter start_date")
     end
   end
 
@@ -302,6 +365,27 @@ RSpec.describe "Nquery::Charts", type: :request do
       expect(chart.reload.name).to eq("Signups updated")
       expect(chart.query.statement).to eq("SELECT 2 AS value")
       expect(chart.visualization["type"]).to eq("line")
+    end
+
+    it "saves the variable type on the chart query" do
+      patch "/dashboards/#{dashboard.id}/charts/#{chart.id}", params: {
+        chart: {
+          name: chart.name,
+          query_attributes: {
+            id: chart.query.id,
+            name: chart.query.name,
+            statement: "SELECT {{start_date}} AS start_date",
+            data_source_id: data_source.id,
+            parameters: [{ name: "start_date", type: "date", default: "2026-08-01" }]
+          },
+          visualization: { type: "bar", x: "value", y: "value" }
+        }
+      }
+
+      expect(response).to redirect_to("/dashboards/#{dashboard.id}/charts/#{chart.id}/edit")
+      expect(chart.query.reload.parameter_definitions).to eq(
+        [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+      )
     end
 
     it "updates the chart via turbo stream without redirecting" do

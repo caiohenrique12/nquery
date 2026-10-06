@@ -73,6 +73,20 @@ RSpec.describe Nquery::DataSources::PostgresqlAdapter do
     expect(result[:duration_ms]).to be_a(Integer)
   end
 
+  it "passes binds through to exec_query" do
+    date = Date.new(2026, 8, 1)
+    bind = ActiveRecord::Relation::QueryAttribute.new("start_date", date, ActiveRecord::Type::Date.new)
+    statement = "SELECT 1 AS id WHERE ? = ?"
+
+    expect(connection).to receive(:exec_query).with(
+      Nquery::DataSources::RowLimit.apply(statement, 10_000),
+      "SQL",
+      [bind, bind]
+    ).and_return(double(columns: %w[id], rows: [[1]]))
+
+    adapter.execute_readonly(statement, binds: [bind, bind])
+  end
+
   it "opens and closes ephemeral connections" do
     sqlite_config = ActiveRecord::Base.connection_db_config.configuration_hash.merge(adapter: "sqlite3")
     data_source = Nquery::DataSource.new(
@@ -135,6 +149,20 @@ RSpec.describe Nquery::DataSources::MysqlAdapter do
 
     expect(result[:columns]).to eq(%w[value])
     expect(result[:rows]).to eq([[1]])
+  end
+
+  it "passes binds through to exec_query" do
+    date = Date.new(2026, 8, 1)
+    bind = ActiveRecord::Relation::QueryAttribute.new("start_date", date, ActiveRecord::Type::Date.new)
+    statement = "SELECT 1 AS value WHERE ? = ?"
+
+    expect(connection).to receive(:exec_query).with(
+      Nquery::DataSources::RowLimit.apply(statement, 10_000),
+      "SQL",
+      [bind]
+    ).and_return(double(columns: %w[value], rows: [[1]]))
+
+    adapter.execute_readonly(statement, binds: [bind])
   end
 end
 
@@ -244,6 +272,24 @@ RSpec.describe Nquery::DataSources::RailsAdapter do
 
       expect(sql).to eq("#{statement}\nLIMIT 2")
       expect(result[:row_count]).to eq(2)
+    end
+
+    it "binds a date comparison without putting the value in the SQL" do
+      start_date = Date.new(2026, 8, 1)
+      end_date = Date.new(2026, 8, 7)
+      binds = [
+        ActiveRecord::Relation::QueryAttribute.new("start_date", start_date, ActiveRecord::Type::Date.new),
+        ActiveRecord::Relation::QueryAttribute.new("end_date", end_date, ActiveRecord::Type::Date.new)
+      ]
+      sql, result = execute_readonly_sql(
+        "SELECT 'kept' AS label WHERE ? <= '2026-08-03' AND ? > '2026-08-03'",
+        binds: binds
+      )
+
+      expect(sql).to include("?")
+      expect(sql).not_to include("2026-08-01")
+      expect(sql).not_to include("2026-08-07")
+      expect(result[:rows]).to eq([["kept"]])
     end
 
     it "caps rows when a line comment hides a limit after a quoted dollar quote" do

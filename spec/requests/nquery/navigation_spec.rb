@@ -26,6 +26,18 @@ RSpec.describe "Navigation layout", type: :request do
     expect(response.body).to include('<span aria-current="page">Collections</span>')
   end
 
+  it "renders a control that slides the sidebar" do
+    sign_in_as_admin
+    get "/collections"
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('id="nq-sidebar"')
+    expect(response.body).to include('class="nq-sidebar-toggle"')
+    expect(response.body).to include('aria-controls="nq-sidebar"')
+    expect(response.body).to include('aria-label="Hide navigation"')
+    expect(response.body).to include('class="nq-sidebar-backdrop"')
+  end
+
   it "renders collection name in breadcrumbs on show" do
     sign_in_as_admin
     root_collection = Nquery::Collection.roots.first

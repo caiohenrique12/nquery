@@ -11,12 +11,13 @@ RSpec.describe "Embed pages", type: :request do
     Nquery.configuration.static_embedding_enabled = true
   end
 
-  def sign_chart_token(resource = chart)
+  def sign_chart_token(resource = chart, params: {})
     resource.update!(enable_embedding: true)
     Nquery::EmbedTokenService.sign(
       resource_type: resource.class.name,
       resource_id: resource.id,
-      creator: admin
+      creator: admin,
+      params: params
     )
   end
 
@@ -144,6 +145,21 @@ RSpec.describe "Embed pages", type: :request do
       expect(response.headers["X-Robots-Tag"]).to eq("noindex")
     end
 
+    it "does not apply dashboard parameters on a chart embed" do
+      enable_static_embedding!
+      result = sign_chart_token
+
+      get "/embed/charts/show", params: {
+        token: result[:signed_token],
+        start_date: "2026-08-01",
+        end_date: "2026-08-07"
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("2026-01")
+      expect(response.body).not_to include("This chart could not be loaded.")
+    end
+
     it "restricts frame ancestors when configured" do
       enable_static_embedding!
       Nquery.configuration.embed_frame_ancestors = ["https://wiki.example.com"]
@@ -236,6 +252,258 @@ RSpec.describe "Embed pages", type: :request do
 
       expect(response).to have_http_status(:forbidden)
       expect(response.body).to include("Invalid or expired embed token")
+    end
+
+    context "when the dashboard declares date parameters" do
+      let(:data_source) { chart.query.data_source }
+      let(:collection) { chart.collection }
+      let!(:filtered_dashboard) do
+        Nquery::Dashboard.create!(
+          name: "Parameter board",
+          collection: collection,
+          creator: admin,
+          parameters: [
+            { "name" => "start_date", "type" => "date", "default" => "2026-08-01" },
+            { "name" => "end_date", "type" => "date", "default" => "2026-08-07" }
+          ]
+        )
+      end
+      let!(:filtered_chart) do
+        query = Nquery::Query.create!(
+          name: "Orders in range",
+          statement: "SELECT 'range-match' AS label WHERE {{start_date}} <= '2026-08-03' AND {{end_date}} > '2026-08-03'",
+          data_source: data_source,
+          creator: admin,
+          collection: collection
+        )
+        created = Nquery::Chart.create!(
+          name: "Orders in range",
+          query: query,
+          collection: collection,
+          creator: admin,
+          visualization: { "type" => "table" }
+        )
+        filtered_dashboard.dashboard_cards.create!(chart: created, pos_x: 0, pos_y: 0, width: 6, height: 4)
+        created
+      end
+      let!(:plain_chart) do
+        query = Nquery::Query.create!(
+          name: "Constant value",
+          statement: "SELECT 1 AS value",
+          data_source: data_source,
+          creator: admin,
+          collection: collection
+        )
+        created = Nquery::Chart.create!(
+          name: "Constant value",
+          query: query,
+          collection: collection,
+          creator: admin,
+          visualization: { "type" => "number", "y" => "value" }
+        )
+        filtered_dashboard.dashboard_cards.create!(chart: created, pos_x: 6, pos_y: 0, width: 6, height: 4)
+        created
+      end
+
+      before do
+        filtered_chart
+        plain_chart
+      end
+
+      it "applies query string dates only to cards that reference them" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+
+        get "/embed/dashboards/show", params: {
+          token: result[:signed_token],
+          start_date: "2026-08-01",
+          end_date: "2026-08-07"
+        }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include("range-match")
+        expect(response.body).to include("[[1]]")
+      end
+
+      it "leaves the opt-in card empty when the query string is outside the range" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+
+        get "/embed/dashboards/show", params: {
+          token: result[:signed_token],
+          start_date: "2026-01-01",
+          end_date: "2026-01-15"
+        }
+
+        expect(response.body).not_to include("range-match")
+        expect(response.body).to include("[[1]]")
+        expect(response.body).not_to include("This chart could not be loaded.")
+      end
+
+      it "applies dates stored on the embed token" do
+        enable_static_embedding!
+        result = sign_chart_token(
+          filtered_dashboard,
+          params: { "start_date" => "2026-08-01", "end_date" => "2026-08-07" }
+        )
+
+        get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+        expect(response.body).to include("range-match")
+        expect(response.body).to include("[[1]]")
+      end
+
+      it "keeps token dates when the query string disagrees" do
+        enable_static_embedding!
+        result = sign_chart_token(
+          filtered_dashboard,
+          params: { "start_date" => "2026-01-01", "end_date" => "2026-01-15" }
+        )
+
+        get "/embed/dashboards/show", params: {
+          token: result[:signed_token],
+          start_date: "2026-08-01",
+          end_date: "2026-08-07"
+        }
+
+        expect(response.body).not_to include("range-match")
+        expect(response.body).to include("[[1]]")
+      end
+
+      it "ignores unknown query keys" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+
+        get "/embed/dashboards/show", params: {
+          token: result[:signed_token],
+          start_date: "2026-08-01",
+          end_date: "2026-08-07",
+          evil: "drop-me"
+        }
+
+        expect(response.body).to include("range-match")
+        expect(response.body).to include("[[1]]")
+        expect(response.body).not_to include("drop-me")
+      end
+
+      it "does not execute an injected date and still renders the other card" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+        injected = "2026-08-01'; DROP TABLE nquery_users"
+
+        get "/embed/dashboards/show", params: {
+          token: result[:signed_token],
+          start_date: injected,
+          end_date: "2026-08-07"
+        }
+
+        expect(response.body).not_to include(injected)
+        expect(response.body).not_to include("DROP TABLE")
+        expect(response.body).to include("This chart could not be loaded.")
+        expect(response.body).to include("[[1]]")
+      end
+
+      it "does not execute a calendar date that does not exist" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+
+        get "/embed/dashboards/show", params: {
+          token: result[:signed_token],
+          start_date: "2026-02-31",
+          end_date: "2026-08-07"
+        }
+
+        expect(response.body).not_to include("2026-02-31")
+        expect(response.body).to include("This chart could not be loaded.")
+        expect(response.body).to include("[[1]]")
+      end
+
+      it "uses declared defaults when the request and token omit them" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+
+        get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+        expect(response.body).to include("range-match")
+        expect(response.body).to include("[[1]]")
+      end
+
+      it "binds the saved date when the chart has no stored parameter" do
+        enable_static_embedding!
+        bare = Nquery::Query.create!(
+          name: "Embed placeholder only",
+          statement: "SELECT CASE WHEN {{start_date}} = '2026-08-01' THEN 'default-bound' ELSE 'query-string-bound' END AS label",
+          data_source: data_source,
+          creator: admin,
+          collection: collection
+        )
+        bare_chart = Nquery::Chart.create!(
+          name: "Embed placeholder only",
+          query: bare,
+          collection: collection,
+          creator: admin,
+          visualization: { "type" => "table" }
+        )
+        board = Nquery::Dashboard.create!(
+          name: "Embed placeholder board",
+          collection: collection,
+          creator: admin,
+          parameters: [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+        )
+        board.dashboard_cards.create!(chart: bare_chart, pos_x: 0, pos_y: 0, width: 6, height: 4)
+        expect(bare.reload.parameters).to eq([])
+        result = sign_chart_token(board)
+
+        get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+        expect(response.body).to include("default-bound")
+        expect(response.body).not_to include("query-string-bound")
+        expect(response.body).not_to include("This chart could not be loaded.")
+        expect(board.reload.parameter_definitions.first).to include("type" => "date", "default" => "2026-08-01")
+      end
+
+      it "binds an agreed stored integer from the linked chart" do
+        enable_static_embedding!
+        query = Nquery::Query.create!(
+          name: "Embed integer chart",
+          statement: "SELECT CASE WHEN {{start_date}} = 4 THEN 'integer-bound' ELSE 'date-bound' END AS label",
+          data_source: data_source,
+          creator: admin,
+          collection: collection,
+          parameters: [{ "name" => "start_date", "type" => "integer", "default" => "4" }]
+        )
+        integer_chart = Nquery::Chart.create!(
+          name: "Embed integer chart",
+          query: query,
+          collection: collection,
+          creator: admin,
+          visualization: { "type" => "table" }
+        )
+        board = Nquery::Dashboard.create!(
+          name: "Embed integer board",
+          collection: collection,
+          creator: admin,
+          parameters: [{ "name" => "start_date", "type" => "date", "default" => "2026-08-01" }]
+        )
+        board.dashboard_cards.create!(chart: integer_chart, pos_x: 0, pos_y: 0, width: 6, height: 4)
+        result = sign_chart_token(board)
+
+        get "/embed/dashboards/show", params: { token: result[:signed_token] }
+
+        expect(response.body).to include("integer-bound")
+        expect(response.body).not_to include("date-bound")
+        expect(board.reload.parameter_definitions.first).to include("type" => "date", "default" => "2026-08-01")
+      end
+
+      it "omits the dashboard title when titled is false" do
+        enable_static_embedding!
+        result = sign_chart_token(filtered_dashboard)
+
+        get "/embed/dashboards/show", params: { token: result[:signed_token], titled: "false" }
+
+        expect(response.body).not_to include("<h1>Parameter board</h1>")
+        expect(response.body).to include("[[1]]")
+      end
     end
   end
 end

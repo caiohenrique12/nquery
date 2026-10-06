@@ -3,14 +3,14 @@
 module Nquery
   module DataSources
     class MysqlAdapter < PostgresqlAdapter
-      def execute_readonly(statement, timeout: 15, row_limit: 10_000)
+      def execute_readonly(statement, timeout: 15, row_limit: 10_000, binds: [])
         with_connection do |conn|
           rows = []
           columns = []
           duration = Benchmark.realtime do
             conn.transaction do
               conn.execute("SET SESSION TRANSACTION READ ONLY")
-              result = conn.exec_query(RowLimit.apply(statement, row_limit))
+              result = exec_limited_query(conn, statement, row_limit, binds)
               columns = result.columns
               rows = result.rows
               raise ActiveRecord::Rollback
