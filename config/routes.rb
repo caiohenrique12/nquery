@@ -54,12 +54,16 @@ Nquery::Engine.routes.draw do
     resources :charts, only: [] do
       concerns :shareable
     end
+    resources :cards, only: [], module: :dashboard do
+      patch :parameters, on: :member
+    end
 
     member do
       get :embed
       patch :update_layout
       patch :archive
       patch :unarchive
+      patch "parameters/:name/charts", action: :connect_parameter, as: :parameter_charts
     end
     concerns :shareable
   end

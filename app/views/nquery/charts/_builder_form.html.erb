@@ -12,6 +12,16 @@
   <div class="nq-chart-builder">
     <div class="nq-chart-builder-layout">
       <aside class="nq-card nq-chart-builder-panel nq-chart-builder-schema">
+        <div id="chart_variable_options" class="nq-chart-variable-options" hidden>
+          <h3 class="nq-panel-title">Parameter</h3>
+          <code data-chart-variable-options-name></code>
+          <label for="chart_variable_options_type">Type</label>
+          <select id="chart_variable_options_type" class="nq-input" data-chart-variable-options-type>
+            <%= options_for_select(Nquery::ParameterValue.type_options) %>
+          </select>
+          <label for="chart_variable_options_default">Default</label>
+          <input id="chart_variable_options_default" type="text" class="nq-input" placeholder="Optional" data-chart-variable-options-default>
+        </div>
         <h3 class="nq-panel-title">Schema</h3>
         <%= render "nquery/charts/schema_tree", schema: schema %>
       </aside>
@@ -87,6 +97,8 @@
                                                  } %>
             <% end %>
           </div>
+
+          <%= render "nquery/charts/variables", chart: chart %>
 
           <%= f.fields_for :query do |query_fields| %>
             <div class="nq-sql-editor-shell">

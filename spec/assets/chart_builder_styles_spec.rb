@@ -19,6 +19,7 @@ RSpec.describe "Chart builder styles" do
     expect(css).to include(".nq-schema-tree")
     expect(css).to include(".nq-schema-column-type")
     expect(css).to include(".nq-sql-editor-shell")
+    expect(css).to include(".nq-sql-parameter")
     expect(css).to include(".nq-chart-preview.is-number")
     expect(css).to include("align-items: center")
     expect(css).to include(".nq-sql-save-status")

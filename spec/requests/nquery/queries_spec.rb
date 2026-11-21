@@ -103,6 +103,24 @@ RSpec.describe "Nquery queries", type: :request do
     expect(payload["tables"].first["columns"].first).to include("name", "type")
   end
 
+  it "keeps a variable type sent with the statement" do
+    sign_in_as(owner)
+
+    patch "/queries/#{query.id}",
+          params: {
+            query: {
+              statement: "SELECT {{start_date}} AS start_date",
+              parameters: [{ name: "start_date", type: "date", default: "2026-08-01" }]
+            }
+          },
+          as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(query.reload.parameter_definitions).to eq([
+      { "name" => "start_date", "type" => "date", "default" => "2026-08-01" }
+    ])
+  end
+
   it "updates a query statement via JSON for chart builder autosave" do
     sign_in_as(owner)
 
@@ -157,6 +175,46 @@ RSpec.describe "Nquery queries", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(JSON.parse(response.body)["columns"]).to include("value")
+  end
+
+  it "binds a variable default posted with the run" do
+    sign_in_as(owner)
+
+    post "/queries/run", params: {
+      data_source_id: data_source.id,
+      statement: "SELECT CASE WHEN {{start_date}} = '2026-08-01' THEN 'default-bound' ELSE 'query-string-bound' END AS label",
+      parameters: [{ name: "start_date", type: "date", default: "2026-08-01" }]
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body)["rows"].flatten).to include("default-bound")
+    expect(JSON.parse(response.body)["rows"].flatten).not_to include("query-string-bound")
+  end
+
+  it "drops an optional clause when the posted default is blank" do
+    sign_in_as(owner)
+
+    post "/queries/run", params: {
+      data_source_id: data_source.id,
+      statement: "SELECT 'kept' AS label [[WHERE 1 = 0 AND {{start_date}} = '2026-08-01']]",
+      parameters: [{ name: "start_date", type: "date", default: "" }]
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body)["rows"].flatten).to include("kept")
+  end
+
+  it "rejects an invalid explicit value without using the default" do
+    sign_in_as(owner)
+
+    post "/queries/run", params: {
+      data_source_id: data_source.id,
+      statement: "SELECT CASE WHEN {{start_date}} = '2026-08-01' THEN 'default-bound' ELSE 'query-string-bound' END AS label",
+      parameters: [{ name: "start_date", type: "date", default: "2026-08-01", value: "2026-02-31" }]
+    }, as: :json
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(JSON.parse(response.body)["error"]).to eq("Invalid value for start_date")
   end
 
   it "returns forbidden when query run lacks permissions" do

@@ -18,13 +18,13 @@ module Nquery
         true
       end
 
-      def execute_readonly(statement, timeout: 15, row_limit: 10_000)
+      def execute_readonly(statement, timeout: 15, row_limit: 10_000, binds: [])
         rows = []
         columns = []
         duration = Benchmark.realtime do
           connection.transaction do
             connection.execute("SET TRANSACTION READ ONLY") if postgresql?
-            result = connection.exec_query(RowLimit.apply(statement, row_limit))
+            result = exec_limited_query(connection, statement, row_limit, binds)
             columns = result.columns
             rows = result.rows
             raise ActiveRecord::Rollback

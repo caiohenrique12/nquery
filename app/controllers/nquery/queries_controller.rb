@@ -20,7 +20,8 @@ module Nquery
       result = QueryRunner.new(
         data_source: @data_source,
         statement: params[:statement],
-        user: current_nquery_user
+        user: current_nquery_user,
+        parameters: run_parameters
       ).run
 
       render json: result
@@ -54,7 +55,27 @@ module Nquery
     end
 
     def query_params
-      params.require(:query).permit(:name, :statement, :data_source_id, :collection_id)
+      params.require(:query).permit(:name, :statement, :data_source_id, :collection_id, parameters: [:name, :type, :default])
+    end
+
+    def run_parameters
+      rows = run_parameter_rows
+      return if rows.empty?
+
+      explicit = {}
+      definitions = rows.map do |row|
+        explicit[row["name"]] = row["value"] if row.key?("value")
+        row.except("value")
+      end
+      source = Query.new(statement: params[:statement], parameters: definitions)
+      DashboardParameters.call(dashboard: source, token_params: {}, request_params: explicit)
+    end
+
+    def run_parameter_rows
+      return [] if params[:parameters].blank?
+
+      permitted = params.permit(parameters: [:name, :type, :default, :value])
+      Array(permitted[:parameters]).map { |row| row.to_h.stringify_keys }
     end
   end
 end

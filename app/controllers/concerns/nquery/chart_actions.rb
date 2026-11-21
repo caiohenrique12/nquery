@@ -88,7 +88,7 @@ module Nquery
       params.require(:chart).permit(
         :name,
         visualization: {},
-        query_attributes: %i[id name statement data_source_id]
+        query_attributes: [:id, :name, :statement, :data_source_id, { parameters: [:name, :type, :default] }]
       )
     end
 

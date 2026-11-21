@@ -4,28 +4,32 @@ module Nquery
   class QueryRunner
     class Error < StandardError; end
     class PermissionError < Error; end
+    class ParameterError < Error; end
 
-    def initialize(data_source:, statement:, user: nil, query: nil)
+    def initialize(data_source:, statement:, user: nil, query: nil, parameters: nil)
       @data_source = data_source
       @statement = statement.to_s.strip
       @user = user
       @query = query
+      @parameters = parameters
     end
 
     def run(audit: true)
       validate_statement!
       check_permissions!
+      sql, binds = prepared_statement
 
       adapter = DataSources::Adapter.for(@data_source)
       result = adapter.execute_readonly(
-        @statement,
+        sql,
         timeout: Nquery.configuration.query_timeout,
-        row_limit: Nquery.configuration.query_row_limit
+        row_limit: Nquery.configuration.query_row_limit,
+        binds: binds
       )
 
       record_audit!(result, "success") if audit
       result
-    rescue PermissionError
+    rescue PermissionError, ParameterError
       raise
     rescue StandardError => e
       record_audit!({}, "error", e.message) if audit
@@ -37,6 +41,35 @@ module Nquery
     def validate_statement!
       message = ReadonlySql.error_message(@statement)
       raise Error, message if message
+    end
+
+    def prepared_statement
+      return [@statement, []] unless @statement.include?("{{")
+
+      bound = StatementBinds.call(
+        statement: @statement,
+        parameters: parameter_values,
+        invalid_names: invalid_parameter_names,
+        adapter: @data_source.adapter
+      )
+      [bound.sql, bound.binds]
+    end
+
+    def parameter_values
+      case @parameters
+      when DashboardParameters::Result
+        @parameters.values
+      when Hash
+        @parameters
+      else
+        {}
+      end
+    end
+
+    def invalid_parameter_names
+      return @parameters.invalid_names if @parameters.is_a?(DashboardParameters::Result)
+
+      []
     end
 
     def check_permissions!

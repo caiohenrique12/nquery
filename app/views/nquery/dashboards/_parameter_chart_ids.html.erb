@@ -1,0 +1,6 @@
+<% if definition.key?("chart_ids") %>
+  <%= hidden_field_tag "dashboard[parameters][][chart_ids][]", "" %>
+  <% Array(definition["chart_ids"]).each do |chart_id| %>
+    <%= hidden_field_tag "dashboard[parameters][][chart_ids][]", chart_id %>
+  <% end %>
+<% end %>

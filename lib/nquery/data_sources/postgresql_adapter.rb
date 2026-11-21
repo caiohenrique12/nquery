@@ -18,7 +18,7 @@ module Nquery
         true
       end
 
-      def execute_readonly(statement, timeout: 15, row_limit: 10_000)
+      def execute_readonly(statement, timeout: 15, row_limit: 10_000, binds: [])
         with_connection do |conn|
           rows = []
           columns = []
@@ -26,7 +26,7 @@ module Nquery
             conn.transaction do
               conn.execute("SET TRANSACTION READ ONLY")
               conn.execute("SET statement_timeout = '#{timeout.to_i}s'")
-              result = conn.exec_query(RowLimit.apply(statement, row_limit))
+              result = exec_limited_query(conn, statement, row_limit, binds)
               columns = result.columns
               rows = result.rows
               raise ActiveRecord::Rollback

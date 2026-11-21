@@ -1,4 +1,5 @@
-<div class="nq-dashboard-card"
+<% wiring_parameter = local_assigns[:wiring_parameter] %>
+<div class="nq-dashboard-card<%= " is-wiring" if wiring_parameter %>"
      style="grid-column: span <%= card.width %>; grid-row: span <%= card.height %>;"
      data-dashboard-grid-target="card"
      data-card-id="<%= card.id %>">
@@ -13,4 +14,29 @@
        data-chart-preview-data-value="<%= card_result.to_json %>">
     <canvas data-chart-preview-target="canvas" height="80"></canvas>
   </div>
+  <% if wiring_parameter %>
+    <% parameter_name = wiring_parameter["name"] %>
+    <% uses_parameter = card.chart.uses_parameter?(parameter_name) %>
+    <% linked = uses_parameter && dashboard.parameter_linked_to_chart?(wiring_parameter, card.chart) %>
+    <div class="nq-dashboard-card-column">
+      <p class="nq-dashboard-card-column-label">Column to filter on</p>
+      <% if uses_parameter %>
+        <% other_chart_ids = dashboard.linked_chart_ids(wiring_parameter) - [card.chart.id] %>
+        <%= form_with url: parameter_charts_dashboard_path(dashboard, name: parameter_name, edit: "parameters", wire: parameter_name), method: :patch, class: "nq-dashboard-card-wire" do %>
+          <%= hidden_field_tag "chart_ids[]", "" %>
+          <% other_chart_ids.each do |chart_id| %>
+            <%= hidden_field_tag "chart_ids[]", chart_id %>
+          <% end %>
+          <%= select_tag "chart_ids[]",
+                         options_for_select([["Select...", ""], ["{{#{parameter_name}}}", card.chart.id]], linked ? card.chart.id.to_s : ""),
+                         id: "card_#{card.id}_parameter_#{parameter_name}",
+                         class: "nq-input",
+                         aria: { label: "Column to filter on" },
+                         onchange: "this.form.requestSubmit()" %>
+        <% end %>
+      <% else %>
+        <%= select_tag "card_#{card.id}_parameter_#{parameter_name}", options_for_select([["Select...", ""]]), id: "card_#{card.id}_parameter_#{parameter_name}", class: "nq-input", disabled: true, aria: { label: "Column to filter on" } %>
+      <% end %>
+    </div>
+  <% end %>
 </div>

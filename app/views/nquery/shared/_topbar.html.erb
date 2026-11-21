@@ -1,4 +1,7 @@
 <header class="nq-topbar">
+  <button type="button" class="nq-sidebar-toggle" aria-controls="nq-sidebar" aria-expanded="true" aria-label="Hide navigation">
+    <%= nq_icon(:menu) %>
+  </button>
   <div class="nq-topbar-actions">
     <% if current_nquery_user %>
       <span class="nq-user"><%= current_nquery_user.name %></span>

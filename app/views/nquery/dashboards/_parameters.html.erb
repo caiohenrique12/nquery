@@ -1,0 +1,159 @@
+<% filter_dashboard = local_assigns.fetch(:filter_dashboard, dashboard) %>
+<% definitions = filter_dashboard.parameter_definitions %>
+<% stored_definitions = dashboard.parameter_definitions %>
+<% cards = local_assigns.fetch(:cards) { dashboard.dashboard_cards.includes(:chart) } %>
+<% invalid_parameter_names = Array(local_assigns[:invalid_parameter_names]) %>
+<% wiring_name = local_assigns[:wiring_name].to_s.presence %>
+<% editing_parameters = can_edit && (local_assigns[:editing_parameters] || dashboard.errors[:parameters].any?) %>
+<% visible_definitions = definitions.select { |definition| !definition.key?("chart_ids") || cards.any? { |card| filter_dashboard.parameter_linked_to_chart?(definition, card.chart) } } %>
+<% if visible_definitions.any? %>
+  <%= form_with url: dashboard_path(dashboard), method: :get, class: "nq-dashboard-filter-bar", data: { turbo: false } do %>
+    <%= hidden_field_tag :edit, "parameters" if editing_parameters %>
+    <%= hidden_field_tag :wire, wiring_name if wiring_name %>
+    <% visible_definitions.each do |definition| %>
+      <% name = definition["name"] %>
+      <% selected = params.key?(name) ? params[name].presence : definition["default"].presence %>
+      <% invalid = invalid_parameter_names.include?(name) %>
+      <div class="nq-dashboard-filter<%= " is-invalid" if invalid %>">
+        <%= label_tag "dashboard_filter_#{name}", name.tr("_", " ").capitalize %>
+        <%= date_field_tag name, selected, id: "dashboard_filter_#{name}", class: "nq-input", onchange: "this.form.requestSubmit()" if definition["type"] == "date" %>
+        <%= datetime_local_field_tag name, selected, id: "dashboard_filter_#{name}", class: "nq-input", onchange: "this.form.requestSubmit()" if definition["type"] == "datetime" %>
+        <%= number_field_tag name, selected, id: "dashboard_filter_#{name}", class: "nq-input", step: 1, onchange: "this.form.requestSubmit()" if definition["type"] == "integer" %>
+        <%= text_field_tag name, selected, id: "dashboard_filter_#{name}", class: "nq-input", onchange: "this.form.requestSubmit()" if definition["type"] == "string" %>
+        <%= select_tag name, options_for_select([["True", "true"], ["False", "false"]], Nquery::ParameterValue.boolean_form_value(selected)), id: "dashboard_filter_#{name}", class: "nq-input", include_blank: "Any", onchange: "this.form.requestSubmit()" if definition["type"] == "boolean" %>
+        <%= text_field_tag name, selected, id: "dashboard_filter_#{name}", class: "nq-input", onchange: "this.form.requestSubmit()", placeholder: "550e8400-e29b-41d4-a716-446655440000", pattern: "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", title: "Enter a UUID" if definition["type"] == "uuid" %>
+        <% if invalid && definition["type"] == "uuid" %>
+          <p class="nq-dashboard-filter-error" role="alert">Enter a UUID.</p>
+        <% elsif invalid && definition["type"] == "boolean" %>
+          <p class="nq-dashboard-filter-error" role="alert">Choose true or false.</p>
+        <% end %>
+      </div>
+    <% end %>
+    <div class="nq-dashboard-filter-actions">
+      <%= submit_tag "Apply", class: "nq-btn" %>
+      <% if visible_definitions.any? { |definition| params[definition["name"]].present? || (definition["default"].present? && !params.key?(definition["name"])) } %>
+        <% clear_params = visible_definitions.to_h { |definition| [definition["name"], ""] } %>
+        <% clear_params["wire"] = wiring_name if wiring_name %>
+        <% clear_params["edit"] = "parameters" if editing_parameters %>
+        <%= link_to "Clear", dashboard_path(dashboard, clear_params), class: "nq-btn" %>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+<% if can_edit && !editing_parameters %>
+  <%= link_to dashboard_path(dashboard, request.query_parameters.except("wire", "edit").merge("edit" => "parameters")), class: "nq-btn nq-dashboard-filter-edit" do %>
+    <%= nq_icon(:edit) %>
+    <span>Edit parameters</span>
+  <% end %>
+<% elsif editing_parameters %>
+  <div class="nq-dashboard-filter-editor is-editing">
+    <div class="nq-dashboard-filter-editor-bar">
+      <span>Edit parameters</span>
+      <%= link_to "Done", dashboard_path(dashboard, request.query_parameters.except("wire", "edit")), class: "nq-btn" %>
+    </div>
+    <div class="nq-dashboard-filter-panel">
+      <% if dashboard.errors[:parameters].any? %>
+        <div class="nq-form-errors" role="alert">
+          <p><strong>Please fix the following:</strong></p>
+          <ul>
+            <% dashboard.errors.full_messages_for(:parameters).each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      <% linkable = cards.filter_map { |card| card.chart.query }.flat_map(&:parameter_definitions).uniq { |row| row["name"] }.reject { |row| definitions.any? { |saved| saved["name"] == row["name"] } } %>
+      <p class="nq-dashboard-filter-hint">Add a parameter here, or link a variable that already exists on a chart, such as <code>{{start_date}}</code>.</p>
+      <%= form_with model: dashboard, url: dashboard_path(dashboard), method: :patch, class: "nq-dashboard-parameter-create" do %>
+        <% stored_definitions.each_with_index do |definition, index| %>
+          <%= hidden_field_tag "dashboard[parameters][][name]", definition["name"], id: "dashboard_new_parameter_#{index}_name" %>
+          <%= hidden_field_tag "dashboard[parameters][][type]", definition["type"], id: "dashboard_new_parameter_#{index}_type" %>
+          <%= hidden_field_tag "dashboard[parameters][][default]", definition["default"], id: "dashboard_new_parameter_#{index}_default" %>
+          <%= render "parameter_chart_ids", definition: definition %>
+        <% end %>
+        <div class="nq-dashboard-filter-field">
+          <%= label_tag "dashboard_parameter_name", "Name" %>
+          <%= text_field_tag "dashboard[parameters][][name]", nil, id: "dashboard_parameter_name", class: "nq-input", placeholder: "active", pattern: "[a-z][a-z0-9_]*", required: true, autocomplete: "off" %>
+        </div>
+        <div class="nq-dashboard-filter-field">
+          <%= label_tag "dashboard_parameter_type", "Type" %>
+          <%= select_tag "dashboard[parameters][][type]", options_for_select(Nquery::ParameterValue.type_options, "string"), id: "dashboard_parameter_type", class: "nq-input" %>
+        </div>
+        <div class="nq-dashboard-filter-field">
+          <%= label_tag "dashboard_parameter_default", "Default" %>
+          <%= text_field_tag "dashboard[parameters][][default]", nil, id: "dashboard_parameter_default", class: "nq-input", placeholder: "Optional" %>
+        </div>
+        <div class="nq-dashboard-filter-add-action">
+          <%= submit_tag "Add parameter", class: "nq-btn nq-btn-primary" %>
+        </div>
+      <% end %>
+      <% if linkable.any? %>
+        <%= form_with model: dashboard, url: dashboard_path(dashboard), method: :patch, class: "nq-dashboard-filter-add" do %>
+          <% stored_definitions.each_with_index do |definition, index| %>
+            <%= hidden_field_tag "dashboard[parameters][][name]", definition["name"], id: "dashboard_saved_parameter_#{index}_name" %>
+            <%= hidden_field_tag "dashboard[parameters][][type]", definition["type"], id: "dashboard_saved_parameter_#{index}_type" %>
+            <%= hidden_field_tag "dashboard[parameters][][default]", definition["default"], id: "dashboard_saved_parameter_#{index}_default" %>
+            <%= render "parameter_chart_ids", definition: definition %>
+          <% end %>
+          <div class="nq-dashboard-filter-field">
+            <%= label_tag "dashboard_link_parameter", "Chart variable" %>
+            <%= select_tag "dashboard[parameters][][name]", options_for_select(linkable.map { |row| ["{{#{row["name"]}}} · #{Nquery::ParameterValue::TYPE_LABELS[row["type"]] || row["type"]}", row["name"]] }), id: "dashboard_link_parameter", class: "nq-input" %>
+          </div>
+          <div class="nq-dashboard-filter-add-action">
+            <%= submit_tag "Link filter", class: "nq-btn nq-btn-primary" %>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="nq-muted">No chart variables are waiting to be linked.</p>
+      <% end %>
+      <% if definitions.any? %>
+        <ul class="nq-dashboard-filter-list">
+          <% definitions.each do |definition| %>
+            <li class="<%= "is-wiring" if wiring_name == definition["name"] %>">
+              <div class="nq-dashboard-filter-list-row">
+                <div class="nq-dashboard-filter-meta">
+                  <%= link_to dashboard_path(dashboard, request.query_parameters.except("wire", "edit").merge("edit" => "parameters", "wire" => definition["name"])), class: "nq-dashboard-filter-field-link", aria: { current: (wiring_name == definition["name"] ? "true" : nil) } do %>
+                    <code>{{<%= definition["name"] %>}}</code>
+                  <% end %>
+                  <span class="nq-badge nq-badge-filter nq-badge-filter-<%= definition["type"] %>"><%= Nquery::ParameterValue::TYPE_LABELS[definition["type"]] || definition["type"] %></span>
+                </div>
+                <span class="nq-dashboard-filter-default">
+                  <% if definition["default"].present? %>
+                    Default <strong><%= definition["default"] %></strong>
+                  <% else %>
+                    No default
+                  <% end %>
+                </span>
+                <% if wiring_name == definition["name"] %>
+                  <%= link_to "Done", dashboard_path(dashboard, request.query_parameters.except("wire", "edit").merge("edit" => "parameters")), class: "nq-btn" %>
+                <% end %>
+                <%= form_with url: dashboard_path(dashboard), method: :patch do %>
+                  <%= hidden_field_tag :edit, "parameters" if editing_parameters %>
+                  <%= hidden_field_tag :wire, wiring_name if wiring_name %>
+                  <% others = stored_definitions.reject { |row| row["name"] == definition["name"] } %>
+                  <% if others.empty? %>
+                    <%= hidden_field_tag "dashboard[parameters][][name]", "" %>
+                    <%= hidden_field_tag "dashboard[parameters][][type]", "date" %>
+                    <%= hidden_field_tag "dashboard[parameters][][default]", "" %>
+                  <% else %>
+                    <% others.each do |row| %>
+                      <%= hidden_field_tag "dashboard[parameters][][name]", row["name"] %>
+                      <%= hidden_field_tag "dashboard[parameters][][type]", row["type"] %>
+                      <%= hidden_field_tag "dashboard[parameters][][default]", row["default"] %>
+                      <%= render "parameter_chart_ids", definition: row %>
+                    <% end %>
+                  <% end %>
+                  <%= button_tag type: "submit", class: "nq-btn nq-btn-ghost" do %>
+                    <%= nq_icon(:trash) %>
+                    <span>Remove</span>
+                  <% end %>
+                <% end %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
+  </div>
+<% end %>

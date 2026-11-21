@@ -1,1 +1,4 @@
 <%= turbo_stream.update "flash", partial: "nquery/shared/flash" %>
+<%= turbo_stream.replace "chart_variables" do %>
+  <%= render "nquery/charts/variables", chart: @chart %>
+<% end %>

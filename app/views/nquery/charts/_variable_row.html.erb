@@ -1,0 +1,10 @@
+<div class="nq-chart-variables-row" data-variable-name="<%= definition["name"] %>">
+  <button type="button" class="nq-chart-variable-chip" data-variable-select aria-pressed="false">
+    <code data-variable-label>{{<%= definition["name"] %>}}</code>
+  </button>
+  <div class="nq-chart-variable-fields" hidden>
+    <%= hidden_field_tag "chart[query_attributes][parameters][][name]", definition["name"], id: "chart_variable_#{definition["name"]}_name", data: { variable_name_input: true } %>
+    <%= select_tag "chart[query_attributes][parameters][][type]", options_for_select(Nquery::ParameterValue.type_options, definition["type"]), id: "chart_variable_#{definition["name"]}_type", data: { variable_type: true } %>
+    <%= text_field_tag "chart[query_attributes][parameters][][default]", definition["default"].presence, id: "chart_variable_#{definition["name"]}_default", data: { variable_default: true } %>
+  </div>
+</div>

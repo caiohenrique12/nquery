@@ -13,10 +13,18 @@
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sql/sql.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sql-formatter@15.4.2/dist/sql-formatter.min.js"></script>
     <%= javascript_include_tag "nquery/application", defer: true %>
+    <script>
+      try {
+        if (window.matchMedia("(min-width: 769px)").matches && localStorage.getItem("nq-sidebar-collapsed") === "true") {
+          document.documentElement.classList.add("nq-sidebar-collapsed")
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body class="nq-body">
     <div class="nq-layout">
       <%= render "nquery/shared/sidebar" %>
+      <button type="button" class="nq-sidebar-backdrop" hidden aria-label="Close navigation"></button>
       <div class="nq-main">
         <%= render "nquery/shared/topbar" %>
         <main class="nq-content" id="main_content">

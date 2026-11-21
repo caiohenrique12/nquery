@@ -6,6 +6,18 @@ require "spec_helper"
 RSpec.describe Nquery::EmbedTokenService do
   let(:user) { Nquery::User.create!(email: "embed@example.com", password: "password123") }
 
+  it "round-trips params through sign and verify" do
+    params = { "start_date" => "2026-08-01", "end_date" => "2026-08-07" }
+    result = described_class.sign(
+      resource_type: "Nquery::Chart",
+      resource_id: 1,
+      creator: user,
+      params: params
+    )
+
+    expect(described_class.verify(result[:signed_token])[:params]).to eq(params)
+  end
+
   it "creates and verifies signed tokens" do
     result = described_class.sign(resource_type: "Nquery::Chart", resource_id: 1, creator: user)
     payload = described_class.verify(result[:signed_token])

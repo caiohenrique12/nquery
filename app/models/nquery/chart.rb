@@ -42,6 +42,10 @@ module Nquery
       query&.statement? || false
     end
 
+    def uses_parameter?(name)
+      statement.to_s.match?(/\{\{\s*#{Regexp.escape(name)}\s*\}\}/)
+    end
+
     def data_source
       query&.data_source
     end

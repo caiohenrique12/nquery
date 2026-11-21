@@ -1,0 +1,28 @@
+<% definitions = chart.query&.parameter_definitions || [] %>
+<div id="chart_variables" class="nq-chart-variables">
+  <% if chart.query&.errors&.include?(:parameters) %>
+    <div class="nq-form-errors" role="alert">
+      <ul>
+        <% chart.query.errors.full_messages_for(:parameters).each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <div class="nq-chart-variables-bar">
+    <span class="nq-panel-title">Parameters</span>
+    <div class="nq-chart-variables-rows" data-chart-variables-target="rows">
+      <% definitions.each do |definition| %>
+        <%= render "nquery/charts/variable_row", definition: definition %>
+      <% end %>
+    </div>
+    <button type="button" class="nq-btn nq-chart-variable-add" data-manages-loading="true" data-chart-variables-target="add">
+      <%= nq_icon(:plus) %>
+      <span>Add parameter</span>
+    </button>
+  </div>
+  <p class="nq-muted" data-chart-variables-target="empty" <%= "hidden" if definitions.any? %>>Add a variable to the query, such as <code>{{start_date}}</code>.</p>
+  <template data-chart-variables-target="template">
+    <%= render "nquery/charts/variable_row", definition: { "name" => "", "type" => "string", "default" => "" } %>
+  </template>
+</div>
