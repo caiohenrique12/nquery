@@ -127,6 +127,28 @@ RSpec.describe Nquery::Query, type: :model do
     expect(query).to be_valid
   end
 
+  it "rejects a parameter type the query cannot bind" do
+    query = build_query(statement: "SELECT {{region}} AS region")
+    query.parameters = [{ "name" => "region", "type" => "float", "default" => "" }]
+
+    expect(query).not_to be_valid
+    expect(query.errors[:parameters]).to include(
+      "must be string, integer, date, datetime, uuid, or boolean"
+    )
+  end
+
+  it "rejects an invalid or duplicated parameter name" do
+    query = build_query(statement: "SELECT 1 AS value")
+    allow(query).to receive(:parameter_definitions).and_return([
+      { "name" => "Start", "type" => "string", "default" => "" },
+      { "name" => "region", "type" => "string", "default" => "" },
+      { "name" => "region", "type" => "string", "default" => "" }
+    ])
+
+    expect(query).not_to be_valid
+    expect(query.errors[:parameters]).to include("include an invalid name", "include a duplicate name")
+  end
+
   it "rejects a boolean default that is not true or false" do
     query = build_query(statement: "SELECT {{active}} AS active")
     query.parameters = [{ "name" => "active", "type" => "boolean", "default" => "maybe" }]

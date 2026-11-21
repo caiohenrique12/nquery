@@ -59,6 +59,14 @@ RSpec.describe Nquery::DataSources::RowLimit do
         end
       end
 
+      context "when a string contains an escaped quote" do
+        let(:statement) { %(SELECT 'O''Brien' AS name, "say \\"hi\\"" AS greeting) }
+
+        it "appends the cap after the quoted text" do
+          expect(sql).to eq("#{statement}\nLIMIT 10000")
+        end
+      end
+
       context "when a block comment opener sits inside a string" do
         let(:statement) { "SELECT '/*' AS note" }
         let(:limit) { 2 }

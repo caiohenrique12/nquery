@@ -24,6 +24,12 @@ RSpec.describe Nquery::Dashboards::Filters, ".call" do
     expect(result.parameters.values["start_date"]).to eq(Date.new(2026, 8, 1))
   end
 
+  it "reads a plain hash of request values" do
+    result = described_class.call(dashboard: dashboard, request_params: { "start_date" => "2026-03-01" })
+
+    expect(result.parameters.values["start_date"]).to eq(Date.new(2026, 3, 1))
+  end
+
   it "lets a declared request date override the default" do
     request_params[:start_date] = "2026-01-15"
 

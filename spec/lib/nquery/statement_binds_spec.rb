@@ -129,6 +129,16 @@ RSpec.describe Nquery::StatementBinds do
       expect(names).to eq(%w[label qty])
     end
 
+    it "treats a missing parameter hash as empty" do
+      expect {
+        described_class.call(
+          statement: "SELECT {{start_date}} AS start_date",
+          parameters: nil,
+          adapter: "sqlite"
+        )
+      }.to raise_error(Nquery::QueryRunner::ParameterError, "Unknown parameter start_date")
+    end
+
     it "raises when a value is missing" do
       expect {
         described_class.call(
