@@ -35,9 +35,9 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "rspec-rails", "~> 7.0"
   spec.add_development_dependency "capybara", "~> 3.40"
-  spec.add_development_dependency "sqlite3", ">= 2.9.6", "< 3"
+  spec.add_development_dependency "sqlite3", ">= 2.10.2", "< 3"
   spec.add_development_dependency "pg", "~> 1.5"
-  spec.add_development_dependency "puma", ">= 7.2.1", "< 8"
+  spec.add_development_dependency "puma", ">= 7.2.2", "< 8"
   spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "rubocop", "~> 1.75"
   spec.add_development_dependency "rubocop-rails-omakase", "~> 1.1"
