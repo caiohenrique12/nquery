@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-21
+
+Host apps should `bundle update nquery` and run `rails db:migrate`.
+
+### Added
+- Dashboard and chart parameters (`{{name}}`) with typed values bound into SQL (#31)
+- Dashboard filter bar to link chart variables and apply dates, strings, integers, UUIDs, and booleans
+- Embed and public dashboard URLs accept declared values from the query string or token
+- Sidebar hide/show control
+
+### Changed
+- Tighten Puma (`>= 7.2.2`) and sqlite3 (`>= 2.10.2`) minimums for known CVEs
+- Patch Rails to 8.1.4.1 and related sanitizer/parser gems
+
+### Fixed
+- Wrap or rewrite SQL that already ends with a LIMIT (#30)
+
 ## [0.1.3] - 2026-09-08
 
 Host apps should `bundle update nquery` and run `rails db:migrate`. Re-run `rails generate nquery:install` (or add the sharing/embed keys to `config/initializers/nquery.rb`) if you want public links or static embeds.
